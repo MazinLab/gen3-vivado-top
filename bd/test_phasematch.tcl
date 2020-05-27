@@ -1,6 +1,6 @@
 
 ################################################################
-# This is a generated script based on design: test_ddc
+# This is a generated script based on design: test_phasematch
 #
 # Though there are limitations about the generated script,
 # the main purpose of this utility is to make learning
@@ -35,7 +35,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 ################################################################
 
 # To test this script, run the following commands from Vivado Tcl console:
-# source test_ddc_script.tcl
+# source test_phasematch_script.tcl
 
 # If there is no project opened, this script will create a
 # project, but make sure you do not have an existing project
@@ -50,7 +50,7 @@ if { $list_projs eq "" } {
 
 # CHANGE DESIGN NAME HERE
 variable design_name
-set design_name test_ddc
+set design_name test_phasematch
 
 # If you do not already have an existing IP Integrator design open,
 # you can create a design using the following command:
@@ -128,12 +128,20 @@ xilinx.com:ip:axi_dma:7.1\
 xilinx.com:ip:axi_intc:4.1\
 xilinx.com:ip:smartconnect:1.0\
 xilinx.com:ip:axis_data_fifo:2.0\
-MazinLab:mkidgen3:resonator_dds:1.0\
 xilinx.com:ip:proc_sys_reset:5.0\
 xilinx.com:ip:system_ila:1.1\
 xilinx.com:ip:xlconcat:2.1\
-xilinx.com:ip:xlconstant:1.1\
 xilinx.com:ip:zynq_ultra_ps_e:3.3\
+xilinx.com:ip:cordic:6.0\
+xilinx.com:ip:axi_fifo_mm_s:4.2\
+xilinx.com:ip:axis_broadcaster:1.1\
+xilinx.com:ip:axis_combiner:1.1\
+xilinx.com:ip:axis_dwidth_converter:1.1\
+xilinx.com:ip:axis_subset_converter:1.1\
+xilinx.com:ip:axis_switch:1.1\
+xilinx.com:ip:fir_compiler:7.2\
+MazinLab:mkidgen3:resonator_dds:1.0\
+xilinx.com:ip:xlconstant:1.1\
 "
 
    set list_ips_missing ""
@@ -162,6 +170,519 @@ if { $bCheckIPsPassed != 1 } {
 # DESIGN PROCs
 ##################################################################
 
+
+# Hierarchical cell: reschan
+proc create_hier_cell_reschan { parentCell nameHier } {
+
+  variable script_folder
+
+  if { $parentCell eq "" || $nameHier eq "" } {
+     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_reschan() - Empty argument(s)!"}
+     return
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+  # Create cell and set as current instance
+  set hier_obj [create_bd_cell -type hier $nameHier]
+  current_bd_instance $hier_obj
+
+  # Create interface pins
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS_DATA
+
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 iq_stream
+
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 s_axi_resonator_dds
+
+
+  # Create pins
+  create_bd_pin -dir I -type clk S_AXI_clk
+  create_bd_pin -dir I -type clk ap_clk
+  create_bd_pin -dir I -type rst ap_rst_n
+  create_bd_pin -dir I -type rst ap_rst_n_S_AXI_clk
+
+  # Create instance: fir_compiler_0, and set properties
+  set fir_compiler_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:fir_compiler:7.2 fir_compiler_0 ]
+  set_property -dict [ list \
+   CONFIG.BestPrecision {true} \
+   CONFIG.Clock_Frequency {300.0} \
+   CONFIG.CoefficientSource {COE_File} \
+   CONFIG.Coefficient_File {../../../../../../../../gen3-reschan/data/FCLowpass.coe} \
+   CONFIG.Coefficient_Fractional_Bits {17} \
+   CONFIG.Coefficient_Sets {1} \
+   CONFIG.Coefficient_Sign {Signed} \
+   CONFIG.Coefficient_Structure {Inferred} \
+   CONFIG.Coefficient_Width {16} \
+   CONFIG.ColumnConfig {5} \
+   CONFIG.DATA_Has_TLAST {Packet_Framing} \
+   CONFIG.Decimation_Rate {2} \
+   CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
+   CONFIG.Filter_Type {Decimation} \
+   CONFIG.Interpolation_Rate {1} \
+   CONFIG.M_DATA_Has_TUSER {User_Field} \
+   CONFIG.Number_Channels {256} \
+   CONFIG.Number_Paths {16} \
+   CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
+   CONFIG.Output_Width {16} \
+   CONFIG.Quantization {Quantize_Only} \
+   CONFIG.RateSpecification {Input_Sample_Period} \
+   CONFIG.S_DATA_Has_FIFO {false} \
+   CONFIG.S_DATA_Has_TUSER {User_Field} \
+   CONFIG.SamplePeriod {1} \
+   CONFIG.Sample_Frequency {0.001} \
+   CONFIG.Select_Pattern {All} \
+   CONFIG.Zero_Pack_Factor {1} \
+ ] $fir_compiler_0
+
+  # Create instance: resonator_dds_0, and set properties
+  set resonator_dds_0 [ create_bd_cell -type ip -vlnv MazinLab:mkidgen3:resonator_dds:1.0 resonator_dds_0 ]
+
+  # Create instance: xlconstant_0, and set properties
+  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {1} \
+ ] $xlconstant_0
+
+  # Create interface connections
+  connect_bd_intf_net -intf_net Conn2 [get_bd_intf_pins s_axi_resonator_dds] [get_bd_intf_pins resonator_dds_0/s_axi_control]
+  connect_bd_intf_net -intf_net bin_to_res_0_res_stream [get_bd_intf_pins iq_stream] [get_bd_intf_pins resonator_dds_0/res_in]
+  connect_bd_intf_net -intf_net fir_compiler_0_M_AXIS_DATA [get_bd_intf_pins M_AXIS_DATA] [get_bd_intf_pins fir_compiler_0/M_AXIS_DATA]
+  connect_bd_intf_net -intf_net resonator_dds_0_res_out [get_bd_intf_pins fir_compiler_0/S_AXIS_DATA] [get_bd_intf_pins resonator_dds_0/res_out]
+
+  # Create port connections
+  connect_bd_net -net S_AXI_clk_0_1 [get_bd_pins S_AXI_clk] [get_bd_pins resonator_dds_0/s_axi_clk]
+  connect_bd_net -net ap_clk_0_1 [get_bd_pins ap_clk] [get_bd_pins fir_compiler_0/aclk] [get_bd_pins resonator_dds_0/ap_clk]
+  connect_bd_net -net ap_rst_n_0_1 [get_bd_pins ap_rst_n] [get_bd_pins resonator_dds_0/ap_rst_n]
+  connect_bd_net -net ap_rst_n_S_AXI_clk_1 [get_bd_pins ap_rst_n_S_AXI_clk] [get_bd_pins resonator_dds_0/ap_rst_n_s_axi_clk]
+  connect_bd_net -net xlconstant_0_dout [get_bd_pins resonator_dds_0/generate_tlast] [get_bd_pins xlconstant_0/dout]
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+}
+
+# Hierarchical cell: phasematch
+proc create_hier_cell_phasematch { parentCell nameHier } {
+
+  variable script_folder
+
+  if { $parentCell eq "" || $nameHier eq "" } {
+     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_phasematch() - Empty argument(s)!"}
+     return
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+  # Create cell and set as current instance
+  set hier_obj [create_bd_cell -type hier $nameHier]
+  current_bd_instance $hier_obj
+
+  # Create interface pins
+  create_bd_intf_pin -mode Monitor -vlnv xilinx.com:interface:axis_rtl:1.0 AXI_STR_TXD
+
+  create_bd_intf_pin -mode Monitor -vlnv xilinx.com:interface:axis_rtl:1.0 M00_AXIS
+
+  create_bd_intf_pin -mode Monitor -vlnv xilinx.com:interface:axis_rtl:1.0 M00_AXIS1
+
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS
+
+  create_bd_intf_pin -mode Monitor -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS_DATA
+
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI
+
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI1
+
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:axis_rtl:1.0 S_AXIS
+
+  create_bd_intf_pin -mode Monitor -vlnv xilinx.com:interface:axis_rtl:1.0 S_AXIS_DATA
+
+  create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL
+
+
+  # Create pins
+  create_bd_pin -dir I -type clk aclk
+  create_bd_pin -dir I -type rst aresetn
+  create_bd_pin -dir O -from 13 -to 0 dout
+
+  # Create instance: arctan_phase, and set properties
+  set arctan_phase [ create_bd_cell -type ip -vlnv xilinx.com:ip:cordic:6.0 arctan_phase ]
+  set_property -dict [ list \
+   CONFIG.Architectural_Configuration {Parallel} \
+   CONFIG.Data_Format {SignedFraction} \
+   CONFIG.Functional_Selection {Arc_Tan} \
+   CONFIG.Output_Width {16} \
+   CONFIG.Pipelining_Mode {Maximum} \
+   CONFIG.cartesian_has_tlast {true} \
+   CONFIG.cartesian_has_tuser {false} \
+   CONFIG.cartesian_tuser_width {1} \
+   CONFIG.out_tlast_behv {Pass_Cartesian_TLAST} \
+ ] $arctan_phase
+
+  # Create instance: arctan_phase1, and set properties
+  set arctan_phase1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:cordic:6.0 arctan_phase1 ]
+  set_property -dict [ list \
+   CONFIG.Architectural_Configuration {Parallel} \
+   CONFIG.Data_Format {SignedFraction} \
+   CONFIG.Functional_Selection {Arc_Tan} \
+   CONFIG.Output_Width {16} \
+   CONFIG.Pipelining_Mode {Maximum} \
+   CONFIG.cartesian_has_tlast {true} \
+   CONFIG.cartesian_has_tuser {false} \
+   CONFIG.cartesian_tuser_width {1} \
+   CONFIG.out_tlast_behv {Pass_Cartesian_TLAST} \
+ ] $arctan_phase1
+
+  # Create instance: arctan_phase2, and set properties
+  set arctan_phase2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:cordic:6.0 arctan_phase2 ]
+  set_property -dict [ list \
+   CONFIG.Architectural_Configuration {Parallel} \
+   CONFIG.Data_Format {SignedFraction} \
+   CONFIG.Functional_Selection {Arc_Tan} \
+   CONFIG.Output_Width {16} \
+   CONFIG.Pipelining_Mode {Maximum} \
+   CONFIG.cartesian_has_tlast {true} \
+   CONFIG.cartesian_has_tuser {false} \
+   CONFIG.cartesian_tuser_width {1} \
+   CONFIG.out_tlast_behv {Pass_Cartesian_TLAST} \
+ ] $arctan_phase2
+
+  # Create instance: arctan_phase3, and set properties
+  set arctan_phase3 [ create_bd_cell -type ip -vlnv xilinx.com:ip:cordic:6.0 arctan_phase3 ]
+  set_property -dict [ list \
+   CONFIG.Architectural_Configuration {Parallel} \
+   CONFIG.Data_Format {SignedFraction} \
+   CONFIG.Functional_Selection {Arc_Tan} \
+   CONFIG.Output_Width {16} \
+   CONFIG.Pipelining_Mode {Maximum} \
+   CONFIG.cartesian_has_tlast {true} \
+   CONFIG.cartesian_has_tuser {false} \
+   CONFIG.cartesian_tuser_width {1} \
+   CONFIG.out_tlast_behv {Pass_Cartesian_TLAST} \
+ ] $arctan_phase3
+
+  # Create instance: axi_fifo_mm_s_0, and set properties
+  set axi_fifo_mm_s_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_fifo_mm_s:4.2 axi_fifo_mm_s_0 ]
+  set_property -dict [ list \
+   CONFIG.C_USE_RX_DATA {0} \
+   CONFIG.C_USE_TX_CTRL {0} \
+ ] $axi_fifo_mm_s_0
+
+  # Create instance: axi_fifo_mm_s_1, and set properties
+  set axi_fifo_mm_s_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_fifo_mm_s:4.2 axi_fifo_mm_s_1 ]
+  set_property -dict [ list \
+   CONFIG.C_USE_RX_DATA {0} \
+   CONFIG.C_USE_TX_CTRL {0} \
+ ] $axi_fifo_mm_s_1
+
+  # Create instance: axis_broadcaster_0, and set properties
+  set axis_broadcaster_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 axis_broadcaster_0 ]
+  set_property -dict [ list \
+   CONFIG.M00_TDATA_REMAP {tdata[31:0]} \
+   CONFIG.M01_TDATA_REMAP {tdata[63:32]} \
+   CONFIG.M02_TDATA_REMAP {tdata[95:64]} \
+   CONFIG.M03_TDATA_REMAP {tdata[127:96]} \
+   CONFIG.M03_TUSER_REMAP {1'b0} \
+   CONFIG.M_TDATA_NUM_BYTES {4} \
+   CONFIG.NUM_MI {4} \
+ ] $axis_broadcaster_0
+
+  # Create instance: axis_broadcaster_1, and set properties
+  set axis_broadcaster_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 axis_broadcaster_1 ]
+  set_property -dict [ list \
+   CONFIG.M00_TDATA_REMAP {tdata[15:0]} \
+   CONFIG.M01_TDATA_REMAP {tdata[15:0]} \
+   CONFIG.M02_TDATA_REMAP {tdata[15:0]} \
+   CONFIG.M03_TDATA_REMAP {tdata[15:0]} \
+   CONFIG.M_TDATA_NUM_BYTES {2} \
+   CONFIG.NUM_MI {4} \
+ ] $axis_broadcaster_1
+
+  # Create instance: axis_combiner_0, and set properties
+  set axis_combiner_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_combiner:1.1 axis_combiner_0 ]
+  set_property -dict [ list \
+   CONFIG.NUM_SI {4} \
+ ] $axis_combiner_0
+
+  # Create instance: axis_dwidth_converter_0, and set properties
+  set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
+  set_property -dict [ list \
+   CONFIG.M_TDATA_NUM_BYTES {16} \
+ ] $axis_dwidth_converter_0
+
+  # Create instance: axis_subset_converter_0, and set properties
+  set axis_subset_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter:1.1 axis_subset_converter_0 ]
+  set_property -dict [ list \
+   CONFIG.M_TDATA_NUM_BYTES {2} \
+   CONFIG.TDATA_REMAP {tdata[15:0]} \
+ ] $axis_subset_converter_0
+
+  # Create instance: axis_switch_0, and set properties
+  set axis_switch_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_switch:1.1 axis_switch_0 ]
+  set_property -dict [ list \
+   CONFIG.DECODER_REG {1} \
+   CONFIG.NUM_MI {4} \
+   CONFIG.NUM_SI {1} \
+   CONFIG.ROUTING_MODE {1} \
+ ] $axis_switch_0
+
+  # Create instance: matched_filter_512x0, and set properties
+  set matched_filter_512x0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:fir_compiler:7.2 matched_filter_512x0 ]
+  set_property -dict [ list \
+   CONFIG.BestPrecision {true} \
+   CONFIG.Clock_Frequency {300.0} \
+   CONFIG.CoefficientSource {COE_File} \
+   CONFIG.Coefficient_File {../../../../../../../data/30-tap-256-rid-opt-match.coe} \
+   CONFIG.Coefficient_Fractional_Bits {8} \
+   CONFIG.Coefficient_Reload {true} \
+   CONFIG.Coefficient_Sets {512} \
+   CONFIG.Coefficient_Sign {Signed} \
+   CONFIG.Coefficient_Structure {Inferred} \
+   CONFIG.Coefficient_Width {16} \
+   CONFIG.ColumnConfig {30} \
+   CONFIG.DATA_Has_TLAST {Vector_Framing} \
+   CONFIG.DATA_TUSER_Width {1} \
+   CONFIG.Data_Fractional_Bits {16} \
+   CONFIG.Data_Width {16} \
+   CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
+   CONFIG.Filter_Selection {1} \
+   CONFIG.M_DATA_Has_TUSER {Chan_ID_Field} \
+   CONFIG.Number_Channels {512} \
+   CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
+   CONFIG.Output_Width {16} \
+   CONFIG.Quantization {Maximize_Dynamic_Range} \
+   CONFIG.RateSpecification {Input_Sample_Period} \
+   CONFIG.S_CONFIG_Method {By_Channel} \
+   CONFIG.S_DATA_Has_FIFO {false} \
+   CONFIG.S_DATA_Has_TUSER {Not_Required} \
+   CONFIG.SamplePeriod {1} \
+   CONFIG.Sample_Frequency {0.001} \
+   CONFIG.Select_Pattern {All} \
+ ] $matched_filter_512x0
+
+  # Create instance: matched_filter_512x1, and set properties
+  set matched_filter_512x1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:fir_compiler:7.2 matched_filter_512x1 ]
+  set_property -dict [ list \
+   CONFIG.BestPrecision {true} \
+   CONFIG.Clock_Frequency {300.0} \
+   CONFIG.CoefficientSource {COE_File} \
+   CONFIG.Coefficient_File {../../../../../../../data/30-tap-256-rid-opt-match.coe} \
+   CONFIG.Coefficient_Fractional_Bits {8} \
+   CONFIG.Coefficient_Reload {true} \
+   CONFIG.Coefficient_Sets {512} \
+   CONFIG.Coefficient_Sign {Signed} \
+   CONFIG.Coefficient_Structure {Inferred} \
+   CONFIG.Coefficient_Width {16} \
+   CONFIG.ColumnConfig {30} \
+   CONFIG.DATA_Has_TLAST {Vector_Framing} \
+   CONFIG.DATA_TUSER_Width {1} \
+   CONFIG.Data_Fractional_Bits {16} \
+   CONFIG.Data_Width {16} \
+   CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
+   CONFIG.Filter_Selection {1} \
+   CONFIG.M_DATA_Has_TUSER {Chan_ID_Field} \
+   CONFIG.Number_Channels {512} \
+   CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
+   CONFIG.Output_Width {16} \
+   CONFIG.Quantization {Maximize_Dynamic_Range} \
+   CONFIG.RateSpecification {Input_Sample_Period} \
+   CONFIG.S_CONFIG_Method {By_Channel} \
+   CONFIG.S_DATA_Has_FIFO {false} \
+   CONFIG.S_DATA_Has_TUSER {Not_Required} \
+   CONFIG.SamplePeriod {1} \
+   CONFIG.Sample_Frequency {0.001} \
+   CONFIG.Select_Pattern {All} \
+ ] $matched_filter_512x1
+
+  # Create instance: matched_filter_512x2, and set properties
+  set matched_filter_512x2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:fir_compiler:7.2 matched_filter_512x2 ]
+  set_property -dict [ list \
+   CONFIG.BestPrecision {true} \
+   CONFIG.Clock_Frequency {300.0} \
+   CONFIG.CoefficientSource {COE_File} \
+   CONFIG.Coefficient_File {../../../../../../../data/30-tap-256-rid-opt-match.coe} \
+   CONFIG.Coefficient_Fractional_Bits {8} \
+   CONFIG.Coefficient_Reload {true} \
+   CONFIG.Coefficient_Sets {512} \
+   CONFIG.Coefficient_Sign {Signed} \
+   CONFIG.Coefficient_Structure {Inferred} \
+   CONFIG.Coefficient_Width {16} \
+   CONFIG.ColumnConfig {30} \
+   CONFIG.DATA_Has_TLAST {Vector_Framing} \
+   CONFIG.DATA_TUSER_Width {1} \
+   CONFIG.Data_Fractional_Bits {16} \
+   CONFIG.Data_Width {16} \
+   CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
+   CONFIG.Filter_Selection {1} \
+   CONFIG.M_DATA_Has_TUSER {Not_Required} \
+   CONFIG.Number_Channels {512} \
+   CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
+   CONFIG.Output_Width {16} \
+   CONFIG.Quantization {Maximize_Dynamic_Range} \
+   CONFIG.RateSpecification {Input_Sample_Period} \
+   CONFIG.S_CONFIG_Method {By_Channel} \
+   CONFIG.S_DATA_Has_FIFO {false} \
+   CONFIG.S_DATA_Has_TUSER {Not_Required} \
+   CONFIG.SamplePeriod {1} \
+   CONFIG.Sample_Frequency {0.001} \
+   CONFIG.Select_Pattern {All} \
+ ] $matched_filter_512x2
+
+  # Create instance: matched_filter_512x3, and set properties
+  set matched_filter_512x3 [ create_bd_cell -type ip -vlnv xilinx.com:ip:fir_compiler:7.2 matched_filter_512x3 ]
+  set_property -dict [ list \
+   CONFIG.BestPrecision {true} \
+   CONFIG.Clock_Frequency {300.0} \
+   CONFIG.CoefficientSource {COE_File} \
+   CONFIG.Coefficient_File {../../../../../../../data/30-tap-256-rid-opt-match.coe} \
+   CONFIG.Coefficient_Fractional_Bits {8} \
+   CONFIG.Coefficient_Reload {true} \
+   CONFIG.Coefficient_Sets {512} \
+   CONFIG.Coefficient_Sign {Signed} \
+   CONFIG.Coefficient_Structure {Inferred} \
+   CONFIG.Coefficient_Width {16} \
+   CONFIG.ColumnConfig {30} \
+   CONFIG.DATA_Has_TLAST {Vector_Framing} \
+   CONFIG.DATA_TUSER_Width {1} \
+   CONFIG.Data_Fractional_Bits {16} \
+   CONFIG.Data_Width {16} \
+   CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
+   CONFIG.Filter_Selection {1} \
+   CONFIG.M_DATA_Has_TUSER {Not_Required} \
+   CONFIG.Number_Channels {512} \
+   CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
+   CONFIG.Output_Width {16} \
+   CONFIG.Quantization {Maximize_Dynamic_Range} \
+   CONFIG.RateSpecification {Input_Sample_Period} \
+   CONFIG.S_CONFIG_Method {By_Channel} \
+   CONFIG.S_DATA_Has_FIFO {false} \
+   CONFIG.S_DATA_Has_TUSER {Not_Required} \
+   CONFIG.SamplePeriod {1} \
+   CONFIG.Sample_Frequency {0.001} \
+   CONFIG.Select_Pattern {All} \
+ ] $matched_filter_512x3
+
+  # Create instance: xlconcat_0, and set properties
+  set xlconcat_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_0 ]
+  set_property -dict [ list \
+   CONFIG.NUM_PORTS {4} \
+ ] $xlconcat_0
+
+  # Create instance: xlconcat_1, and set properties
+  set xlconcat_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_1 ]
+  set_property -dict [ list \
+   CONFIG.NUM_PORTS {6} \
+ ] $xlconcat_1
+
+  # Create instance: xlconcat_2, and set properties
+  set xlconcat_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_2 ]
+  set_property -dict [ list \
+   CONFIG.NUM_PORTS {6} \
+ ] $xlconcat_2
+
+  # Create interface connections
+  connect_bd_intf_net -intf_net Conn1 [get_bd_intf_pins M_AXIS] [get_bd_intf_pins axis_combiner_0/M_AXIS]
+  set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_intf_nets Conn1]
+  connect_bd_intf_net -intf_net Conn2 [get_bd_intf_pins S_AXI] [get_bd_intf_pins axi_fifo_mm_s_0/S_AXI]
+  connect_bd_intf_net -intf_net Conn3 [get_bd_intf_pins S_AXI1] [get_bd_intf_pins axi_fifo_mm_s_1/S_AXI]
+  connect_bd_intf_net -intf_net Conn4 [get_bd_intf_pins S_AXI_CTRL] [get_bd_intf_pins axis_switch_0/S_AXI_CTRL]
+  connect_bd_intf_net -intf_net S_AXIS_1 [get_bd_intf_pins S_AXIS] [get_bd_intf_pins axis_dwidth_converter_0/S_AXIS]
+  connect_bd_intf_net -intf_net arctan_phase1_M_AXIS_DOUT [get_bd_intf_pins arctan_phase1/M_AXIS_DOUT] [get_bd_intf_pins matched_filter_512x1/S_AXIS_DATA]
+  connect_bd_intf_net -intf_net arctan_phase2_M_AXIS_DOUT [get_bd_intf_pins arctan_phase2/M_AXIS_DOUT] [get_bd_intf_pins matched_filter_512x2/S_AXIS_DATA]
+  connect_bd_intf_net -intf_net arctan_phase3_M_AXIS_DOUT [get_bd_intf_pins arctan_phase3/M_AXIS_DOUT] [get_bd_intf_pins matched_filter_512x3/S_AXIS_DATA]
+  connect_bd_intf_net -intf_net arctan_phase_M_AXIS_DOUT [get_bd_intf_pins arctan_phase/M_AXIS_DOUT] [get_bd_intf_pins matched_filter_512x0/S_AXIS_DATA]
+  connect_bd_intf_net -intf_net [get_bd_intf_nets arctan_phase_M_AXIS_DOUT] [get_bd_intf_pins S_AXIS_DATA] [get_bd_intf_pins arctan_phase/M_AXIS_DOUT]
+  set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_intf_nets arctan_phase_M_AXIS_DOUT]
+  connect_bd_intf_net -intf_net axi_fifo_mm_s_0_AXI_STR_TXD [get_bd_intf_pins axi_fifo_mm_s_0/AXI_STR_TXD] [get_bd_intf_pins axis_broadcaster_1/S_AXIS]
+  connect_bd_intf_net -intf_net [get_bd_intf_nets axi_fifo_mm_s_0_AXI_STR_TXD] [get_bd_intf_pins AXI_STR_TXD] [get_bd_intf_pins axi_fifo_mm_s_0/AXI_STR_TXD]
+  set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_intf_nets axi_fifo_mm_s_0_AXI_STR_TXD]
+  connect_bd_intf_net -intf_net axi_fifo_mm_s_1_AXI_STR_TXD [get_bd_intf_pins axi_fifo_mm_s_1/AXI_STR_TXD] [get_bd_intf_pins axis_subset_converter_0/S_AXIS]
+  connect_bd_intf_net -intf_net axis_broadcaster_0_M00_AXIS [get_bd_intf_pins arctan_phase/S_AXIS_CARTESIAN] [get_bd_intf_pins axis_broadcaster_0/M00_AXIS]
+  connect_bd_intf_net -intf_net [get_bd_intf_nets axis_broadcaster_0_M00_AXIS] [get_bd_intf_pins M00_AXIS] [get_bd_intf_pins axis_broadcaster_0/M00_AXIS]
+  set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_intf_nets axis_broadcaster_0_M00_AXIS]
+  connect_bd_intf_net -intf_net axis_broadcaster_0_M01_AXIS [get_bd_intf_pins arctan_phase1/S_AXIS_CARTESIAN] [get_bd_intf_pins axis_broadcaster_0/M01_AXIS]
+  connect_bd_intf_net -intf_net axis_broadcaster_0_M02_AXIS [get_bd_intf_pins arctan_phase2/S_AXIS_CARTESIAN] [get_bd_intf_pins axis_broadcaster_0/M02_AXIS]
+  connect_bd_intf_net -intf_net axis_broadcaster_0_M03_AXIS [get_bd_intf_pins arctan_phase3/S_AXIS_CARTESIAN] [get_bd_intf_pins axis_broadcaster_0/M03_AXIS]
+  connect_bd_intf_net -intf_net axis_broadcaster_1_M00_AXIS [get_bd_intf_pins axis_broadcaster_1/M00_AXIS] [get_bd_intf_pins matched_filter_512x0/S_AXIS_CONFIG]
+  connect_bd_intf_net -intf_net axis_broadcaster_1_M01_AXIS [get_bd_intf_pins axis_broadcaster_1/M01_AXIS] [get_bd_intf_pins matched_filter_512x1/S_AXIS_CONFIG]
+  connect_bd_intf_net -intf_net axis_broadcaster_1_M02_AXIS [get_bd_intf_pins axis_broadcaster_1/M02_AXIS] [get_bd_intf_pins matched_filter_512x2/S_AXIS_CONFIG]
+  connect_bd_intf_net -intf_net axis_broadcaster_1_M03_AXIS [get_bd_intf_pins axis_broadcaster_1/M03_AXIS] [get_bd_intf_pins matched_filter_512x3/S_AXIS_CONFIG]
+  connect_bd_intf_net -intf_net axis_dwidth_converter_0_M_AXIS [get_bd_intf_pins axis_broadcaster_0/S_AXIS] [get_bd_intf_pins axis_dwidth_converter_0/M_AXIS]
+  connect_bd_intf_net -intf_net axis_subset_converter_0_M_AXIS [get_bd_intf_pins axis_subset_converter_0/M_AXIS] [get_bd_intf_pins axis_switch_0/S00_AXIS]
+  connect_bd_intf_net -intf_net axis_switch_0_M00_AXIS [get_bd_intf_pins axis_switch_0/M00_AXIS] [get_bd_intf_pins matched_filter_512x0/S_AXIS_RELOAD]
+  connect_bd_intf_net -intf_net [get_bd_intf_nets axis_switch_0_M00_AXIS] [get_bd_intf_pins M00_AXIS1] [get_bd_intf_pins axis_switch_0/M00_AXIS]
+  set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_intf_nets axis_switch_0_M00_AXIS]
+  connect_bd_intf_net -intf_net axis_switch_0_M01_AXIS [get_bd_intf_pins axis_switch_0/M01_AXIS] [get_bd_intf_pins matched_filter_512x1/S_AXIS_RELOAD]
+  connect_bd_intf_net -intf_net axis_switch_0_M02_AXIS [get_bd_intf_pins axis_switch_0/M02_AXIS] [get_bd_intf_pins matched_filter_512x2/S_AXIS_RELOAD]
+  connect_bd_intf_net -intf_net axis_switch_0_M03_AXIS [get_bd_intf_pins axis_switch_0/M03_AXIS] [get_bd_intf_pins matched_filter_512x3/S_AXIS_RELOAD]
+  connect_bd_intf_net -intf_net matched_filter_512x0_M_AXIS_DATA [get_bd_intf_pins axis_combiner_0/S00_AXIS] [get_bd_intf_pins matched_filter_512x0/M_AXIS_DATA]
+  connect_bd_intf_net -intf_net [get_bd_intf_nets matched_filter_512x0_M_AXIS_DATA] [get_bd_intf_pins M_AXIS_DATA] [get_bd_intf_pins matched_filter_512x0/M_AXIS_DATA]
+  set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_intf_nets matched_filter_512x0_M_AXIS_DATA]
+  connect_bd_intf_net -intf_net matched_filter_512x1_M_AXIS_DATA [get_bd_intf_pins axis_combiner_0/S01_AXIS] [get_bd_intf_pins matched_filter_512x1/M_AXIS_DATA]
+  connect_bd_intf_net -intf_net matched_filter_512x2_M_AXIS_DATA [get_bd_intf_pins axis_combiner_0/S02_AXIS] [get_bd_intf_pins matched_filter_512x2/M_AXIS_DATA]
+  connect_bd_intf_net -intf_net matched_filter_512x3_M_AXIS_DATA [get_bd_intf_pins axis_combiner_0/S03_AXIS] [get_bd_intf_pins matched_filter_512x3/M_AXIS_DATA]
+
+  # Create port connections
+  connect_bd_net -net Net [get_bd_pins aclk] [get_bd_pins arctan_phase/aclk] [get_bd_pins arctan_phase1/aclk] [get_bd_pins arctan_phase2/aclk] [get_bd_pins arctan_phase3/aclk] [get_bd_pins axi_fifo_mm_s_0/s_axi_aclk] [get_bd_pins axi_fifo_mm_s_1/s_axi_aclk] [get_bd_pins axis_broadcaster_0/aclk] [get_bd_pins axis_broadcaster_1/aclk] [get_bd_pins axis_combiner_0/aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_subset_converter_0/aclk] [get_bd_pins axis_switch_0/aclk] [get_bd_pins axis_switch_0/s_axi_ctrl_aclk] [get_bd_pins matched_filter_512x0/aclk] [get_bd_pins matched_filter_512x1/aclk] [get_bd_pins matched_filter_512x2/aclk] [get_bd_pins matched_filter_512x3/aclk]
+  connect_bd_net -net Net1 [get_bd_pins aresetn] [get_bd_pins axi_fifo_mm_s_0/s_axi_aresetn] [get_bd_pins axi_fifo_mm_s_1/s_axi_aresetn] [get_bd_pins axis_broadcaster_0/aresetn] [get_bd_pins axis_combiner_0/aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_subset_converter_0/aresetn] [get_bd_pins axis_switch_0/s_axi_ctrl_aresetn]
+  connect_bd_net -net axi_fifo_mm_s_0_interrupt [get_bd_pins axi_fifo_mm_s_0/interrupt] [get_bd_pins xlconcat_0/In2]
+  connect_bd_net -net axi_fifo_mm_s_0_mm2s_prmry_reset_out_n [get_bd_pins axi_fifo_mm_s_0/mm2s_prmry_reset_out_n] [get_bd_pins axis_broadcaster_1/aresetn]
+  connect_bd_net -net axi_fifo_mm_s_1_interrupt [get_bd_pins axi_fifo_mm_s_1/interrupt] [get_bd_pins xlconcat_0/In3]
+  connect_bd_net -net axi_fifo_mm_s_1_mm2s_prmry_reset_out_n [get_bd_pins axi_fifo_mm_s_1/mm2s_prmry_reset_out_n] [get_bd_pins axis_switch_0/aresetn]
+  connect_bd_net -net matched_filter_512x0_event_s_config_tlast_missing [get_bd_pins matched_filter_512x0/event_s_config_tlast_missing] [get_bd_pins xlconcat_1/In2]
+  connect_bd_net -net matched_filter_512x0_event_s_config_tlast_unexpected [get_bd_pins matched_filter_512x0/event_s_config_tlast_unexpected] [get_bd_pins xlconcat_1/In3]
+  connect_bd_net -net matched_filter_512x0_event_s_data_tlast_missing [get_bd_pins matched_filter_512x0/event_s_data_tlast_missing] [get_bd_pins xlconcat_1/In0]
+  connect_bd_net -net matched_filter_512x0_event_s_data_tlast_unexpected [get_bd_pins matched_filter_512x0/event_s_data_tlast_unexpected] [get_bd_pins xlconcat_1/In1]
+  connect_bd_net -net matched_filter_512x0_event_s_reload_tlast_missing [get_bd_pins matched_filter_512x0/event_s_reload_tlast_missing] [get_bd_pins xlconcat_1/In4]
+  connect_bd_net -net matched_filter_512x0_event_s_reload_tlast_unexpected [get_bd_pins matched_filter_512x0/event_s_reload_tlast_unexpected] [get_bd_pins xlconcat_1/In5]
+  connect_bd_net -net matched_filter_512x1_event_s_config_tlast_missing [get_bd_pins matched_filter_512x1/event_s_config_tlast_missing] [get_bd_pins xlconcat_2/In2]
+  connect_bd_net -net matched_filter_512x1_event_s_config_tlast_unexpected [get_bd_pins matched_filter_512x1/event_s_config_tlast_unexpected] [get_bd_pins xlconcat_2/In3]
+  connect_bd_net -net matched_filter_512x1_event_s_data_tlast_missing [get_bd_pins matched_filter_512x1/event_s_data_tlast_missing] [get_bd_pins xlconcat_2/In0]
+  connect_bd_net -net matched_filter_512x1_event_s_data_tlast_unexpected [get_bd_pins matched_filter_512x1/event_s_data_tlast_unexpected] [get_bd_pins xlconcat_2/In1]
+  connect_bd_net -net matched_filter_512x1_event_s_reload_tlast_missing [get_bd_pins matched_filter_512x1/event_s_reload_tlast_missing] [get_bd_pins xlconcat_2/In4]
+  connect_bd_net -net matched_filter_512x1_event_s_reload_tlast_unexpected [get_bd_pins matched_filter_512x1/event_s_reload_tlast_unexpected] [get_bd_pins xlconcat_2/In5]
+  connect_bd_net -net xlconcat_0_dout [get_bd_pins dout] [get_bd_pins xlconcat_0/dout]
+  set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_nets xlconcat_0_dout]
+  connect_bd_net -net xlconcat_1_dout [get_bd_pins xlconcat_0/In0] [get_bd_pins xlconcat_1/dout]
+  connect_bd_net -net xlconcat_2_dout [get_bd_pins xlconcat_0/In1] [get_bd_pins xlconcat_2/dout]
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+}
 
 
 # Procedure to create entire design; Provide argument to make
@@ -203,8 +724,6 @@ proc create_root_design { parentCell } {
   # Create instance: axi_dma_0, and set properties
   set axi_dma_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_dma:7.1 axi_dma_0 ]
   set_property -dict [ list \
-   CONFIG.c_include_mm2s_dre {1} \
-   CONFIG.c_include_s2mm_dre {1} \
    CONFIG.c_include_sg {0} \
    CONFIG.c_m_axi_mm2s_data_width {256} \
    CONFIG.c_m_axis_mm2s_tdata_width {256} \
@@ -236,14 +755,17 @@ proc create_root_design { parentCell } {
    CONFIG.FIFO_DEPTH {2048} \
  ] $axis_data_fifo_1
 
+  # Create instance: phasematch
+  create_hier_cell_phasematch [current_bd_instance .] phasematch
+
   # Create instance: ps8_0_axi_periph, and set properties
   set ps8_0_axi_periph [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 ps8_0_axi_periph ]
   set_property -dict [ list \
-   CONFIG.NUM_MI {4} \
+   CONFIG.NUM_MI {6} \
  ] $ps8_0_axi_periph
 
-  # Create instance: resonator_dds_0, and set properties
-  set resonator_dds_0 [ create_bd_cell -type ip -vlnv MazinLab:mkidgen3:resonator_dds:1.0 resonator_dds_0 ]
+  # Create instance: reschan
+  create_hier_cell_reschan [current_bd_instance .] reschan
 
   # Create instance: rst_ps8_0_99M, and set properties
   set rst_ps8_0_99M [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_ps8_0_99M ]
@@ -251,12 +773,12 @@ proc create_root_design { parentCell } {
   # Create instance: system_ila_0, and set properties
   set system_ila_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:system_ila:1.1 system_ila_0 ]
   set_property -dict [ list \
-   CONFIG.C_BRAM_CNT {39} \
+   CONFIG.C_BRAM_CNT {5} \
    CONFIG.C_DATA_DEPTH {2048} \
    CONFIG.C_INPUT_PIPE_STAGES {3} \
-   CONFIG.C_MON_TYPE {INTERFACE} \
-   CONFIG.C_NUM_MONITOR_SLOTS {3} \
-   CONFIG.C_NUM_OF_PROBES {0} \
+   CONFIG.C_MON_TYPE {MIX} \
+   CONFIG.C_NUM_MONITOR_SLOTS {8} \
+   CONFIG.C_NUM_OF_PROBES {1} \
    CONFIG.C_PROBE0_TYPE {0} \
    CONFIG.C_SLOT_0_APC_EN {0} \
    CONFIG.C_SLOT_0_AXI_DATA_SEL {1} \
@@ -267,27 +789,36 @@ proc create_root_design { parentCell } {
    CONFIG.C_SLOT_1_AXI_TRIG_SEL {1} \
    CONFIG.C_SLOT_1_INTF_TYPE {xilinx.com:interface:axis_rtl:1.0} \
    CONFIG.C_SLOT_2_APC_EN {0} \
-   CONFIG.C_SLOT_2_AXI_AR_SEL_DATA {1} \
-   CONFIG.C_SLOT_2_AXI_AR_SEL_TRIG {1} \
-   CONFIG.C_SLOT_2_AXI_AW_SEL_DATA {1} \
-   CONFIG.C_SLOT_2_AXI_AW_SEL_TRIG {1} \
-   CONFIG.C_SLOT_2_AXI_B_SEL_DATA {1} \
-   CONFIG.C_SLOT_2_AXI_B_SEL_TRIG {1} \
-   CONFIG.C_SLOT_2_AXI_R_SEL_DATA {1} \
-   CONFIG.C_SLOT_2_AXI_R_SEL_TRIG {1} \
-   CONFIG.C_SLOT_2_AXI_W_SEL_DATA {1} \
-   CONFIG.C_SLOT_2_AXI_W_SEL_TRIG {1} \
-   CONFIG.C_SLOT_2_INTF_TYPE {xilinx.com:interface:aximm_rtl:1.0} \
+   CONFIG.C_SLOT_2_AXI_DATA_SEL {1} \
+   CONFIG.C_SLOT_2_AXI_TRIG_SEL {1} \
+   CONFIG.C_SLOT_2_INTF_TYPE {xilinx.com:interface:axis_rtl:1.0} \
+   CONFIG.C_SLOT_3_APC_EN {0} \
+   CONFIG.C_SLOT_3_AXI_DATA_SEL {1} \
+   CONFIG.C_SLOT_3_AXI_TRIG_SEL {1} \
+   CONFIG.C_SLOT_3_INTF_TYPE {xilinx.com:interface:axis_rtl:1.0} \
+   CONFIG.C_SLOT_4_APC_EN {0} \
+   CONFIG.C_SLOT_4_AXI_DATA_SEL {1} \
+   CONFIG.C_SLOT_4_AXI_TRIG_SEL {1} \
+   CONFIG.C_SLOT_4_INTF_TYPE {xilinx.com:interface:axis_rtl:1.0} \
+   CONFIG.C_SLOT_5_APC_EN {0} \
+   CONFIG.C_SLOT_5_AXI_DATA_SEL {1} \
+   CONFIG.C_SLOT_5_AXI_TRIG_SEL {1} \
+   CONFIG.C_SLOT_5_INTF_TYPE {xilinx.com:interface:axis_rtl:1.0} \
+   CONFIG.C_SLOT_6_APC_EN {0} \
+   CONFIG.C_SLOT_6_AXI_DATA_SEL {1} \
+   CONFIG.C_SLOT_6_AXI_TRIG_SEL {1} \
+   CONFIG.C_SLOT_6_INTF_TYPE {xilinx.com:interface:axis_rtl:1.0} \
+   CONFIG.C_SLOT_7_APC_EN {0} \
+   CONFIG.C_SLOT_7_AXI_DATA_SEL {1} \
+   CONFIG.C_SLOT_7_AXI_TRIG_SEL {1} \
+   CONFIG.C_SLOT_7_INTF_TYPE {xilinx.com:interface:axis_rtl:1.0} \
  ] $system_ila_0
 
   # Create instance: xlconcat_0, and set properties
   set xlconcat_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_0 ]
   set_property -dict [ list \
-   CONFIG.NUM_PORTS {2} \
+   CONFIG.NUM_PORTS {3} \
  ] $xlconcat_0
-
-  # Create instance: xlconstant_0, and set properties
-  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
 
   # Create instance: zynq_ultra_ps_e_0, and set properties
   set zynq_ultra_ps_e_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:zynq_ultra_ps_e:3.3 zynq_ultra_ps_e_0 ]
@@ -1813,53 +2344,65 @@ proc create_root_design { parentCell } {
  ] $zynq_ultra_ps_e_0
 
   # Create interface connections
+connect_bd_intf_net -intf_net Conn [get_bd_intf_pins phasematch/S_AXIS_DATA] [get_bd_intf_pins system_ila_0/SLOT_1_AXIS]
+connect_bd_intf_net -intf_net Conn1 [get_bd_intf_pins phasematch/AXI_STR_TXD] [get_bd_intf_pins system_ila_0/SLOT_2_AXIS]
+connect_bd_intf_net -intf_net Conn2 [get_bd_intf_pins phasematch/M00_AXIS] [get_bd_intf_pins system_ila_0/SLOT_3_AXIS]
+connect_bd_intf_net -intf_net Conn3 [get_bd_intf_pins phasematch/M00_AXIS1] [get_bd_intf_pins system_ila_0/SLOT_4_AXIS]
+connect_bd_intf_net -intf_net Conn4 [get_bd_intf_pins phasematch/M_AXIS_DATA] [get_bd_intf_pins system_ila_0/SLOT_6_AXIS]
   connect_bd_intf_net -intf_net axi_dma_0_M_AXIS_MM2S [get_bd_intf_pins axi_dma_0/M_AXIS_MM2S] [get_bd_intf_pins axis_data_fifo_0/S_AXIS]
   connect_bd_intf_net -intf_net axi_dma_0_M_AXI_MM2S [get_bd_intf_pins axi_dma_0/M_AXI_MM2S] [get_bd_intf_pins axi_smc/S00_AXI]
   connect_bd_intf_net -intf_net axi_dma_0_M_AXI_S2MM [get_bd_intf_pins axi_dma_0/M_AXI_S2MM] [get_bd_intf_pins axi_smc/S01_AXI]
   connect_bd_intf_net -intf_net axi_smc_M00_AXI [get_bd_intf_pins axi_smc/M00_AXI] [get_bd_intf_pins zynq_ultra_ps_e_0/S_AXI_HP0_FPD]
-  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_pins axis_data_fifo_0/M_AXIS] [get_bd_intf_pins resonator_dds_0/res_in]
+  connect_bd_intf_net -intf_net axis_data_fifo_0_M_AXIS [get_bd_intf_pins axis_data_fifo_0/M_AXIS] [get_bd_intf_pins reschan/iq_stream]
 connect_bd_intf_net -intf_net [get_bd_intf_nets axis_data_fifo_0_M_AXIS] [get_bd_intf_pins axis_data_fifo_0/M_AXIS] [get_bd_intf_pins system_ila_0/SLOT_0_AXIS]
   set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_intf_nets axis_data_fifo_0_M_AXIS]
   connect_bd_intf_net -intf_net axis_data_fifo_1_M_AXIS [get_bd_intf_pins axi_dma_0/S_AXIS_S2MM] [get_bd_intf_pins axis_data_fifo_1/M_AXIS]
   connect_bd_intf_net -intf_net ps8_0_axi_periph_M00_AXI [get_bd_intf_pins axi_dma_0/S_AXI_LITE] [get_bd_intf_pins ps8_0_axi_periph/M00_AXI]
   connect_bd_intf_net -intf_net ps8_0_axi_periph_M01_AXI [get_bd_intf_pins axi_intc_0/s_axi] [get_bd_intf_pins ps8_0_axi_periph/M01_AXI]
-  connect_bd_intf_net -intf_net ps8_0_axi_periph_M03_AXI [get_bd_intf_pins ps8_0_axi_periph/M03_AXI] [get_bd_intf_pins resonator_dds_0/s_axi_control]
-connect_bd_intf_net -intf_net [get_bd_intf_nets ps8_0_axi_periph_M03_AXI] [get_bd_intf_pins ps8_0_axi_periph/M03_AXI] [get_bd_intf_pins system_ila_0/SLOT_2_AXI]
-  set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_intf_nets ps8_0_axi_periph_M03_AXI]
-  connect_bd_intf_net -intf_net resonator_dds_0_res_out [get_bd_intf_pins axis_data_fifo_1/S_AXIS] [get_bd_intf_pins resonator_dds_0/res_out]
-connect_bd_intf_net -intf_net [get_bd_intf_nets resonator_dds_0_res_out] [get_bd_intf_pins axis_data_fifo_1/S_AXIS] [get_bd_intf_pins system_ila_0/SLOT_1_AXIS]
-  set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_intf_nets resonator_dds_0_res_out]
+  connect_bd_intf_net -intf_net ps8_0_axi_periph_M02_AXI [get_bd_intf_pins ps8_0_axi_periph/M02_AXI] [get_bd_intf_pins reschan/s_axi_resonator_dds]
+  connect_bd_intf_net -intf_net ps8_0_axi_periph_M03_AXI [get_bd_intf_pins phasematch/S_AXI] [get_bd_intf_pins ps8_0_axi_periph/M03_AXI]
+  connect_bd_intf_net -intf_net ps8_0_axi_periph_M04_AXI [get_bd_intf_pins phasematch/S_AXI1] [get_bd_intf_pins ps8_0_axi_periph/M04_AXI]
+  connect_bd_intf_net -intf_net ps8_0_axi_periph_M05_AXI [get_bd_intf_pins phasematch/S_AXI_CTRL] [get_bd_intf_pins ps8_0_axi_periph/M05_AXI]
+  connect_bd_intf_net -intf_net reschan_M_AXIS_DATA [get_bd_intf_pins phasematch/S_AXIS] [get_bd_intf_pins reschan/M_AXIS_DATA]
+connect_bd_intf_net -intf_net [get_bd_intf_nets reschan_M_AXIS_DATA] [get_bd_intf_pins reschan/M_AXIS_DATA] [get_bd_intf_pins system_ila_0/SLOT_7_AXIS]
+  set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_intf_nets reschan_M_AXIS_DATA]
+  connect_bd_intf_net -intf_net reschan_M_AXIS_DATA_0 [get_bd_intf_pins axis_data_fifo_1/S_AXIS] [get_bd_intf_pins phasematch/M_AXIS]
+connect_bd_intf_net -intf_net [get_bd_intf_nets reschan_M_AXIS_DATA_0] [get_bd_intf_pins phasematch/M_AXIS] [get_bd_intf_pins system_ila_0/SLOT_5_AXIS]
   connect_bd_intf_net -intf_net zynq_ultra_ps_e_0_M_AXI_HPM0_FPD [get_bd_intf_pins ps8_0_axi_periph/S00_AXI] [get_bd_intf_pins zynq_ultra_ps_e_0/M_AXI_HPM0_FPD]
 
   # Create port connections
   connect_bd_net -net axi_dma_0_mm2s_introut [get_bd_pins axi_dma_0/mm2s_introut] [get_bd_pins xlconcat_0/In0]
   connect_bd_net -net axi_dma_0_s2mm_introut [get_bd_pins axi_dma_0/s2mm_introut] [get_bd_pins xlconcat_0/In1]
   connect_bd_net -net axi_intc_0_irq [get_bd_pins axi_intc_0/irq] [get_bd_pins zynq_ultra_ps_e_0/pl_ps_irq0]
-  connect_bd_net -net rst_ps8_0_99M_peripheral_aresetn [get_bd_pins axi_dma_0/axi_resetn] [get_bd_pins axi_intc_0/s_axi_aresetn] [get_bd_pins axi_smc/aresetn] [get_bd_pins axis_data_fifo_0/s_axis_aresetn] [get_bd_pins axis_data_fifo_1/s_axis_aresetn] [get_bd_pins ps8_0_axi_periph/ARESETN] [get_bd_pins ps8_0_axi_periph/M00_ARESETN] [get_bd_pins ps8_0_axi_periph/M01_ARESETN] [get_bd_pins ps8_0_axi_periph/M02_ARESETN] [get_bd_pins ps8_0_axi_periph/M03_ARESETN] [get_bd_pins ps8_0_axi_periph/S00_ARESETN] [get_bd_pins resonator_dds_0/ap_rst_n] [get_bd_pins resonator_dds_0/ap_rst_n_s_axi_clk] [get_bd_pins rst_ps8_0_99M/peripheral_aresetn] [get_bd_pins system_ila_0/resetn]
+  connect_bd_net -net phasematch_dout [get_bd_pins phasematch/dout] [get_bd_pins system_ila_0/probe0] [get_bd_pins xlconcat_0/In2]
+  connect_bd_net -net rst_ps8_0_99M_peripheral_aresetn [get_bd_pins axi_dma_0/axi_resetn] [get_bd_pins axi_intc_0/s_axi_aresetn] [get_bd_pins axi_smc/aresetn] [get_bd_pins axis_data_fifo_0/s_axis_aresetn] [get_bd_pins axis_data_fifo_1/s_axis_aresetn] [get_bd_pins phasematch/aresetn] [get_bd_pins ps8_0_axi_periph/ARESETN] [get_bd_pins ps8_0_axi_periph/M00_ARESETN] [get_bd_pins ps8_0_axi_periph/M01_ARESETN] [get_bd_pins ps8_0_axi_periph/M02_ARESETN] [get_bd_pins ps8_0_axi_periph/M03_ARESETN] [get_bd_pins ps8_0_axi_periph/M04_ARESETN] [get_bd_pins ps8_0_axi_periph/M05_ARESETN] [get_bd_pins ps8_0_axi_periph/S00_ARESETN] [get_bd_pins reschan/ap_rst_n] [get_bd_pins reschan/ap_rst_n_S_AXI_clk] [get_bd_pins rst_ps8_0_99M/peripheral_aresetn] [get_bd_pins system_ila_0/resetn]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins axi_intc_0/intr] [get_bd_pins xlconcat_0/dout]
-  connect_bd_net -net xlconstant_0_dout [get_bd_pins resonator_dds_0/generate_tlast] [get_bd_pins xlconstant_0/dout]
-  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins axi_dma_0/m_axi_mm2s_aclk] [get_bd_pins axi_dma_0/m_axi_s2mm_aclk] [get_bd_pins axi_dma_0/s_axi_lite_aclk] [get_bd_pins axi_intc_0/s_axi_aclk] [get_bd_pins axi_smc/aclk] [get_bd_pins axis_data_fifo_0/s_axis_aclk] [get_bd_pins axis_data_fifo_1/s_axis_aclk] [get_bd_pins ps8_0_axi_periph/ACLK] [get_bd_pins ps8_0_axi_periph/M00_ACLK] [get_bd_pins ps8_0_axi_periph/M01_ACLK] [get_bd_pins ps8_0_axi_periph/M02_ACLK] [get_bd_pins ps8_0_axi_periph/M03_ACLK] [get_bd_pins ps8_0_axi_periph/S00_ACLK] [get_bd_pins resonator_dds_0/ap_clk] [get_bd_pins resonator_dds_0/s_axi_clk] [get_bd_pins rst_ps8_0_99M/slowest_sync_clk] [get_bd_pins system_ila_0/clk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk0] [get_bd_pins zynq_ultra_ps_e_0/saxihp0_fpd_aclk]
+  connect_bd_net -net zynq_ultra_ps_e_0_pl_clk0 [get_bd_pins axi_dma_0/m_axi_mm2s_aclk] [get_bd_pins axi_dma_0/m_axi_s2mm_aclk] [get_bd_pins axi_dma_0/s_axi_lite_aclk] [get_bd_pins axi_intc_0/s_axi_aclk] [get_bd_pins axi_smc/aclk] [get_bd_pins axis_data_fifo_0/s_axis_aclk] [get_bd_pins axis_data_fifo_1/s_axis_aclk] [get_bd_pins phasematch/aclk] [get_bd_pins ps8_0_axi_periph/ACLK] [get_bd_pins ps8_0_axi_periph/M00_ACLK] [get_bd_pins ps8_0_axi_periph/M01_ACLK] [get_bd_pins ps8_0_axi_periph/M02_ACLK] [get_bd_pins ps8_0_axi_periph/M03_ACLK] [get_bd_pins ps8_0_axi_periph/M04_ACLK] [get_bd_pins ps8_0_axi_periph/M05_ACLK] [get_bd_pins ps8_0_axi_periph/S00_ACLK] [get_bd_pins reschan/S_AXI_clk] [get_bd_pins reschan/ap_clk] [get_bd_pins rst_ps8_0_99M/slowest_sync_clk] [get_bd_pins system_ila_0/clk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk0] [get_bd_pins zynq_ultra_ps_e_0/saxihp0_fpd_aclk]
   connect_bd_net -net zynq_ultra_ps_e_0_pl_resetn0 [get_bd_pins rst_ps8_0_99M/ext_reset_in] [get_bd_pins zynq_ultra_ps_e_0/pl_resetn0]
 
   # Create address segments
   assign_bd_address -offset 0x00000000 -range 0x80000000 -target_address_space [get_bd_addr_spaces axi_dma_0/Data_MM2S] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_DDR_LOW] -force
   assign_bd_address -offset 0x00000000 -range 0x80000000 -target_address_space [get_bd_addr_spaces axi_dma_0/Data_S2MM] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_DDR_LOW] -force
+  assign_bd_address -offset 0xFF000000 -range 0x01000000 -target_address_space [get_bd_addr_spaces axi_dma_0/Data_MM2S] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_LPS_OCM] -force
+  assign_bd_address -offset 0xFF000000 -range 0x01000000 -target_address_space [get_bd_addr_spaces axi_dma_0/Data_S2MM] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_LPS_OCM] -force
   assign_bd_address -offset 0xC0000000 -range 0x20000000 -target_address_space [get_bd_addr_spaces axi_dma_0/Data_MM2S] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_QSPI] -force
   assign_bd_address -offset 0xC0000000 -range 0x20000000 -target_address_space [get_bd_addr_spaces axi_dma_0/Data_S2MM] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_QSPI] -force
   assign_bd_address -offset 0xA0000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs axi_dma_0/S_AXI_LITE/Reg] -force
+  assign_bd_address -offset 0xA0040000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs phasematch/axi_fifo_mm_s_0/S_AXI/Mem0] -force
+  assign_bd_address -offset 0xA0050000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs phasematch/axi_fifo_mm_s_1/S_AXI/Mem0] -force
   assign_bd_address -offset 0xA0010000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs axi_intc_0/S_AXI/Reg] -force
-  assign_bd_address -offset 0xA0040000 -range 0x00020000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs resonator_dds_0/s_axi_control/Reg] -force
+  assign_bd_address -offset 0xA0020000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs phasematch/axis_switch_0/S_AXI_CTRL/Reg] -force
+  assign_bd_address -offset 0xA0030000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs reschan/resonator_dds_0/s_axi_control/Reg] -force
 
   # Exclude Address Segments
   exclude_bd_addr_seg -target_address_space [get_bd_addr_spaces axi_dma_0/Data_MM2S] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_DDR_HIGH]
-  exclude_bd_addr_seg -offset 0xFF000000 -range 0x01000000 -target_address_space [get_bd_addr_spaces axi_dma_0/Data_MM2S] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_LPS_OCM]
   exclude_bd_addr_seg -target_address_space [get_bd_addr_spaces axi_dma_0/Data_S2MM] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_DDR_HIGH]
-  exclude_bd_addr_seg -offset 0xFF000000 -range 0x01000000 -target_address_space [get_bd_addr_spaces axi_dma_0/Data_S2MM] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_LPS_OCM]
 
 
   # Restore current instance
   current_bd_instance $oldCurInst
 
+  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -1871,6 +2414,4 @@ connect_bd_intf_net -intf_net [get_bd_intf_nets resonator_dds_0_res_out] [get_bd
 
 create_root_design ""
 
-
-common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
