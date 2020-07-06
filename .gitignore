@@ -1,1 +1,6 @@
+.*
+proj_1/
+myproj/
+vivado*
+*.log
 top/
