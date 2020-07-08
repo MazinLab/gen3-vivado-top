@@ -999,7 +999,7 @@ proc create_hier_cell_reschan { parentCell nameHier } {
    CONFIG.BestPrecision {true} \
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
-   CONFIG.Coefficient_File {../../../../../../../../gen3-reschan/data/FCLowpass.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/FCLowpass.coe} \
    CONFIG.Coefficient_Fractional_Bits {17} \
    CONFIG.Coefficient_Sets {1} \
    CONFIG.Coefficient_Sign {Signed} \
