@@ -1,9 +1,0 @@
-[submodule "ip/gen3-resproc"]
-	path = ip/gen3-resproc
-	url = https://github.com/MazinLab/gen3-resproc
-[submodule "ip/gen3-reschan"]
-	path = ip/gen3-reschan
-	url = https://github.com/MazinLab/gen3-reschan
-[submodule "ip/gen3-opfb"]
-	path = ip/gen3-opfb
-	url = https://github.com/MazinLab/gen3-opfb
