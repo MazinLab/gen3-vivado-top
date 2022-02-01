@@ -4,3 +4,11 @@ top/
 *.jou
 *.str
 opfb_reschan_capture/
+gen3_iqsweep_play/
+capplay_migrate/
+capplay_migrate21.2/
+iqtest_2021.1/
+capplay_jcfix/
+capplay_jc2/
+capplay_jc1/
+foo/
