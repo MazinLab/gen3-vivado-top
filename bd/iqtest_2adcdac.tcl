@@ -136,6 +136,7 @@ xilinx.com:ip:axi_protocol_converter:2.1\
 xilinx.com:ip:axis_broadcaster:1.1\
 mazinlab:mkidgen3:dac_table_axim:1.33\
 xilinx.com:ip:xlconcat:2.1\
+xilinx.com:ip:xlconstant:1.1\
 xilinx.com:ip:zynq_ultra_ps_e:3.3\
 xilinx.com:ip:axis_clock_converter:1.1\
 xilinx.com:ip:axis_dwidth_converter:1.1\
@@ -144,7 +145,6 @@ xilinx.com:ip:ddr4:2.2\
 mazinlab:mkidgen3:filter_iq:0.3\
 mazinlab:mkidgen3:filter_phase:0.4\
 mazinlab:mkidgen3:pair_iq:0.3\
-xilinx.com:ip:xlconstant:1.1\
 xilinx.com:ip:axis_register_slice:1.1\
 xilinx.com:ip:proc_sys_reset:5.0\
 xilinx.com:ip:axis_combiner:1.1\
@@ -2291,13 +2291,26 @@ proc create_hier_cell_rfdc { parentCell nameHier } {
   # Create instance: axis_broadcaster_3, and set properties
   set axis_broadcaster_3 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 axis_broadcaster_3 ]
   set_property -dict [ list \
+   CONFIG.HAS_TKEEP {0} \
+   CONFIG.HAS_TLAST {0} \
    CONFIG.HAS_TREADY {0} \
+   CONFIG.HAS_TSTRB {0} \
    CONFIG.M00_TDATA_REMAP {tdata[255:0]} \
    CONFIG.M01_TDATA_REMAP {tdata[255:0]} \
+   CONFIG.M_TDATA_NUM_BYTES {32} \
+   CONFIG.S_TDATA_NUM_BYTES {32} \
  ] $axis_broadcaster_3
 
   # Create instance: axis_broadcaster_4, and set properties
   set axis_broadcaster_4 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 axis_broadcaster_4 ]
+  set_property -dict [ list \
+   CONFIG.HAS_TKEEP {0} \
+   CONFIG.HAS_TLAST {0} \
+   CONFIG.HAS_TREADY {0} \
+   CONFIG.HAS_TSTRB {0} \
+   CONFIG.M_TDATA_NUM_BYTES {32} \
+   CONFIG.S_TDATA_NUM_BYTES {32} \
+ ] $axis_broadcaster_4
 
   # Create instance: axis_combiner_0, and set properties
   set axis_combiner_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_combiner:1.1 axis_combiner_0 ]
@@ -2934,7 +2947,6 @@ proc create_hier_cell_capture { parentCell nameHier } {
   connect_bd_intf_net -intf_net Conn2 [get_bd_intf_pins default_sysclk1_300mhz] [get_bd_intf_pins ddr4_0/C0_SYS_CLK]
   connect_bd_intf_net -intf_net Conn3 [get_bd_intf_pins control] [get_bd_intf_pins axi_interconnect_0/S00_AXI]
   connect_bd_intf_net -intf_net Conn4 [get_bd_intf_pins phase0] [get_bd_intf_pins filter_phase_0/instream]
-  connect_bd_intf_net -intf_net S00_AXI_1 [get_bd_intf_pins JebConnect/S00_AXI] [get_bd_intf_pins axis2mm_0/M_AXI]
   connect_bd_intf_net -intf_net S03_AXI_1 [get_bd_intf_pins S_DDR_AXI] [get_bd_intf_pins JebConnect/S01_AXI]
   connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_pins axi_interconnect_0/M00_AXI] [get_bd_intf_pins axis2mm_0/S_AXIL]
   connect_bd_intf_net -intf_net axi_interconnect_0_M01_AXI [get_bd_intf_pins axi_interconnect_0/M01_AXI] [get_bd_intf_pins axis_switch/S_AXI_CTRL]
@@ -2942,6 +2954,7 @@ proc create_hier_cell_capture { parentCell nameHier } {
   connect_bd_intf_net -intf_net axi_interconnect_0_M03_AXI [get_bd_intf_pins axi_interconnect_0/M03_AXI] [get_bd_intf_pins filter_iq_1/s_axi_control]
   connect_bd_intf_net -intf_net axi_interconnect_0_M04_AXI [get_bd_intf_pins axi_interconnect_0/M04_AXI] [get_bd_intf_pins filter_phase_0/s_axi_control]
   connect_bd_intf_net -intf_net axi_smc_M00_AXI [get_bd_intf_pins JebConnect/M_AXI] [get_bd_intf_pins ddr4_0/C0_DDR4_S_AXI]
+  connect_bd_intf_net -intf_net axis2mm_0_M_AXI [get_bd_intf_pins JebConnect/S00_AXI] [get_bd_intf_pins axis2mm_0/M_AXI]
   connect_bd_intf_net -intf_net axis_clock_converter_0_M_AXIS [get_bd_intf_pins axis2mm_0/S_AXIS] [get_bd_intf_pins axis_clock_converter_0/M_AXIS]
   connect_bd_intf_net -intf_net axis_dwidth_converter_0_M_AXIS [get_bd_intf_pins axis_clock_converter_0/S_AXIS] [get_bd_intf_pins axis_dwidth_converter_0/M_AXIS]
   connect_bd_intf_net -intf_net axis_switch_0_M00_AXIS [get_bd_intf_pins axis_dwidth_converter_0/S_AXIS] [get_bd_intf_pins axis_switch/M00_AXIS]
@@ -3144,6 +3157,8 @@ proc create_root_design { parentCell } {
    CONFIG.HAS_TREADY {0} \
    CONFIG.M00_TDATA_REMAP {tdata[127:0]} \
    CONFIG.M01_TDATA_REMAP {tdata[127:0]} \
+   CONFIG.M_TDATA_NUM_BYTES {16} \
+   CONFIG.S_TDATA_NUM_BYTES {16} \
  ] $axis_broadcaster_0
 
   # Create instance: axis_broadcaster_1, and set properties
@@ -3152,6 +3167,8 @@ proc create_root_design { parentCell } {
    CONFIG.HAS_TREADY {0} \
    CONFIG.M00_TDATA_REMAP {tdata[127:0]} \
    CONFIG.M01_TDATA_REMAP {tdata[127:0]} \
+   CONFIG.M_TDATA_NUM_BYTES {16} \
+   CONFIG.S_TDATA_NUM_BYTES {16} \
  ] $axis_broadcaster_1
 
   # Create instance: capture
@@ -3189,6 +3206,9 @@ proc create_root_design { parentCell } {
 
   # Create instance: xlconcat_0, and set properties
   set xlconcat_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_0 ]
+
+  # Create instance: xlconstant_0, and set properties
+  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
 
   # Create instance: zynq_ultra_ps_e_0, and set properties
   set zynq_ultra_ps_e_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:zynq_ultra_ps_e:3.3 zynq_ultra_ps_e_0 ]
@@ -4814,6 +4834,7 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_net -net usp_rf_data_converter_0_clk_adc1 [get_bd_pins axi_intc_0/s_axi_aclk] [get_bd_pins axi_interconnect_1/S00_ACLK] [get_bd_pins axi_protocol_convert_0/aclk] [get_bd_pins ps8_0_axi_periph/ACLK] [get_bd_pins ps8_0_axi_periph/M00_ACLK] [get_bd_pins ps8_0_axi_periph/M01_ACLK] [get_bd_pins ps8_0_axi_periph/M02_ACLK] [get_bd_pins ps8_0_axi_periph/M04_ACLK] [get_bd_pins ps8_0_axi_periph/S00_ACLK] [get_bd_pins resets/slowest_sync_clk1] [get_bd_pins rfdc/s_axi_aclk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk0]
   connect_bd_net -net usp_rf_data_converter_0_clk_dac1 [get_bd_pins dac_table_axim_0/ap_clk] [get_bd_pins ps8_0_axi_periph/M03_ACLK] [get_bd_pins resets/slowest_sync_clk2] [get_bd_pins rfdc/clk_dac0] [get_bd_pins zynq_ultra_ps_e_0/saxihp0_fpd_aclk]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins axi_intc_0/intr] [get_bd_pins xlconcat_0/dout]
+  connect_bd_net -net xlconstant_0_dout [get_bd_pins dac_table_axim_0/iout_TREADY] [get_bd_pins dac_table_axim_0/qout_TREADY] [get_bd_pins xlconstant_0/dout]
   connect_bd_net -net zynq_ultra_ps_e_0_pl_resetn0 [get_bd_pins resets/ext_reset_in] [get_bd_pins zynq_ultra_ps_e_0/pl_resetn0]
 
   # Create address segments
