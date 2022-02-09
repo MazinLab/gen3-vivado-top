@@ -1438,8 +1438,7 @@ proc create_hier_cell_reschan { parentCell nameHier } {
    CONFIG.Number_Paths {16} \
    CONFIG.Optimal_Column_Lengths {true} \
    CONFIG.Optimization_Goal {Custom} \
-   CONFIG.Optimization_List {\
-Control_Path_Fanout,Control_Column_Fanout,Control_Broadcast_Fanout,Control_LUT_Pipeline,Optimal_Column_Lengths,No_SRL_Attributes,Other} \
+   CONFIG.Optimization_List {None} \
    CONFIG.Other {true} \
    CONFIG.Output_Buffer_Type {Block} \
    CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
@@ -2717,6 +2716,7 @@ proc create_hier_cell_photon_pipe { parentCell nameHier } {
    CONFIG.M_TDATA_NUM_BYTES {32} \
    CONFIG.M_TUSER_WIDTH {8} \
    CONFIG.S_TDATA_NUM_BYTES {32} \
+   CONFIG.S_TUSER_WIDTH {8} \
  ] $axis_broadcaster_1
 
   # Create instance: axis_register_slice_0, and set properties
