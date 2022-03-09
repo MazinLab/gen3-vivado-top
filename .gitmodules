@@ -1,0 +1,4 @@
+[submodule "blocks"]
+	path = blocks
+	url = https://github.com/mazinlab/mkidgen3_blocks.git
+	branch = 2021.1
