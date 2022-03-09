@@ -24,4 +24,11 @@ Will need to do for each fir _0 - _15
 The file does not include the new dac uram version (1.32)
 
 Best timing I saw was WNS=-0.092 TNS = -15.389 with 1clkc. Implementation was slightly different than the script with Post-place, rout, and post-route all set to AgressiveExplore (but I'm not sure this was making the difference)
-Several runs were in the ~WNS~-0.150/TNS=-75. I also attained WNS~-0.092 once with 8 taps. 
+Several runs were in the ~WNS~-0.150/TNS=-75. I also attained WNS~-0.092 once with 8 taps.
+
+
+
+# Notes on new project creation
+
+run
+add_files -norecurse {C:/Users/one/xilinx_projects/mkidgen3_blocks/wb2axip/rtl/axis2mm.v C:/Users/one/xilinx_projects/mkidgen3_blocks/wb2axip/rtl/skidbuffer.v C:/Users/one/xilinx_projects/mkidgen3_blocks/wb2axip/rtl/sfifo.v}
