@@ -2,13 +2,13 @@
 set origin_dir "."
 
 # BD to source (relative to ${origin_dir})
-set bd_to_src "iqtest_2adcdac.tcl"
+set bd_to_src "iqtest.tcl"
 
 # Set project name
-set _xil_proj_name_ "Full_Data_Rate_Capture"
+set _xil_proj_name_ "reschantest"
 
 # Set IP Repo
-set ip_repo "/home/jpsmith/Gen3/mkidgen3_blocks"
+set ip_repo "./blocks"
 
 # Create project
  create_project ${_xil_proj_name_} ./${_xil_proj_name_} -part xczu28dr-ffvg1517-2-e
@@ -35,7 +35,7 @@ add_files -norecurse -fileset $obj $files
 
 
 # Build block design
-source ${origin_dir}/${bd_to_src}
+source ${origin_dir}/bd/${bd_to_src}
 
 # Generate HDL Wrapper
 make_wrapper -files [get_files ${origin_dir}/${_xil_proj_name_}/${_xil_proj_name_}.srcs/sources_1/bd/${design_name}/${design_name}.bd] -top
