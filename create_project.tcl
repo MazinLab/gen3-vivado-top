@@ -1,11 +1,9 @@
+# BD to source (relative to ${origin_dir}) and project name
+set bd_to_src "iqtest.tcl"
+set _xil_proj_name_ "newprj"
+
 # Set project origin
 set origin_dir "."
-
-# BD to source (relative to ${origin_dir})
-set bd_to_src "iqtest.tcl"
-
-# Set project name
-set _xil_proj_name_ "reschantest"
 
 # Set IP Repo
 set ip_repo "./blocks"
@@ -55,5 +53,5 @@ set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore [
 
 #Uncomment below to run through bitstream generation
 #update_compile_order -fileset sources_1
-#launch_runs impl_1 -to_step write_bitstream -jobs 4 
+#launch_runs impl_1 -to_step write_bitstream -jobs 4
 #wait_on_run impl_1
