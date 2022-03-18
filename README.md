@@ -2,6 +2,10 @@
 
 We suggest starting from mkidgen if you are looking at this project for the first time. This repository focuses on the gateware. This document and project are in heavy flux and resource calculations are only partially done. Some of the linked projects do not yet exist or are untested (especially in the timekeeping/triggering area of the design) and the names and links are suggestive placeholders. In some cases there are alternative/backup approaches that are not described.
 
+## Building the Project
+starting from `firmware` run: `make <test_name>`
+
+
 ## Creating the latest testbench
 
 _*The create_project script is presently broken so use option 2*_

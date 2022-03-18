@@ -1,12 +1,12 @@
 # BD to source (relative to ${origin_dir}) and project name
-set bd_to_src "iqtest.tcl"
-set _xil_proj_name_ "newprj"
+set bd_to_src "rfdc_test.tcl"
+set _xil_proj_name_ "rfdc_test_prj"
 
 # Set project origin
 set origin_dir "."
 
 # Set IP Repo
-set ip_repo "./blocks"
+set ip_repo "../../blocks"
 
 # Create project
  create_project ${_xil_proj_name_} ./${_xil_proj_name_} -part xczu28dr-ffvg1517-2-e
@@ -33,13 +33,13 @@ add_files -norecurse -fileset $obj $files
 
 
 # Build block design
-source ${origin_dir}/bd/${bd_to_src}
+source ${origin_dir}/${bd_to_src}
 
 # Generate HDL Wrapper
 make_wrapper -files [get_files ${origin_dir}/${_xil_proj_name_}/${_xil_proj_name_}.srcs/sources_1/bd/${design_name}/${design_name}.bd] -top
 add_files -norecurse ${origin_dir}/${_xil_proj_name_}/${_xil_proj_name_}.srcs/sources_1/bd/${design_name}/hdl/${design_name}_wrapper.v
 
-set_property top dac_replay_volatile_wrapper [current_fileset]
+set_property top ${design_name}_wrapper [current_fileset]
 update_compile_order -fileset sources_1
 
 # Change Synth and Imp Settings for phys-opt (helps axigmem in capture)
