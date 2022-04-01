@@ -159,7 +159,7 @@ mazinlab:mkidgen3:fir_to_fft:1.31\
 mazinlab:mkidgen3:bin_to_res:1.33\
 xilinx.com:ip:axis_broadcaster:1.1\
 mazinlab:mkidgen3:pkg_fft_output:0.3\
-MazinLab:mkidgen3:ssrfft_16x4096_axis:1.0\
+MazinLab:mkidgen3:ssrfft_16x4096_axis_growth:1.3\
 xilinx.com:ip:axis_combiner:1.1\
 xilinx.com:ip:fir_compiler:7.2\
 mazinlab:mkidgen3:opfb_fir_cfg:1.31\
@@ -333,8 +333,8 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_noovlp/lane0.coe} \
-   CONFIG.Coefficient_Fractional_Bits {15} \
+   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_critical_16_-2/lane0.coe} \
+   CONFIG.Coefficient_Fractional_Bits {2} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
@@ -345,7 +345,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {15} \
+   CONFIG.Data_Fractional_Bits {0} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -382,8 +382,8 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_noovlp/lane1.coe} \
-   CONFIG.Coefficient_Fractional_Bits {15} \
+   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_critical_16_-2/lane1.coe} \
+   CONFIG.Coefficient_Fractional_Bits {2} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
@@ -394,7 +394,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {15} \
+   CONFIG.Data_Fractional_Bits {0} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -431,8 +431,8 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_noovlp/lane2.coe} \
-   CONFIG.Coefficient_Fractional_Bits {15} \
+   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_critical_16_-2/lane2.coe} \
+   CONFIG.Coefficient_Fractional_Bits {2} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
@@ -443,7 +443,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {15} \
+   CONFIG.Data_Fractional_Bits {0} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -480,8 +480,8 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_noovlp/lane3.coe} \
-   CONFIG.Coefficient_Fractional_Bits {15} \
+   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_critical_16_-2/lane3.coe} \
+   CONFIG.Coefficient_Fractional_Bits {2} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
@@ -492,7 +492,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {15} \
+   CONFIG.Data_Fractional_Bits {0} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -529,8 +529,8 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_noovlp/lane4.coe} \
-   CONFIG.Coefficient_Fractional_Bits {15} \
+   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_critical_16_-2/lane4.coe} \
+   CONFIG.Coefficient_Fractional_Bits {2} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
@@ -541,7 +541,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {15} \
+   CONFIG.Data_Fractional_Bits {0} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -578,8 +578,8 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_noovlp/lane5.coe} \
-   CONFIG.Coefficient_Fractional_Bits {15} \
+   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_critical_16_-2/lane5.coe} \
+   CONFIG.Coefficient_Fractional_Bits {2} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
@@ -590,7 +590,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {15} \
+   CONFIG.Data_Fractional_Bits {0} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -627,8 +627,8 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_noovlp/lane6.coe} \
-   CONFIG.Coefficient_Fractional_Bits {15} \
+   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_critical_16_-2/lane6.coe} \
+   CONFIG.Coefficient_Fractional_Bits {2} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
@@ -639,7 +639,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {15} \
+   CONFIG.Data_Fractional_Bits {0} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -676,8 +676,8 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_noovlp/lane7.coe} \
-   CONFIG.Coefficient_Fractional_Bits {15} \
+   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_critical_16_-2/lane7.coe} \
+   CONFIG.Coefficient_Fractional_Bits {2} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
@@ -688,7 +688,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {15} \
+   CONFIG.Data_Fractional_Bits {0} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -725,8 +725,8 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_noovlp/lane8.coe} \
-   CONFIG.Coefficient_Fractional_Bits {15} \
+   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_critical_16_-2/lane8.coe} \
+   CONFIG.Coefficient_Fractional_Bits {2} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
@@ -737,7 +737,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {15} \
+   CONFIG.Data_Fractional_Bits {0} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -774,8 +774,8 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_noovlp/lane9.coe} \
-   CONFIG.Coefficient_Fractional_Bits {15} \
+   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_critical_16_-2/lane9.coe} \
+   CONFIG.Coefficient_Fractional_Bits {2} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
@@ -786,7 +786,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {15} \
+   CONFIG.Data_Fractional_Bits {0} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -823,8 +823,8 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_noovlp/lane10.coe} \
-   CONFIG.Coefficient_Fractional_Bits {15} \
+   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_critical_16_-2/lane10.coe} \
+   CONFIG.Coefficient_Fractional_Bits {2} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
@@ -835,7 +835,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {15} \
+   CONFIG.Data_Fractional_Bits {0} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -872,8 +872,8 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_noovlp/lane11.coe} \
-   CONFIG.Coefficient_Fractional_Bits {15} \
+   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_critical_16_-2/lane11.coe} \
+   CONFIG.Coefficient_Fractional_Bits {2} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
@@ -884,7 +884,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {15} \
+   CONFIG.Data_Fractional_Bits {0} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -921,8 +921,8 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_noovlp/lane12.coe} \
-   CONFIG.Coefficient_Fractional_Bits {15} \
+   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_critical_16_-2/lane12.coe} \
+   CONFIG.Coefficient_Fractional_Bits {2} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
@@ -933,7 +933,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {15} \
+   CONFIG.Data_Fractional_Bits {0} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -970,8 +970,8 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_noovlp/lane13.coe} \
-   CONFIG.Coefficient_Fractional_Bits {15} \
+   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_critical_16_-2/lane13.coe} \
+   CONFIG.Coefficient_Fractional_Bits {2} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
@@ -982,7 +982,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {15} \
+   CONFIG.Data_Fractional_Bits {0} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -1019,8 +1019,8 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_noovlp/lane14.coe} \
-   CONFIG.Coefficient_Fractional_Bits {15} \
+   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_critical_16_-2/lane14.coe} \
+   CONFIG.Coefficient_Fractional_Bits {2} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
@@ -1031,7 +1031,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {15} \
+   CONFIG.Data_Fractional_Bits {0} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -1068,8 +1068,8 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_noovlp/lane15.coe} \
-   CONFIG.Coefficient_Fractional_Bits {15} \
+   CONFIG.Coefficient_File {../../../../../../../../../data/4_tap_critical_16_-2/lane15.coe} \
+   CONFIG.Coefficient_Fractional_Bits {2} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
@@ -1080,7 +1080,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {15} \
+   CONFIG.Data_Fractional_Bits {0} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -1265,7 +1265,7 @@ proc create_hier_cell_fft { parentCell nameHier } {
   set pkg_fft_output_1 [ create_bd_cell -type ip -vlnv mazinlab:mkidgen3:pkg_fft_output:0.3 pkg_fft_output_1 ]
 
   # Create instance: ssrfft_16x4096_axis_0, and set properties
-  set ssrfft_16x4096_axis_0 [ create_bd_cell -type ip -vlnv MazinLab:mkidgen3:ssrfft_16x4096_axis:1.0 ssrfft_16x4096_axis_0 ]
+  set ssrfft_16x4096_axis_0 [ create_bd_cell -type ip -vlnv MazinLab:mkidgen3:ssrfft_16x4096_axis_growth:1.3 ssrfft_16x4096_axis_0 ]
 
   # Create instance: xlconstant_0, and set properties
   set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
