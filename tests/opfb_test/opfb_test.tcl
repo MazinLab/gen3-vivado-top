@@ -161,7 +161,7 @@ mazinlab:mkidgen3:fir_to_fft:1.31\
 mazinlab:mkidgen3:bin_to_res:1.33\
 xilinx.com:ip:axi_gpio:2.0\
 mazinlab:mkidgen3:pkg_fft_output:0.3\
-MazinLab:mkidgen3:ssrfft_16x4096_axis_growth:1.4\
+MazinLab:mkidgen3:ssrfft_16x4096_axis:1.0\
 xilinx.com:ip:axis_combiner:1.1\
 xilinx.com:ip:fir_compiler:7.2\
 mazinlab:mkidgen3:opfb_fir_cfg:1.31\
@@ -387,19 +387,19 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/4_tap_crit_noscale/lane0.coe} \
-   CONFIG.Coefficient_Fractional_Bits {26} \
+   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/8_tap_equiripple/lane0.coe} \
+   CONFIG.Coefficient_Fractional_Bits {15} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
    CONFIG.Coefficient_Width {16} \
-   CONFIG.ColumnConfig {4} \
+   CONFIG.ColumnConfig {8} \
    CONFIG.Control_Broadcast_Fanout {false} \
    CONFIG.Control_Column_Fanout {false} \
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {0} \
+   CONFIG.Data_Fractional_Bits {15} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -436,19 +436,19 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/4_tap_crit_noscale/lane1.coe} \
-   CONFIG.Coefficient_Fractional_Bits {26} \
+   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/8_tap_equiripple/lane1.coe} \
+   CONFIG.Coefficient_Fractional_Bits {15} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
    CONFIG.Coefficient_Width {16} \
-   CONFIG.ColumnConfig {4} \
+   CONFIG.ColumnConfig {8} \
    CONFIG.Control_Broadcast_Fanout {false} \
    CONFIG.Control_Column_Fanout {false} \
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {0} \
+   CONFIG.Data_Fractional_Bits {15} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -485,19 +485,19 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/4_tap_crit_noscale/lane2.coe} \
-   CONFIG.Coefficient_Fractional_Bits {26} \
+   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/8_tap_equiripple/lane2.coe} \
+   CONFIG.Coefficient_Fractional_Bits {15} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
    CONFIG.Coefficient_Width {16} \
-   CONFIG.ColumnConfig {4} \
+   CONFIG.ColumnConfig {8} \
    CONFIG.Control_Broadcast_Fanout {false} \
    CONFIG.Control_Column_Fanout {false} \
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {0} \
+   CONFIG.Data_Fractional_Bits {15} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -534,19 +534,19 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/4_tap_crit_noscale/lane3.coe} \
-   CONFIG.Coefficient_Fractional_Bits {26} \
+   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/8_tap_equiripple/lane3.coe} \
+   CONFIG.Coefficient_Fractional_Bits {15} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
    CONFIG.Coefficient_Width {16} \
-   CONFIG.ColumnConfig {4} \
+   CONFIG.ColumnConfig {8} \
    CONFIG.Control_Broadcast_Fanout {false} \
    CONFIG.Control_Column_Fanout {false} \
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {0} \
+   CONFIG.Data_Fractional_Bits {15} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -583,19 +583,19 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/4_tap_crit_noscale/lane4.coe} \
-   CONFIG.Coefficient_Fractional_Bits {26} \
+   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/8_tap_equiripple/lane4.coe} \
+   CONFIG.Coefficient_Fractional_Bits {15} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
    CONFIG.Coefficient_Width {16} \
-   CONFIG.ColumnConfig {4} \
+   CONFIG.ColumnConfig {8} \
    CONFIG.Control_Broadcast_Fanout {false} \
    CONFIG.Control_Column_Fanout {false} \
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {0} \
+   CONFIG.Data_Fractional_Bits {15} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -632,19 +632,19 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/4_tap_crit_noscale/lane5.coe} \
-   CONFIG.Coefficient_Fractional_Bits {26} \
+   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/8_tap_equiripple/lane5.coe} \
+   CONFIG.Coefficient_Fractional_Bits {15} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
    CONFIG.Coefficient_Width {16} \
-   CONFIG.ColumnConfig {4} \
+   CONFIG.ColumnConfig {8} \
    CONFIG.Control_Broadcast_Fanout {false} \
    CONFIG.Control_Column_Fanout {false} \
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {0} \
+   CONFIG.Data_Fractional_Bits {15} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -681,19 +681,19 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/4_tap_crit_noscale/lane6.coe} \
-   CONFIG.Coefficient_Fractional_Bits {26} \
+   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/8_tap_equiripple/lane6.coe} \
+   CONFIG.Coefficient_Fractional_Bits {15} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
    CONFIG.Coefficient_Width {16} \
-   CONFIG.ColumnConfig {4} \
+   CONFIG.ColumnConfig {8} \
    CONFIG.Control_Broadcast_Fanout {false} \
    CONFIG.Control_Column_Fanout {false} \
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {0} \
+   CONFIG.Data_Fractional_Bits {15} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -730,19 +730,19 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/4_tap_crit_noscale/lane7.coe} \
-   CONFIG.Coefficient_Fractional_Bits {26} \
+   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/8_tap_equiripple/lane7.coe} \
+   CONFIG.Coefficient_Fractional_Bits {15} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
    CONFIG.Coefficient_Width {16} \
-   CONFIG.ColumnConfig {4} \
+   CONFIG.ColumnConfig {8} \
    CONFIG.Control_Broadcast_Fanout {false} \
    CONFIG.Control_Column_Fanout {false} \
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {0} \
+   CONFIG.Data_Fractional_Bits {15} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -779,19 +779,19 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/4_tap_crit_noscale/lane8.coe} \
-   CONFIG.Coefficient_Fractional_Bits {26} \
+   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/8_tap_equiripple/lane8.coe} \
+   CONFIG.Coefficient_Fractional_Bits {15} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
    CONFIG.Coefficient_Width {16} \
-   CONFIG.ColumnConfig {4} \
+   CONFIG.ColumnConfig {8} \
    CONFIG.Control_Broadcast_Fanout {false} \
    CONFIG.Control_Column_Fanout {false} \
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {0} \
+   CONFIG.Data_Fractional_Bits {15} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -828,19 +828,19 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/4_tap_crit_noscale/lane9.coe} \
-   CONFIG.Coefficient_Fractional_Bits {26} \
+   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/8_tap_equiripple/lane9.coe} \
+   CONFIG.Coefficient_Fractional_Bits {15} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
    CONFIG.Coefficient_Width {16} \
-   CONFIG.ColumnConfig {4} \
+   CONFIG.ColumnConfig {8} \
    CONFIG.Control_Broadcast_Fanout {false} \
    CONFIG.Control_Column_Fanout {false} \
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {0} \
+   CONFIG.Data_Fractional_Bits {15} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -877,19 +877,19 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/4_tap_crit_noscale/lane10.coe} \
-   CONFIG.Coefficient_Fractional_Bits {26} \
+   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/8_tap_equiripple/lane10.coe} \
+   CONFIG.Coefficient_Fractional_Bits {15} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
    CONFIG.Coefficient_Width {16} \
-   CONFIG.ColumnConfig {4} \
+   CONFIG.ColumnConfig {8} \
    CONFIG.Control_Broadcast_Fanout {false} \
    CONFIG.Control_Column_Fanout {false} \
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {0} \
+   CONFIG.Data_Fractional_Bits {15} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -926,19 +926,19 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/4_tap_crit_noscale/lane11.coe} \
-   CONFIG.Coefficient_Fractional_Bits {26} \
+   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/8_tap_equiripple/lane11.coe} \
+   CONFIG.Coefficient_Fractional_Bits {15} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
    CONFIG.Coefficient_Width {16} \
-   CONFIG.ColumnConfig {4} \
+   CONFIG.ColumnConfig {8} \
    CONFIG.Control_Broadcast_Fanout {false} \
    CONFIG.Control_Column_Fanout {false} \
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {0} \
+   CONFIG.Data_Fractional_Bits {15} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -975,19 +975,19 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/4_tap_crit_noscale/lane12.coe} \
-   CONFIG.Coefficient_Fractional_Bits {26} \
+   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/8_tap_equiripple/lane12.coe} \
+   CONFIG.Coefficient_Fractional_Bits {15} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
    CONFIG.Coefficient_Width {16} \
-   CONFIG.ColumnConfig {4} \
+   CONFIG.ColumnConfig {8} \
    CONFIG.Control_Broadcast_Fanout {false} \
    CONFIG.Control_Column_Fanout {false} \
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {0} \
+   CONFIG.Data_Fractional_Bits {15} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -1024,19 +1024,19 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/4_tap_crit_noscale/lane13.coe} \
-   CONFIG.Coefficient_Fractional_Bits {26} \
+   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/8_tap_equiripple/lane13.coe} \
+   CONFIG.Coefficient_Fractional_Bits {15} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
    CONFIG.Coefficient_Width {16} \
-   CONFIG.ColumnConfig {4} \
+   CONFIG.ColumnConfig {8} \
    CONFIG.Control_Broadcast_Fanout {false} \
    CONFIG.Control_Column_Fanout {false} \
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {0} \
+   CONFIG.Data_Fractional_Bits {15} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -1073,19 +1073,19 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/4_tap_crit_noscale/lane14.coe} \
-   CONFIG.Coefficient_Fractional_Bits {26} \
+   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/8_tap_equiripple/lane14.coe} \
+   CONFIG.Coefficient_Fractional_Bits {15} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
    CONFIG.Coefficient_Width {16} \
-   CONFIG.ColumnConfig {4} \
+   CONFIG.ColumnConfig {8} \
    CONFIG.Control_Broadcast_Fanout {false} \
    CONFIG.Control_Column_Fanout {false} \
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {0} \
+   CONFIG.Data_Fractional_Bits {15} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -1122,19 +1122,19 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/4_tap_crit_noscale/lane15.coe} \
-   CONFIG.Coefficient_Fractional_Bits {26} \
+   CONFIG.Coefficient_File {/home/jpsmith/Gen3/mkidgen3/firmware/data/8_tap_equiripple/lane15.coe} \
+   CONFIG.Coefficient_Fractional_Bits {15} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
    CONFIG.Coefficient_Structure {Inferred} \
    CONFIG.Coefficient_Width {16} \
-   CONFIG.ColumnConfig {4} \
+   CONFIG.ColumnConfig {8} \
    CONFIG.Control_Broadcast_Fanout {false} \
    CONFIG.Control_Column_Fanout {false} \
    CONFIG.Control_LUT_Pipeline {false} \
    CONFIG.Control_Path_Fanout {false} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
-   CONFIG.Data_Fractional_Bits {0} \
+   CONFIG.Data_Fractional_Bits {15} \
    CONFIG.Data_Path_Broadcast {false} \
    CONFIG.Data_Path_Fanout {false} \
    CONFIG.Data_Width {16} \
@@ -1402,7 +1402,7 @@ proc create_hier_cell_fft { parentCell nameHier } {
   set pkg_fft_output_1 [ create_bd_cell -type ip -vlnv mazinlab:mkidgen3:pkg_fft_output:0.3 pkg_fft_output_1 ]
 
   # Create instance: ssrfft_16x4096_axis_0, and set properties
-  set ssrfft_16x4096_axis_0 [ create_bd_cell -type ip -vlnv MazinLab:mkidgen3:ssrfft_16x4096_axis_growth:1.4 ssrfft_16x4096_axis_0 ]
+  set ssrfft_16x4096_axis_0 [ create_bd_cell -type ip -vlnv MazinLab:mkidgen3:ssrfft_16x4096_axis:1.0 ssrfft_16x4096_axis_0 ]
 
   # Create instance: xlconstant_0, and set properties
   set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
@@ -1452,25 +1452,25 @@ proc create_hier_cell_fft { parentCell nameHier } {
   connect_bd_net -net Net [get_bd_pins ap_rst_n] [get_bd_pins axi_gpio_0/s_axi_aresetn] [get_bd_pins axis_broadcaster_0/aresetn] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn] [get_bd_pins axis_register_slice_10/aresetn] [get_bd_pins axis_register_slice_11/aresetn] [get_bd_pins axis_register_slice_12/aresetn] [get_bd_pins axis_register_slice_13/aresetn] [get_bd_pins axis_register_slice_14/aresetn] [get_bd_pins axis_register_slice_15/aresetn] [get_bd_pins axis_register_slice_16/aresetn] [get_bd_pins axis_register_slice_17/aresetn] [get_bd_pins axis_register_slice_2/aresetn] [get_bd_pins axis_register_slice_3/aresetn] [get_bd_pins axis_register_slice_4/aresetn] [get_bd_pins axis_register_slice_5/aresetn] [get_bd_pins axis_register_slice_6/aresetn] [get_bd_pins axis_register_slice_7/aresetn] [get_bd_pins axis_register_slice_8/aresetn] [get_bd_pins axis_register_slice_9/aresetn] [get_bd_pins pkg_fft_output_1/ap_rst_n]
   connect_bd_net -net Net2 [get_bd_pins clk_out1] [get_bd_pins axi_gpio_0/s_axi_aclk] [get_bd_pins axis_broadcaster_0/aclk] [get_bd_pins axis_register_slice_0/aclk] [get_bd_pins axis_register_slice_1/aclk] [get_bd_pins axis_register_slice_10/aclk] [get_bd_pins axis_register_slice_11/aclk] [get_bd_pins axis_register_slice_12/aclk] [get_bd_pins axis_register_slice_13/aclk] [get_bd_pins axis_register_slice_14/aclk] [get_bd_pins axis_register_slice_15/aclk] [get_bd_pins axis_register_slice_16/aclk] [get_bd_pins axis_register_slice_17/aclk] [get_bd_pins axis_register_slice_2/aclk] [get_bd_pins axis_register_slice_3/aclk] [get_bd_pins axis_register_slice_4/aclk] [get_bd_pins axis_register_slice_5/aclk] [get_bd_pins axis_register_slice_6/aclk] [get_bd_pins axis_register_slice_7/aclk] [get_bd_pins axis_register_slice_8/aclk] [get_bd_pins axis_register_slice_9/aclk] [get_bd_pins pkg_fft_output_1/ap_clk] [get_bd_pins ssrfft_16x4096_axis_0/clk]
   connect_bd_net -net axi_gpio_0_gpio_io_o [get_bd_pins axi_gpio_0/gpio_io_o] [get_bd_pins ssrfft_16x4096_axis_0/scale_in]
-  connect_bd_net -net ssrfft_16x4096_axis_0_biniq_1 [get_bd_pins pkg_fft_output_1/iq01] [get_bd_pins ssrfft_16x4096_axis_0/biniq_1]
-  connect_bd_net -net ssrfft_16x4096_axis_0_biniq_2 [get_bd_pins pkg_fft_output_1/iq02] [get_bd_pins ssrfft_16x4096_axis_0/biniq_2]
-  connect_bd_net -net ssrfft_16x4096_axis_0_biniq_3 [get_bd_pins pkg_fft_output_1/iq03] [get_bd_pins ssrfft_16x4096_axis_0/biniq_3]
-  connect_bd_net -net ssrfft_16x4096_axis_0_biniq_4 [get_bd_pins pkg_fft_output_1/iq04] [get_bd_pins ssrfft_16x4096_axis_0/biniq_4]
-  connect_bd_net -net ssrfft_16x4096_axis_0_biniq_5 [get_bd_pins pkg_fft_output_1/iq05] [get_bd_pins ssrfft_16x4096_axis_0/biniq_5]
-  connect_bd_net -net ssrfft_16x4096_axis_0_biniq_6 [get_bd_pins pkg_fft_output_1/iq06] [get_bd_pins ssrfft_16x4096_axis_0/biniq_6]
-  connect_bd_net -net ssrfft_16x4096_axis_0_biniq_7 [get_bd_pins pkg_fft_output_1/iq07] [get_bd_pins ssrfft_16x4096_axis_0/biniq_7]
-  connect_bd_net -net ssrfft_16x4096_axis_0_biniq_8 [get_bd_pins pkg_fft_output_1/iq08] [get_bd_pins ssrfft_16x4096_axis_0/biniq_8]
-  connect_bd_net -net ssrfft_16x4096_axis_0_biniq_9 [get_bd_pins pkg_fft_output_1/iq09] [get_bd_pins ssrfft_16x4096_axis_0/biniq_9]
-  connect_bd_net -net ssrfft_16x4096_axis_0_biniq_10 [get_bd_pins pkg_fft_output_1/iq10] [get_bd_pins ssrfft_16x4096_axis_0/biniq_10]
-  connect_bd_net -net ssrfft_16x4096_axis_0_biniq_11 [get_bd_pins pkg_fft_output_1/iq11] [get_bd_pins ssrfft_16x4096_axis_0/biniq_11]
-  connect_bd_net -net ssrfft_16x4096_axis_0_biniq_12 [get_bd_pins pkg_fft_output_1/iq12] [get_bd_pins ssrfft_16x4096_axis_0/biniq_12]
-  connect_bd_net -net ssrfft_16x4096_axis_0_biniq_13 [get_bd_pins pkg_fft_output_1/iq13] [get_bd_pins ssrfft_16x4096_axis_0/biniq_13]
-  connect_bd_net -net ssrfft_16x4096_axis_0_biniq_14 [get_bd_pins pkg_fft_output_1/iq14] [get_bd_pins ssrfft_16x4096_axis_0/biniq_14]
-  connect_bd_net -net ssrfft_16x4096_axis_0_biniq_15 [get_bd_pins pkg_fft_output_1/iq15] [get_bd_pins ssrfft_16x4096_axis_0/biniq_15]
   connect_bd_net -net ssrfft_16x4096_axis_0_biniq_valid [get_bd_pins biniq_valid] [get_bd_pins pkg_fft_output_1/iq00_ap_vld] [get_bd_pins pkg_fft_output_1/iq01_ap_vld] [get_bd_pins pkg_fft_output_1/iq02_ap_vld] [get_bd_pins pkg_fft_output_1/iq03_ap_vld] [get_bd_pins pkg_fft_output_1/iq04_ap_vld] [get_bd_pins pkg_fft_output_1/iq05_ap_vld] [get_bd_pins pkg_fft_output_1/iq06_ap_vld] [get_bd_pins pkg_fft_output_1/iq07_ap_vld] [get_bd_pins pkg_fft_output_1/iq08_ap_vld] [get_bd_pins pkg_fft_output_1/iq09_ap_vld] [get_bd_pins pkg_fft_output_1/iq10_ap_vld] [get_bd_pins pkg_fft_output_1/iq11_ap_vld] [get_bd_pins pkg_fft_output_1/iq12_ap_vld] [get_bd_pins pkg_fft_output_1/iq13_ap_vld] [get_bd_pins pkg_fft_output_1/iq14_ap_vld] [get_bd_pins pkg_fft_output_1/iq15_ap_vld] [get_bd_pins pkg_fft_output_1/scale_ap_vld] [get_bd_pins ssrfft_16x4096_axis_0/biniq_valid]
   set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_nets ssrfft_16x4096_axis_0_biniq_valid]
   connect_bd_net -net ssrfft_16x4096_axis_1_biniq_0 [get_bd_pins biniq_0] [get_bd_pins pkg_fft_output_1/iq00] [get_bd_pins ssrfft_16x4096_axis_0/biniq_0]
   set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_nets ssrfft_16x4096_axis_1_biniq_0]
+  connect_bd_net -net ssrfft_16x4096_axis_1_biniq_1 [get_bd_pins pkg_fft_output_1/iq01] [get_bd_pins ssrfft_16x4096_axis_0/biniq_1]
+  connect_bd_net -net ssrfft_16x4096_axis_1_biniq_2 [get_bd_pins pkg_fft_output_1/iq02] [get_bd_pins ssrfft_16x4096_axis_0/biniq_2]
+  connect_bd_net -net ssrfft_16x4096_axis_1_biniq_3 [get_bd_pins pkg_fft_output_1/iq03] [get_bd_pins ssrfft_16x4096_axis_0/biniq_3]
+  connect_bd_net -net ssrfft_16x4096_axis_1_biniq_4 [get_bd_pins pkg_fft_output_1/iq04] [get_bd_pins ssrfft_16x4096_axis_0/biniq_4]
+  connect_bd_net -net ssrfft_16x4096_axis_1_biniq_5 [get_bd_pins pkg_fft_output_1/iq05] [get_bd_pins ssrfft_16x4096_axis_0/biniq_5]
+  connect_bd_net -net ssrfft_16x4096_axis_1_biniq_6 [get_bd_pins pkg_fft_output_1/iq06] [get_bd_pins ssrfft_16x4096_axis_0/biniq_6]
+  connect_bd_net -net ssrfft_16x4096_axis_1_biniq_7 [get_bd_pins pkg_fft_output_1/iq07] [get_bd_pins ssrfft_16x4096_axis_0/biniq_7]
+  connect_bd_net -net ssrfft_16x4096_axis_1_biniq_8 [get_bd_pins pkg_fft_output_1/iq08] [get_bd_pins ssrfft_16x4096_axis_0/biniq_8]
+  connect_bd_net -net ssrfft_16x4096_axis_1_biniq_9 [get_bd_pins pkg_fft_output_1/iq09] [get_bd_pins ssrfft_16x4096_axis_0/biniq_9]
+  connect_bd_net -net ssrfft_16x4096_axis_1_biniq_10 [get_bd_pins pkg_fft_output_1/iq10] [get_bd_pins ssrfft_16x4096_axis_0/biniq_10]
+  connect_bd_net -net ssrfft_16x4096_axis_1_biniq_11 [get_bd_pins pkg_fft_output_1/iq11] [get_bd_pins ssrfft_16x4096_axis_0/biniq_11]
+  connect_bd_net -net ssrfft_16x4096_axis_1_biniq_12 [get_bd_pins pkg_fft_output_1/iq12] [get_bd_pins ssrfft_16x4096_axis_0/biniq_12]
+  connect_bd_net -net ssrfft_16x4096_axis_1_biniq_13 [get_bd_pins pkg_fft_output_1/iq13] [get_bd_pins ssrfft_16x4096_axis_0/biniq_13]
+  connect_bd_net -net ssrfft_16x4096_axis_1_biniq_14 [get_bd_pins pkg_fft_output_1/iq14] [get_bd_pins ssrfft_16x4096_axis_0/biniq_14]
+  connect_bd_net -net ssrfft_16x4096_axis_1_biniq_15 [get_bd_pins pkg_fft_output_1/iq15] [get_bd_pins ssrfft_16x4096_axis_0/biniq_15]
   connect_bd_net -net ssrfft_16x4096_axis_1_scale_out [get_bd_pins scale_out] [get_bd_pins pkg_fft_output_1/scale] [get_bd_pins ssrfft_16x4096_axis_0/scale_out]
   set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_nets ssrfft_16x4096_axis_1_scale_out]
   connect_bd_net -net xlconstant_0_dout [get_bd_pins pkg_fft_output_1/output_r_TREADY] [get_bd_pins xlconstant_0/dout]
@@ -1627,9 +1627,9 @@ proc create_hier_cell_opfb { parentCell nameHier } {
 
   # Create interface connections
   connect_bd_intf_net -intf_net Conn1 [get_bd_intf_pins M_AXIS] [get_bd_intf_pins fft/M_AXIS]
+  connect_bd_intf_net -intf_net Conn2 [get_bd_intf_pins M_AXIS1] [get_bd_intf_pins firs/M_AXIS1]
   connect_bd_intf_net -intf_net Conn3 [get_bd_intf_pins S_AXI] [get_bd_intf_pins fft/S_AXI]
   connect_bd_intf_net -intf_net Conn4 [get_bd_intf_pins S00_AXIS] [get_bd_intf_pins firs/S00_AXIS]
-  connect_bd_intf_net -intf_net Conn5 [get_bd_intf_pins M_AXIS1] [get_bd_intf_pins firs/M_AXIS1]
   connect_bd_intf_net -intf_net adc_to_opfb_1_lanes [get_bd_intf_pins adc_to_opfb_0/lanes] [get_bd_intf_pins firs/S_AXIS1]
   connect_bd_intf_net -intf_net fft_output_r [get_bd_intf_pins output_r] [get_bd_intf_pins fft/output_r]
   connect_bd_intf_net -intf_net fir_to_fft_1_output_r [get_bd_intf_pins fft/S_AXIS] [get_bd_intf_pins fir_to_fft_1/output_r]
@@ -2733,9 +2733,9 @@ proc create_hier_cell_photon_pipe { parentCell nameHier } {
   # Create interface connections
   connect_bd_intf_net -intf_net Conn1 [get_bd_intf_pins M_AXIS] [get_bd_intf_pins opfb/M_AXIS]
   connect_bd_intf_net -intf_net Conn2 [get_bd_intf_pins bin2res_control] [get_bd_intf_pins reschan/bin2res_control]
+  connect_bd_intf_net -intf_net Conn3 [get_bd_intf_pins M_AXIS1] [get_bd_intf_pins opfb/M_AXIS1]
   connect_bd_intf_net -intf_net Conn4 [get_bd_intf_pins S_AXI] [get_bd_intf_pins opfb/S_AXI]
   connect_bd_intf_net -intf_net Conn5 [get_bd_intf_pins S00_AXIS] [get_bd_intf_pins opfb/S00_AXIS]
-  connect_bd_intf_net -intf_net Conn6 [get_bd_intf_pins M_AXIS1] [get_bd_intf_pins opfb/M_AXIS1]
   connect_bd_intf_net -intf_net axis_register_slice_0_M_AXIS [get_bd_intf_pins axis_register_slice_0/M_AXIS] [get_bd_intf_pins reschan/iq_stream]
   connect_bd_intf_net -intf_net axis_register_slice_2_M_AXIS [get_bd_intf_pins axis_register_slice_2/M_AXIS] [get_bd_intf_pins opfb/istream_V]
   connect_bd_intf_net -intf_net axis_register_slice_4_M_AXIS [get_bd_intf_pins RAWIQ_AXIS] [get_bd_intf_pins axis_register_slice_4/M_AXIS]
@@ -2828,7 +2828,7 @@ proc create_hier_cell_capture { parentCell nameHier } {
    CONFIG.M03_HAS_REGSLICE {4} \
    CONFIG.M04_HAS_REGSLICE {4} \
    CONFIG.M05_HAS_REGSLICE {4} \
-   CONFIG.NUM_MI {6} \
+   CONFIG.NUM_MI {5} \
    CONFIG.S00_HAS_REGSLICE {4} \
    CONFIG.XBAR_DATA_WIDTH {32} \
  ] $axi_interconnect_0
@@ -2962,8 +2962,8 @@ proc create_hier_cell_capture { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net Net [get_bd_pins pipe_clk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M01_ACLK] [get_bd_pins axi_interconnect_0/M02_ACLK] [get_bd_pins axi_interconnect_0/M03_ACLK] [get_bd_pins axi_interconnect_0/M04_ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axis_data_fifo_0/s_axis_aclk] [get_bd_pins axis_register_slice_1/aclk] [get_bd_pins axis_register_slice_2/aclk] [get_bd_pins axis_switch/aclk] [get_bd_pins axis_switch/s_axi_ctrl_aclk] [get_bd_pins capture_upsizer/ap_clk] [get_bd_pins filter_iq_0/ap_clk] [get_bd_pins filter_iq_1/ap_clk] [get_bd_pins filter_phase_0/ap_clk] [get_bd_pins pair_iq_0/ap_clk]
-  connect_bd_net -net Net1 [get_bd_pins axis2mm_clk] [get_bd_pins JebConnect/m_axis_aclk] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/M05_ACLK] [get_bd_pins axis2mm_0/S_AXI_ACLK] [get_bd_pins axis_data_fifo_0/m_axis_aclk]
-  connect_bd_net -net Net2 [get_bd_pins axis2mm_aresetn] [get_bd_pins JebConnect/S_AXI_ARESETN] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/M05_ARESETN] [get_bd_pins axis2mm_0/S_AXI_ARESETN]
+  connect_bd_net -net Net1 [get_bd_pins axis2mm_clk] [get_bd_pins JebConnect/m_axis_aclk] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axis2mm_0/S_AXI_ACLK] [get_bd_pins axis_data_fifo_0/m_axis_aclk]
+  connect_bd_net -net Net2 [get_bd_pins axis2mm_aresetn] [get_bd_pins JebConnect/S_AXI_ARESETN] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axis2mm_0/S_AXI_ARESETN]
   connect_bd_net -net ap_rst_n_1 [get_bd_pins pipe_aresetn] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/M01_ARESETN] [get_bd_pins axi_interconnect_0/M02_ARESETN] [get_bd_pins axi_interconnect_0/M03_ARESETN] [get_bd_pins axi_interconnect_0/M04_ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axis_data_fifo_0/s_axis_aresetn] [get_bd_pins axis_register_slice_1/aresetn] [get_bd_pins axis_register_slice_2/aresetn] [get_bd_pins axis_switch/aresetn] [get_bd_pins axis_switch/s_axi_ctrl_aresetn] [get_bd_pins capture_upsizer/ap_rst_n] [get_bd_pins filter_iq_0/ap_rst_n] [get_bd_pins filter_iq_1/ap_rst_n] [get_bd_pins filter_phase_0/ap_rst_n] [get_bd_pins pair_iq_0/ap_rst_n]
   connect_bd_net -net axis2mm_0_o_int [get_bd_pins o_int] [get_bd_pins axis2mm_0/o_int]
   connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_pins c0_ddr4_ui_clk2] [get_bd_pins JebConnect/c0_ddr4_ui_clk2] [get_bd_pins ddr4_0/c0_ddr4_ui_clk]
@@ -4760,7 +4760,7 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
  ] $zynq_ultra_ps_e_0
 
   # Create interface connections
-connect_bd_intf_net -intf_net FIR_in_0 [get_bd_intf_pins photon_pipe/M_AXIS1] [get_bd_intf_pins system_ila_0/SLOT_3_AXIS]
+connect_bd_intf_net -intf_net Conn [get_bd_intf_pins photon_pipe/M_AXIS1] [get_bd_intf_pins system_ila_0/SLOT_3_AXIS]
 connect_bd_intf_net -intf_net FIR_out_0 [get_bd_intf_pins photon_pipe/S00_AXIS] [get_bd_intf_pins system_ila_0/SLOT_2_AXIS]
   connect_bd_intf_net -intf_net adc0_clk_1 [get_bd_intf_ports adc0_clk] [get_bd_intf_pins rfdc/adc0_clk]
   connect_bd_intf_net -intf_net axi_interconnect_1_M00_AXI [get_bd_intf_pins axi_interconnect_1/M00_AXI] [get_bd_intf_pins photon_pipe/bin2res_control]
@@ -4807,9 +4807,9 @@ connect_bd_intf_net -intf_net [get_bd_intf_nets replay2opfb_i_adc] [get_bd_intf_
   connect_bd_net -net fft_scale [get_bd_pins photon_pipe/scale_out] [get_bd_pins system_ila_0/probe2]
   connect_bd_net -net fft_valid [get_bd_pins photon_pipe/biniq_valid] [get_bd_pins system_ila_0/probe0]
   connect_bd_net -net fftbin0 [get_bd_pins photon_pipe/biniq_0] [get_bd_pins system_ila_0/probe1]
-  connect_bd_net -net resets_never_reset [get_bd_pins axi_interconnect_1/ARESETN] [get_bd_pins axi_interconnect_1/M00_ARESETN] [get_bd_pins axi_interconnect_1/M01_ARESETN] [get_bd_pins axi_interconnect_1/M02_ARESETN] [get_bd_pins axis_broadcaster_0/aresetn] [get_bd_pins axis_broadcaster_1/aresetn] [get_bd_pins capture/pipe_aresetn] [get_bd_pins photon_pipe/ap_rst_n] [get_bd_pins replay2opfb/pipe_aresetn] [get_bd_pins resets/never_reset_512]
+  connect_bd_net -net resets_never_reset [get_bd_pins axi_interconnect_1/ARESETN] [get_bd_pins axi_interconnect_1/M00_ARESETN] [get_bd_pins axi_interconnect_1/M01_ARESETN] [get_bd_pins axi_interconnect_1/M02_ARESETN] [get_bd_pins axis_broadcaster_0/aresetn] [get_bd_pins axis_broadcaster_1/aresetn] [get_bd_pins capture/pipe_aresetn] [get_bd_pins photon_pipe/ap_rst_n] [get_bd_pins replay2opfb/pipe_aresetn] [get_bd_pins resets/never_reset_512] [get_bd_pins system_ila_0/resetn]
   connect_bd_net -net resets_never_reset_256 -boundary_type upper [get_bd_pins resets/never_reset_256]
-  connect_bd_net -net resets_never_reset_512_256 [get_bd_pins capture/axis2mm_aresetn] [get_bd_pins resets/never_reset_512_256] [get_bd_pins system_ila_0/resetn]
+  connect_bd_net -net resets_never_reset_512_256 [get_bd_pins capture/axis2mm_aresetn] [get_bd_pins resets/never_reset_512_256]
   connect_bd_net -net resets_peripheral_aresetn_100 [get_bd_pins resets/peripheral_aresetn_100] [get_bd_pins rfdc/s_axi_aresetn]
   connect_bd_net -net resets_peripheral_aresetn_256 [get_bd_pins dac_table_axim_0/ap_rst_n] [get_bd_pins ps8_0_axi_periph/M03_ARESETN] [get_bd_pins replay2opfb/replay_aresetn] [get_bd_pins resets/peripheral_aresetn_256] [get_bd_pins rfdc/s1_axis_aresetn]
   connect_bd_net -net resets_peripheral_aresetn_512 [get_bd_pins photon_pipe/aresetn] [get_bd_pins resets/peripheral_aresetn_512] [get_bd_pins rfdc/m2_axis_aresetn]
@@ -4823,16 +4823,17 @@ connect_bd_intf_net -intf_net [get_bd_intf_nets replay2opfb_i_adc] [get_bd_intf_
   assign_bd_address -offset 0x000800000000 -range 0x000800000000 -target_address_space [get_bd_addr_spaces dac_table_axim_0/Data_m_axi_gmem] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_DDR_HIGH] -force
   assign_bd_address -offset 0x00000000 -range 0x80000000 -target_address_space [get_bd_addr_spaces dac_table_axim_0/Data_m_axi_gmem] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_DDR_LOW] -force
   assign_bd_address -offset 0xC0000000 -range 0x20000000 -target_address_space [get_bd_addr_spaces dac_table_axim_0/Data_m_axi_gmem] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_QSPI] -force
+  assign_bd_address -offset 0xA0070000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs photon_pipe/opfb/fft/axi_gpio_0/S_AXI/Reg] -force
   assign_bd_address -offset 0xA0000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs axi_intc_0/S_AXI/Reg] -force
-  assign_bd_address -offset 0xA0030000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs capture/axis2mm_0/S_AXIL/reg0] -force
-  assign_bd_address -offset 0xA0040000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs capture/axis_switch/S_AXI_CTRL/Reg] -force
-  assign_bd_address -offset 0xA0070000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs photon_pipe/reschan/bin_to_res/s_axi_control/Reg] -force
+  assign_bd_address -offset 0xA0010000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs capture/axis2mm_0/S_AXIL/reg0] -force
+  assign_bd_address -offset 0xA0020000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs capture/axis_switch/S_AXI_CTRL/Reg] -force
+  assign_bd_address -offset 0xA0080000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs photon_pipe/reschan/bin_to_res/s_axi_control/Reg] -force
   assign_bd_address -offset 0xA0060000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs dac_table_axim_0/s_axi_control/Reg] -force
   assign_bd_address -offset 0x000500000000 -range 0x000100000000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs capture/ddr4_0/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] -force
-  assign_bd_address -offset 0xA0010000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs capture/filter_iq_0/s_axi_control/Reg] -force
-  assign_bd_address -offset 0xA0020000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs capture/filter_iq_1/s_axi_control/Reg] -force
+  assign_bd_address -offset 0xA0030000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs capture/filter_iq_0/s_axi_control/Reg] -force
+  assign_bd_address -offset 0xA0040000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs capture/filter_iq_1/s_axi_control/Reg] -force
   assign_bd_address -offset 0xA0050000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs capture/filter_phase_0/s_axi_control/Reg] -force
-  assign_bd_address -offset 0xA0080000 -range 0x00040000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs rfdc/usp_rf_data_converter_0/s_axi/Reg] -force
+  assign_bd_address -offset 0xA00C0000 -range 0x00040000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs rfdc/usp_rf_data_converter_0/s_axi/Reg] -force
   assign_bd_address -offset 0x000500000000 -range 0x000100000000 -target_address_space [get_bd_addr_spaces capture/axis2mm_0/M_AXI] [get_bd_addr_segs capture/ddr4_0/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] -force
 
   # Exclude Address Segments
