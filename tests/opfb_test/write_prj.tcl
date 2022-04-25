@@ -43,14 +43,14 @@ set_property top ${design_name}_wrapper [current_fileset]
 update_compile_order -fileset sources_1
 
 # Change Synth and Imp Settings for phys-opt (helps axigmem in capture)
-#set_property strategy Flow_PerfOptimized_high [get_runs synth_1]
-#set_property STEPS.SYNTH_DESIGN.ARGS.RETIMING true [get_runs synth_1]
-#set_property strategy Performance_ExtraTimingOpt [get_runs impl_1]
-#set_property STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore [get_runs impl_1]
-#set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.IS_ENABLED true [get_runs impl_1]
-#set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore [get_runs impl_1]
+set_property strategy Flow_PerfOptimized_high [get_runs synth_1]
+set_property STEPS.SYNTH_DESIGN.ARGS.RETIMING true [get_runs synth_1]
+set_property strategy Performance_ExtraTimingOpt [get_runs impl_1]
+set_property STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore [get_runs impl_1]
+set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.IS_ENABLED true [get_runs impl_1]
+set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore [get_runs impl_1]
 
-import_files -fileset utils_1 ../../data/rqs_report.rqs
+#import_files -fileset utils_1 ../../data/rqs_report.rqs
 
 #Uncomment below to run through bitstream generation
 #update_compile_order -fileset sources_1
