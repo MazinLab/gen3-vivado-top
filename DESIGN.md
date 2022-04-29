@@ -94,7 +94,7 @@ AXI Interconnects, AXI4S broadcasters, combiners, and register slices are omitte
 ## Overlapped Polyphase Filter
 The photon_pipe.opfb hierarchy ingests the raw data stream each ADC (one I, one Q) and yields an IQ stream of Overlapped Polyphase filter channels, each with 2 MHz of bandwidth.The OPFB runs at 512~Mhz, has no control lines, and has its reset tied off. Within in the hierarchy data flows through the HLS [adc-to-opfb](https://github.com/MazinLab/adc-to-opfb) block (dataflow, 2 functions, all ap_ctrl_none), then into the fir hierarchy where it is sliced/broadcast into bank of 16 FIR Compiler blocks configured by a small HLS coefficient select block ([opfb-fir-cfg](https://github.com/MazinLab/opfb-fir-cfg)) that runs once when the bitstream is loaded. 
 
-The FIR outputs are merged with an axis combiner, fed through the[opfb-fir-to-fft](https://github.com/MazinLab/opfb-fir-to-fft) HLS block for processing (pipeline ii=1, flat, ap_ctrl_none), to an axis broadcast/slice, and into a super sample rate 4096 point FFT block exported from sysgen (16x256). The output of the FFT is packaged back into a single AXIS stream by [pkg-fft-output](https://github.com/MazinLab/pkg-fft-output) (pipeline ii=1, flat, ap_ctrl_none, ap_vld on the inputs). This last block generates the TLAST signal from an internal counter.
+The FIR outputs are merged with an axis combiner, fed through the [opfb-fir-to-fft](https://github.com/MazinLab/opfb-fir-to-fft) HLS block for processing (pipeline ii=1, flat, ap_ctrl_none), to an axis broadcast/slice, and into a super sample rate 4096 point FFT block exported from sysgen (16x256). The output of the FFT is packaged back into a single AXIS stream by [pkg-fft-output](https://github.com/MazinLab/pkg-fft-output) (pipeline ii=1, flat, ap_ctrl_none, ap_vld on the inputs). This last block generates the TLAST signal from an internal counter.
 
 #### In:
 - 256b AXI4S of 8 16b signed I words @ 512MHz
@@ -124,53 +124,102 @@ The FIR outputs are merged with an axis combiner, fed through the[opfb-fir-to-ff
 
 
 ### adc-to-opfb
-Inputs: 
-- I 128bit AXI4S of 16 bit words
-- Q 128bit AXI4S of 16 bit words
+```cpp
+void adc_to_opfb( hls::stream<ap_uint<128>> &istream, hls::stream<ap_uint<128>> &qstream, hls::stream<ap_axiu<512,0,0,0>> &lanes) {
+#pragma HLS DATAFLOW
+#pragma HLS INTERFACE axis register port=istream
+#pragma HLS INTERFACE axis register port=qstream
+#pragma HLS INTERFACE axis register port=lanes
+#pragma HLS INTERFACE ap_ctrl_none port=return
+// ...
+```
 
-Outputs:
-- 16x IQ 32bit AXI4S of 16bit complex words, streams equipped with TLAST.
+#### In: 
+- I Stream 128b AXI4S of 8 16b signed words
+- Q Stream 128b AXI4S of 8 16b signed words
 
-This block takes the incoming 8 I & Q samples and bundles them into complex shorts for internal operations. It then
-breaks the 8 IQ into 16 by applying feeding the even and odd lanes with every other sample (i.e. sample 0, 16, 32 -> 
-lane0; 8, 24, 40 -> lane1; sample 1, 17, 33 -> lane2; etc). Each lane keeps a delay line of 128 samples and uses the
-delay line to drive the output in 'off' cycles, thereby resulting in output that looks like 0, -127, 1, -126, ... 
-for a given lane. The resulting pattern may be seen in full, along with the intended FIR coefficient set (TODO) for
-multiplication in the simulation output. TLAST (TODO) is set on the 256th cycle of each lane. 
+#### Out:
+- Interleaved IQ Stream 512b AXI4S of 16 32b complex signed words, stream equipped with TLAST that asserts every 512 beats.
 
-#### FIR Bank & Control
-The 16 FIRs are configured for 512 channel 2 parallel path 16 bit input, 18 bit output with 256 coefficient sets.
-Configuration is by channel with the channel HLS block configuring coefficient set order as 0, 0, 1, 1, 2, 2, ....
-Coefficient reload is disabled. The FIRs are not presently planned to do anything with axi4s side channel
-information aside from TLAST passthrough. TODO: Revisit side channel handling for datastream framing as OPFB progresses.
+This block takes the incoming 8 I & Q samples and bundles them into uint256 groups of 8 complex words for internal operations. It breaks the 8 IQ into 16 by applying feeding the even and odd lanes with every other sample (i.e. sample 0, 16, 32 -> 
+lane0; 8, 24, 40 -> lane1; sample 1, 17, 33 -> lane2; etc). Two delay lines 128 samples and uses the
+delay line to drive the output in 'off' cycles, thereby resulting in output with sample indices like 0, -127, 1, -126, ... for a given lane. The resulting pattern may be seen in full, along with the intended FIR coefficient set (TODO) for
+multiplication in the simulation output. TLAST is set on the 512th cycle. 
 
-#### opfb-fir-to-fft
-Inputs: 
-- IQ 36bit AXI4S of 18 bit complex equipped with TLAST
+### FIR Compiler Bank
+The interleaved IQ stream for *adc_to_opfb* is split into 16 single IQ streams via a broadcaster with each sent into one of 16 FIR Compiler cores. The broadcaster has TREADY disabled. 
 
-Output: 
-- IQ 36bit AXI4S of 18 bit complex equipped with TLAST
+The 16 FIRs are configured for 512 channel 2 parallel path 16 bit input, 16 bit output with 256 coefficient sets. Configuration is by channel and done by the [opfb-fir-cfg](https://github.com/MazinLab/opfb-fir-cfg) block sending coefficient set order as 0, 0, 1, 1, 2, 2, ... via a broadcaster. Coefficient reload is disabled. The FIRs are configured for vector framing with no TUSER input or output and no TREADY support. 
 
-This block takes an IQ stream from a lane's FIR and reorderes them as needed to feed the FFT. It breaks the incoming
-stream into even (group A) and odd samples, with the odd samples grouped into a group of the first 128 (group B) and the
-second 128 (group C). Samples are stored in internal FIFOs and sent on in order from group A, then C, then B, thereby
-achieving the alternating cycle reorder required by the OPFB. The results of the are available from the C simulation of
-the core.
+The output is remerged into a single stream via an axi4s combiner. 
 
-#### Vector FFT
-Inputs: 
-- 16x IQ 36bit AXI4S of 18 bit complex equipped with TLAST
+### opfb-fir-to-fft
+```cpp
+void fir_to_fft(hls::stream<ap_axiu<512, 0,0,0>> &input, hls::stream<ap_axiu<512, 0,0,0>> &output) {
+#pragma HLS PIPELINE II=1
+#pragma HLS INTERFACE axis register port=input
+#pragma HLS INTERFACE axis register port=output
+#pragma HLS INTERFACE ap_ctrl_none port=return
+// ...
+```
 
-Output: 
-- 1 576bit AXI4S of 16 18 bit complex equipped with TLAST
+#### In:
+- Interleaved IQ Stream 512b AXI4S of 16 32b complex signed words, stream equipped with TLAST that asserts every 512 beats.
+#### Out:
+- Interleaved IQ Stream 512b AXI4S of 16 32b complex signed words, stream equipped with TLAST that asserts every 512 beats.
 
-The FFT is done by the Xilinx Vector FFT from the SSR Blockset for System Generator. The inputs into the FFT must be
-connected in an interleaved fashion to ensure the expected natural bin order. The first 8 inputs coming from the even
-lanes and the second 8 inputs from the odd lanes. TLAST is asserted on the cycle containing the last 16 bins of the FFT.
+This block takes the merged IQ stream from the FIR bank and reorders them as needed to feed the FFT. The stream is broken into even (group A) and odd samples, with odd samples grouped into a group of the first 128 (group B) and second 128 (group C). Samples are stored in internal FIFOs and sent on in order from group A, then C, then B, thereby achieving the alternating cycle reorder required by the OPFB. The resulting index order from this are available from the C simulation of the core.
 
-The HLS SSR FFT is not used as of HLx 2019.2 as:
-- There are windows/linux compile issues
-- Initial tests show it may not make timing
+
+### Vector (SSR) FFT
+#### In: 
+- 16 IQ 32b AXI4S streams of complex signed words. Side channels are ignored. TREADY is permanently asserted. 
+- 12b Scale Port
+
+#### Out: 
+- 16x 32b output ports of of complex signed words and an output valid line.
+- 12b overflow port
+
+The FFT is done by the Xilinx Vector FFT from the SSR Blockset for System Generator/Model Composer. The inputs into the FFT must be connected in an interleaved fashion to ensure the expected natural bin order. The first 8 inputs coming from the even lanes and the second 8 inputs from the odd lanes. This order is ensured by the preceeding blocks in the design. The HLS SSR FFT is not used as of HLx 2019.2 as there were both windows/linux compile issues and initial tests showed it may not make timing.
+
+
+### pkg-fft-output 
+```cpp
+typedef unsigned int iq_t;
+
+void pkg_fft_output(iq_t iq00, iq_t iq01, iq_t iq02, iq_t iq03, iq_t iq04, iq_t iq05, iq_t iq06, iq_t iq07, iq_t iq08, iq_t iq09, iq_t iq10, iq_t iq11, iq_t iq12, iq_t iq13, iq_t iq14, iq_t iq15, ap_uint<12> scale, hls::stream<ap_axiu<512,16,0,0>> &output) {
+#pragma HLS INTERFACE ap_vld port=iq00
+#pragma HLS INTERFACE ap_vld port=iq01
+#pragma HLS INTERFACE ap_vld port=iq02
+#pragma HLS INTERFACE ap_vld port=iq03
+#pragma HLS INTERFACE ap_vld port=iq04
+#pragma HLS INTERFACE ap_vld port=iq05
+#pragma HLS INTERFACE ap_vld port=iq06
+#pragma HLS INTERFACE ap_vld port=iq07
+#pragma HLS INTERFACE ap_vld port=iq08
+#pragma HLS INTERFACE ap_vld port=iq09
+#pragma HLS INTERFACE ap_vld port=iq10
+#pragma HLS INTERFACE ap_vld port=iq11
+#pragma HLS INTERFACE ap_vld port=iq12
+#pragma HLS INTERFACE ap_vld port=iq13
+#pragma HLS INTERFACE ap_vld port=iq14
+#pragma HLS INTERFACE ap_vld port=iq15
+#pragma HLS INTERFACE ap_vld port=scale
+#pragma HLS INTERFACE axis register forward port=output
+#pragma HLS PIPELINE II=1
+#pragma HLS INTERFACE ap_ctrl_none port=return
+\\...
+```
+
+#### In: 
+- 16x 32b ports of complex signed words and associated valid lines.
+- 12b Scale overflow port
+
+#### Out: 
+- 512b AXI4S stream of 16 32b complex signed IQ words. TUSER contains the overflow status of the SSR FFT. TLAST is asserted every 256th beat, indicating the beat of the last OPFB bin in a full spectrum
+
+This block ingests the SSR FFT output and packages it into a single wide axis stream.
+
 
 ## Resonator Channelization
 The blocks here select 2048 IQ streams from the 4096 FFT IQ bins, digitally down-convert the IQs, and then lowpass and decimate (2:1) them. The selection is done by the [bin-to-res](https://github.com/MazinLab/bin-to-res) (pipelined II=1, ap_ctrl_none, flat, axilite port for resmap) and the DDC by the [resonator-ddc](https://github.com/MazinLab/resonator-dds) (git repo is a misnomer) block (ap_ctl_none, pipelined ii=1, pipelined subfunctions, axilite port for tone control).
