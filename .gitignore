@@ -25,7 +25,8 @@ b2rcaptest/
 
 # test system projects
 rfdc_test_prj/
-opfb_test_prj/
+opfb_dac_loopback_prj/
+opfb_rfdc_loopback_prj/
 reschan_test_prj/
 gen3_top_prj/
 triggertest/
