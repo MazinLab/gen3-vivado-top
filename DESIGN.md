@@ -99,7 +99,7 @@ The FIR outputs are merged with an axis combiner, fed through the [opfb-fir-to-f
 #### In:
 - 256b AXI4S of 8 16b signed I words @ 512MHz
 - 256b AXI4S of 8 16b signed Q words @ 512MHz
-- reset
+- aresetn
 - clock, 512MHz, synchronous to the ADC I & Q datastreams
 
 #### Out:
@@ -119,8 +119,7 @@ The FIR outputs are merged with an axis combiner, fed through the [opfb-fir-to-f
   - pkg_fft_output
 
 #### Utilization:
-- for 8 taps: 256 (FIR) + 144 (FFT) DSP48
-- for 4 taps: ~17% LUT (20% or LUTRAM) 6% FF, 0.7% BRAM, 3.5% DSPs
+TODO
 
 
 ### adc-to-opfb
@@ -185,123 +184,137 @@ The FFT is done by the Xilinx Vector FFT from the SSR Blockset for System Genera
 
 ### pkg-fft-output 
 ```cpp
-typedef unsigned int iq_t;
-
-void pkg_fft_output(iq_t iq00, iq_t iq01, iq_t iq02, iq_t iq03, iq_t iq04, iq_t iq05, iq_t iq06, iq_t iq07, iq_t iq08, iq_t iq09, iq_t iq10, iq_t iq11, iq_t iq12, iq_t iq13, iq_t iq14, iq_t iq15, ap_uint<12> scale, hls::stream<ap_axiu<512,16,0,0>> &output) {
-#pragma HLS INTERFACE ap_vld port=iq00
-#pragma HLS INTERFACE ap_vld port=iq01
-#pragma HLS INTERFACE ap_vld port=iq02
-#pragma HLS INTERFACE ap_vld port=iq03
-#pragma HLS INTERFACE ap_vld port=iq04
-#pragma HLS INTERFACE ap_vld port=iq05
-#pragma HLS INTERFACE ap_vld port=iq06
-#pragma HLS INTERFACE ap_vld port=iq07
-#pragma HLS INTERFACE ap_vld port=iq08
-#pragma HLS INTERFACE ap_vld port=iq09
-#pragma HLS INTERFACE ap_vld port=iq10
-#pragma HLS INTERFACE ap_vld port=iq11
-#pragma HLS INTERFACE ap_vld port=iq12
-#pragma HLS INTERFACE ap_vld port=iq13
-#pragma HLS INTERFACE ap_vld port=iq14
-#pragma HLS INTERFACE ap_vld port=iq15
+void pkg_fft_output(unsigned int iq[N_LANES], scale_t scale, hls::stream<ap_axiu<512,16,0,0>> &output) {
+#pragma HLS INTERFACE ap_vld port=iq
 #pragma HLS INTERFACE ap_vld port=scale
 #pragma HLS INTERFACE axis register forward port=output
+#pragma HLS ARRAY_PARTITION variable=iq type=complete
 #pragma HLS PIPELINE II=1
 #pragma HLS INTERFACE ap_ctrl_none port=return
 \\...
 ```
 
 #### In: 
-- 16x 32b ports of complex signed words and associated valid lines.
-- 12b Scale overflow port
+- 16x 32b ports of complex signed IQ words and associated valid lines
+- 12b scale overflow port
 
 #### Out: 
-- 512b AXI4S stream of 16 32b complex signed IQ words. TUSER contains the overflow status of the SSR FFT. TLAST is asserted every 256th beat, indicating the beat of the last OPFB bin in a full spectrum
+- 512b AXI4S stream of 16 32b complex signed IQ words equipped with TLAST and TUSER.
 
-This block ingests the SSR FFT output and packages it into a single wide axis stream.
+This block ingests the SSR FFT output and packages it into a single wide axis stream. Any backpressure applied to this core WILL cause the OPFB output stream to irreparably lose synchronization, **it is therefore advised to explicitly tie TREADY high**. TUSER contains the overflow status of the SSR FFT. TLAST is asserted every 256th beat, indicating the beat of the last OPFB bin in a full spectrum
 
 
 ## Resonator Channelization
-The blocks here select 2048 IQ streams from the 4096 FFT IQ bins, digitally down-convert the IQs, and then lowpass and decimate (2:1) them. The selection is done by the [bin-to-res](https://github.com/MazinLab/bin-to-res) (pipelined II=1, ap_ctrl_none, flat, axilite port for resmap) and the DDC by the [resonator-ddc](https://github.com/MazinLab/resonator-dds) (git repo is a misnomer) block (ap_ctl_none, pipelined ii=1, pipelined subfunctions, axilite port for tone control).
+The resonator channelization stage creates a resonator channel axi4s stream of 2048 IQ streams, grouped in 8s and temporallly muxed from the stream of 4096 FFT IQ bins. It digitally down-converts on a per-channel basis, low-pass filters, and decimates (2:1) each. The result is 2048 resonator channels with . Selection is done by [bin-to-res](https://github.com/MazinLab/bin-to-res), DDC by the [resonator-ddc](https://github.com/MazinLab/resonator-dds) (git repo is a misnomer, TODO) block, and filtering+decimationn by an FIR Compiler core. At present this FIR core is one of the largest resource offenders of the entire design even though its purpose it to merely prevent phase wraps, be ~3dB flat in 500 kHz, and move from a 2MHz to 1MHz sample rate.   
 
+#### Hierarchy: 
+1. [bin-to-res](https://github.com/MazinLab/bin-to-res)
+2. broadcast to debug capture
+3. [resonator-ddc](https://github.com/MazinLab/resonator-dds)
+4. broadcast to debug capture
+5. Xilinx FIR Compiler Core, 256 channel 16 parallel path mode, single coefficient set
+6. broadcast to debug capture
 
-Hierarchy: photon_pipe/reschan/
-- bin_to_res
-- broadcast to debug capture
-- resonator_ddc
-- broadcast to debug capture
-- lowpass fir
-- broadcast to debug capture
+#### In:
+- 512b AXI4S of 16 32b complex numbers, with TLAST indicating beat containing final OPFB bin
+- AXI-Lite Control Port
+- aresetn 
+- clock, 512MHz, synchronous to the ADC I & Q datastreams
 
-
-Inputs: 
-- 512b AXI4S of 16 16b complex numbers, with TLAST
-- AXI-Lite resonator map port
-- AXI-Lite resonator tone port
-
-Outputs:
+#### Out:
 - 256b AXI4S of 8 16b complex, with TLAST, TUSER (group), valid every other clock (256MHz data @ 512MHz)
 - AXI4S debug streams for capturing raw ADC IQ and DDCd IQs
 
-Utilization: TODO
+#### Utilization:
+TODO
+
+### bin-to-res
+```cpp
+void bin_to_res(hls::stream<ap_axiu<512,0,0,0>> &iq_stream, hls::stream<ap_axiu<256,8,0,0>> &res_stream, ap_uint<12*N_RES_PCLK> rid_to_bin[256]) {
+#pragma HLS PIPELINE II=1 style=frp
+#pragma HLS INTERFACE axis register port=iq_stream
+#pragma HLS INTERFACE axis register port=res_stream
+#pragma HLS INTERFACE s_axilite port=rid_to_bin name=resmap bundle=control
+#pragma HLS INTERFACE ap_ctrl_none port=return
+\\...
+```
+
+#### In:
+- 512b AXI4S of 16 32b complex IQ words, equipped with TLAST
+- AXI-Lite resonator channel to OPFB bin mapping port, an ap_uint<12*8> 256 element array
+
+#### Out:
+- 256b AXI4S of 8 32b complex IQ words, equipped with TLAST and TUSER
+
+[Bin-to-res](https://github.com/MazinLab/opfb-bin-to-res) ingests the IQ bins output by the
+OPFB subsystem and caches them into eight identical independent caches consisting of one full 4096 point OPFB spectrum each. It extracts 8 cached IQ values per the mapping each beat, combining these and outputting as a single TDM stream of the corresponding to resonators. Caches are implemented as 8 banks of ~131kb BRAMs in order to have sufficient memory ports. The bin mapping is a 96b x 256 entry LUT loaded in from python via AXI Lite. Each 96b word specifies the 8 OPFB bin addresses used to drive the resonator channels of the corresponding group, e.g. bits 12-23 of word 2 specify the OPFB bin for resonator channel 17 (8*2+1). 
+
+TLAST is asserted every 256th beat and TUSER contains the group number. For any beat the resonator channels on TDATA are 8*TUSER to 8*(TUSER+1)-1, least to most significant bit. The cache write address is reset to 0 every inbound TLAST to ensure that should the core ever stall due to backpressure the resonator outputs will be out of sync for at most one full OPFB spectrum.
+
+### resonator-ddc
+```cpp
+#define N_TONEBITS 11
+#define N_P0BITS 21
+
+typedef struct tone_t {
+  ap_fixed<N_TONEBITS, 1, AP_RND_CONV, AP_WRAP> inc;
+  ap_fixed<N_P0BITS, 1, AP_RND_CONV, AP_WRAP> phase0; //-1-1 wrap
+} tone_t;
+
+typedef ap_uint<(N_P0BITS+N_TONEBITS)*N_RES_PCLK> tonegroup_t;  // 8 tone_t
+
+void resonator_dds(hls::stream<ap_axiu<256,8,0,0>> &res_in, hls::stream<ap_axiu<256,8,0,0>> &res_out, tonegroup_t tones[N_RES_GROUPS]) {
+#pragma HLS INTERFACE ap_ctrl_none port=return
+#pragma HLS INTERFACE s_axilite port=tones
+#pragma HLS INTERFACE axis port=res_in register
+#pragma HLS INTERFACE axis port=res_out register
+#pragma HLS PIPELINE II=1
+\\...
+```
+
+#### In:                 
+- 256b AXI4S of 8 32b complex IQ equipped with TLAST and TUSER
+  - The core treats IQ values as equivalent to `complex<ap_fixed<16, -9, AP_RND_CONV, AP_SAT_SYM>>`
+- AXI-Lite Control Port for DDC tone control LUT
+
+#### Out:
+- 256b AXI4S of 8 32b complex IQ (down-converted) equipped with TLAST and TUSER
+  - Values are packed as equivalent to `complex<ap_fixed<16, -7, AP_RND_CONV, AP_SAT_SYM>>`
+
+The [resonator-ddc](https://github.com/MazinLab/resonator-dds) core maintains an internal phase accumulator for each resonator channel, incrementing it by the channel's tone increment and offsetting it by the channel's phase offset (rotate loops in lab parlance). The accumulator value is then used to query a quarter-wave sin/cos LUTs stored in with the core ROM. The result is neither dithered nor Taylor corrected, though there is example Xilinx HLS code for how to implement those features. The resulting sin/cos values are fed into a Xilinx complex multiplier (3 DSP slices per IQ, 24 in total) and the results passed out of the block. The tone LUT consists of packed tone increments `ap_fixed<N_TONEBITS, 1, AP_RND_CONV, AP_WRAP>` and offsets `ap_fixed<N_P0BITS, 1, AP_RND_CONV, AP_WRAP>`. The python driver and helpers in `mkidgen3.drivers.ddc.DDC.tones` and `mkidgen3.configure_ddc` have details. 
+
+**Because this core uses an internal stream counter in its present form it is not robust to back-pressure**. Switching to a counter that resets on inbound TLAST or no counter and use of TUSER would both alleviate this issue but have timing and structure implications that would need to be tested.
+
+### FIR Compiler Core
+The low-pass FIR is configured for 256 channel, 16 parallel channel (8I, 8Q) operation with 20 taps and 16b sample width. It is configured for a decimation of 2, dropping the sample rate to 1 MHZ. This core is a significant fraction of the entire designs utilization.
+
+## Phase
+The phase subsystem uses a bank of 4 Xilinx Cordic blocks in between an axis broadcaster and combiner.
+
+#### Hierarchy: 
+1. data width converter
+2. broadcast to 4 substreams
+3. 4x Xilinx Cordic cores in arctan mode
+4. axis combiner
+5. [attach_user]((https://github.com/MazinLab/phase-user-attach) 
+
+#### In:
+- 256b AXI4S of 8 32b complex numbers valid every other clock (256MHz data @ 512MHz)
+- aresetn 
+- clock, 512MHz, synchronous to the ADC I & Q datastreams
+
+#### Out:
+- 64b AXI4S of 4 16b phases, with TLAST and TUSER (group)
+
+#### Utilization:
+TODO
 
 
-
-#### opfb-bin-to-res Selection
-Inputs: 
-- 2 288bit AXI4S of 16 18 bit numbers (I and Q streams), both equipped with TLAST
-- AXI-Lite resonator map port (256x8 ap_uint<12> array).
-
-Outputs:
-- 1 288bit AXI4S of 8 18 bit complex equipped with TLAST and possibly (TODO) TKEEP
-
-The resonator selection [HLS block](https://github.com/MazinLab/opfb-bin-to-res) ingests the IQ bins output by the
-OPFB subsystem and extracts and outputs the IQ values corresponding to resonators. This is done by caching the bin
-spectrum (updating the next 16 bins each clock) and fetching 8 bins containing resonators each clock. This is
-implemented as 8 banks of ~147kbit BRAM in order to have sufficient memory ports. The bins used are stored in a bin
-to resonator LUT (2048 x 12 bits) loaded in from python via AXI Lite. 
-
-####  resonator-dds
-Inputs: 
-- 1 288bit AXI4S of 8 18 bit complex equipped with TLAST and possibly (TODO) TKEEP or TUSER
-- Quarter wave SIN/COS LUT of length... This is implemented in ROM and sized to support 8 simultaneous reads.
-- Resonator frequency table stored as a phase increment LUT.
-- Resonator phase shift table stored as a phase zero.
-
-Outputs:
-- 1 288bit AXI4S of 8 18 bit complex equipped with TLAST and possibly (TODO) TKEEP
-
-Utilization:
-- 24 DSP48
-
-The HLS block uses the TLAST on the inbound stream to keep track of the cycle and query phase and phase increment
-LUTs for the received group of resonators. These are used increment/maintain an accumulated phase for each resonator
-which is used to query a quarter-wave sin/cos LUT (stored in ROM). Phase offsets are used to apply a per-resonator 
-phase shift (rotate loops in gen2 parlance). Presently the result is neither dithered nor Taylor corrected, however
-there is example Xilinx HLS code for how to implement those features as well. The resulting sin/cos values are fed 
-into a Xilinx complex multiplier (3 DSP slices per IQ, 24 in total) and the results passed out of the block.
-
-#### FIR Core
-Utilization:
-- 320 (or 240) 
-
-The fir is configured for 256 channel, 16 parallel channel (8I, 8Q) operation with 20 taps and 18 bit IO. It is
-configured for a decimation of 2, dropping the sample rate to 1 MHZ. This takes ~320 DSP slices, though the core
-itself should be able to run at ~820MHz, so with a clock crossing we could run with 8 to 6 to 8 lanes for a total of
-240 DSP slices.
-
-
-##### FIR block and HLS channel config
-- 200 DSP slices, 138 if FIR at 768MHz (assuming 50/51 taps)
-
+## Phasematch
 The FIR is configured for 256 channel operation with 51 taps for 256 reloadable coefficient sets and 18 bit IO
 It is configured to operate at 768 MHz and for by channel coefficient operation. This takes 17 DSP slices. The
 channel configuration is streamed in 0,1,2,3... from a simple VHDL block. The reload channel is an input to the
 subsystem. TUSER is passed through.
-
-## Phase
-
-## Phasematch
 
 ## Trigger
 
