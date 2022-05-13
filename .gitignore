@@ -29,4 +29,5 @@ opfb_dac_loopback_prj/
 opfb_rfdc_loopback_prj/
 reschan_test_prj/
 gen3_top_prj/
+fccm22_demo_prj/
 triggertest/

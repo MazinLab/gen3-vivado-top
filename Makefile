@@ -2,9 +2,11 @@
 
 origin_dir := .
 
-all: opfb_dac_loopback opfb_rfdc_loopback rfdc_test reschan_test gen3_top
+all: fccm22_demo opfb_dac_loopback opfb_rfdc_loopback rfdc_test reschan_test gen3_top
 
 
+fccm22_demo:
+	cd $(origin_dir)/tests/fccm22_demo; vivado -mode batch -nojou -nolog -source ./write_prj.tcl
 opfb_dac_loopback:
 	cd $(origin_dir)/tests/opfb_dac_loopback; vivado -mode batch -nojou -nolog -source ./write_prj.tcl
 opfb_rfdc_loopback:
