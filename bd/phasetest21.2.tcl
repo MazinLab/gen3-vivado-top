@@ -155,7 +155,7 @@ xilinx.com:ip:axi_register_slice:2.1\
 xilinx.com:ip:axis_data_fifo:2.0\
 xilinx.com:ip:axis_switch:1.1\
 mazinlab:mkidgen3:capture_upsizer:0.5\
-mazinlab:mkidgen3:adc_to_opfb:1.31\
+mazinlab:mkidgen3:adc_to_opfb:1.32\
 mazinlab:mkidgen3:fir_to_fft:1.31\
 mazinlab:mkidgen3:attach_user:0.1\
 xilinx.com:ip:axis_combiner:1.1\
@@ -1402,7 +1402,9 @@ proc create_hier_cell_fft { parentCell nameHier } {
   # Create instance: axis_register_slice_1, and set properties
   set axis_register_slice_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_register_slice:1.1 axis_register_slice_1 ]
   set_property -dict [ list \
+   CONFIG.HAS_TKEEP {0} \
    CONFIG.HAS_TREADY {0} \
+   CONFIG.HAS_TSTRB {0} \
  ] $axis_register_slice_1
 
   # Create instance: fftscale, and set properties
@@ -2174,7 +2176,7 @@ proc create_hier_cell_opfb { parentCell nameHier } {
   create_bd_pin -dir I -type rst ap_rst_n
 
   # Create instance: adc_to_opfb_0, and set properties
-  set adc_to_opfb_0 [ create_bd_cell -type ip -vlnv mazinlab:mkidgen3:adc_to_opfb:1.31 adc_to_opfb_0 ]
+  set adc_to_opfb_0 [ create_bd_cell -type ip -vlnv mazinlab:mkidgen3:adc_to_opfb:1.32 adc_to_opfb_0 ]
 
   # Create instance: fft
   create_hier_cell_fft $hier_obj fft
@@ -2206,13 +2208,13 @@ proc create_hier_cell_opfb { parentCell nameHier } {
   current_bd_instance $oldCurInst
 }
 
-# Hierarchical cell: Switchboard
-proc create_hier_cell_Switchboard { parentCell nameHier } {
+# Hierarchical cell: switchboard
+proc create_hier_cell_switchboard { parentCell nameHier } {
 
   variable script_folder
 
   if { $parentCell eq "" || $nameHier eq "" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2092 -severity "ERROR" "create_hier_cell_Switchboard() - Empty argument(s)!"}
+     catch {common::send_gid_msg -ssname BD::TCL -id 2092 -severity "ERROR" "create_hier_cell_switchboard() - Empty argument(s)!"}
      return
   }
 
@@ -3246,7 +3248,9 @@ proc create_hier_cell_photon_pipe { parentCell nameHier } {
   # Create instance: axis_register_slice_0, and set properties
   set axis_register_slice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_register_slice:1.1 axis_register_slice_0 ]
   set_property -dict [ list \
+   CONFIG.HAS_TKEEP {0} \
    CONFIG.HAS_TREADY {0} \
+   CONFIG.HAS_TSTRB {0} \
  ] $axis_register_slice_0
 
   # Create instance: axis_register_slice_1, and set properties
@@ -3396,9 +3400,6 @@ proc create_hier_cell_capture { parentCell nameHier } {
   # Create instance: JebConnect
   create_hier_cell_JebConnect $hier_obj JebConnect
 
-  # Create instance: Switchboard
-  create_hier_cell_Switchboard $hier_obj Switchboard
-
   # Create instance: axi_interconnect_0, and set properties
   set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
   set_property -dict [ list \
@@ -3407,13 +3408,13 @@ proc create_hier_cell_capture { parentCell nameHier } {
    CONFIG.XBAR_DATA_WIDTH {32} \
  ] $axi_interconnect_0
 
-  # Create instance: axis2mm_0, and set properties
+  # Create instance: axis2mm, and set properties
   set block_name axis2mm
-  set block_cell_name axis2mm_0
-  if { [catch {set axis2mm_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+  set block_cell_name axis2mm
+  if { [catch {set axis2mm [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
-   } elseif { $axis2mm_0 eq "" } {
+   } elseif { $axis2mm eq "" } {
      catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
@@ -3421,11 +3422,11 @@ proc create_hier_cell_capture { parentCell nameHier } {
    CONFIG.LGFIFO {8} \
    CONFIG.LGLEN {33} \
    CONFIG.OPT_AXIS_SKIDREGISTER {1} \
- ] $axis2mm_0
+ ] $axis2mm
 
   set_property -dict [ list \
    CONFIG.FREQ_HZ {256000000} \
- ] [get_bd_intf_pins /capture/axis2mm_0/M_AXI]
+ ] [get_bd_intf_pins /capture/axis2mm/M_AXI]
 
   # Create instance: axis_register_slice_0, and set properties
   set axis_register_slice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_register_slice:1.1 axis_register_slice_0 ]
@@ -3474,6 +3475,9 @@ proc create_hier_cell_capture { parentCell nameHier } {
   # Create instance: pair_iq_0, and set properties
   set pair_iq_0 [ create_bd_cell -type ip -vlnv mazinlab:mkidgen3:pair_iq:0.4 pair_iq_0 ]
 
+  # Create instance: switchboard
+  create_hier_cell_switchboard $hier_obj switchboard
+
   # Create instance: xlconstant_0, and set properties
   set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
   set_property -dict [ list \
@@ -3492,34 +3496,34 @@ proc create_hier_cell_capture { parentCell nameHier } {
   connect_bd_intf_net -intf_net Conn3 [get_bd_intf_pins control] [get_bd_intf_pins axi_interconnect_0/S00_AXI]
   connect_bd_intf_net -intf_net Conn4 [get_bd_intf_pins phase0] [get_bd_intf_pins filter_phase_0/instream]
   connect_bd_intf_net -intf_net S03_AXI_1 [get_bd_intf_pins S_DDR_AXI] [get_bd_intf_pins JebConnect/S01_AXI]
-  connect_bd_intf_net -intf_net Switchboard_M_AXIS [get_bd_intf_pins Switchboard/M_AXIS] [get_bd_intf_pins axis2mm_0/S_AXIS]
-  connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_pins axi_interconnect_0/M00_AXI] [get_bd_intf_pins axis2mm_0/S_AXIL]
-  connect_bd_intf_net -intf_net axi_interconnect_0_M01_AXI [get_bd_intf_pins Switchboard/S_AXI_CTRL] [get_bd_intf_pins axi_interconnect_0/M01_AXI]
+  connect_bd_intf_net -intf_net Switchboard_M_AXIS [get_bd_intf_pins axis2mm/S_AXIS] [get_bd_intf_pins switchboard/M_AXIS]
+  connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_pins axi_interconnect_0/M00_AXI] [get_bd_intf_pins axis2mm/S_AXIL]
+  connect_bd_intf_net -intf_net axi_interconnect_0_M01_AXI [get_bd_intf_pins axi_interconnect_0/M01_AXI] [get_bd_intf_pins switchboard/S_AXI_CTRL]
   connect_bd_intf_net -intf_net axi_interconnect_0_M02_AXI [get_bd_intf_pins axi_interconnect_0/M02_AXI] [get_bd_intf_pins filter_iq_0/s_axi_control]
   connect_bd_intf_net -intf_net axi_interconnect_0_M03_AXI [get_bd_intf_pins axi_interconnect_0/M03_AXI] [get_bd_intf_pins filter_iq_1/s_axi_control]
   connect_bd_intf_net -intf_net axi_interconnect_0_M04_AXI [get_bd_intf_pins axi_interconnect_0/M04_AXI] [get_bd_intf_pins filter_phase_0/s_axi_control]
   connect_bd_intf_net -intf_net axi_interconnect_0_M05_AXI [get_bd_intf_pins axi_interconnect_0/M05_AXI] [get_bd_intf_pins filter_phase_1/s_axi_control]
   connect_bd_intf_net -intf_net axi_smc_M00_AXI [get_bd_intf_pins JebConnect/M_AXI] [get_bd_intf_pins ddr4_0/C0_DDR4_S_AXI]
-  connect_bd_intf_net -intf_net axis2mm_0_M_AXI [get_bd_intf_pins JebConnect/S00_AXI] [get_bd_intf_pins axis2mm_0/M_AXI]
+  connect_bd_intf_net -intf_net axis2mm_0_M_AXI [get_bd_intf_pins JebConnect/S00_AXI] [get_bd_intf_pins axis2mm/M_AXI]
   connect_bd_intf_net -intf_net axis_register_slice_0_M_AXIS [get_bd_intf_pins axis_register_slice_0/M_AXIS] [get_bd_intf_pins pair_iq_0/i_in_V]
   connect_bd_intf_net -intf_net axis_register_slice_1_M_AXIS [get_bd_intf_pins axis_register_slice_1/M_AXIS] [get_bd_intf_pins pair_iq_0/q_in_V]
-  connect_bd_intf_net -intf_net filter_iq_0_outstream [get_bd_intf_pins Switchboard/S01_AXIS] [get_bd_intf_pins filter_iq_0/outstream]
-  connect_bd_intf_net -intf_net filter_iq_1_outstream [get_bd_intf_pins Switchboard/S02_AXIS] [get_bd_intf_pins filter_iq_1/outstream]
-  connect_bd_intf_net -intf_net filter_phase_0_outstream [get_bd_intf_pins Switchboard/S03_AXIS] [get_bd_intf_pins filter_phase_0/outstream]
-  connect_bd_intf_net -intf_net filter_phase_1_outstream [get_bd_intf_pins Switchboard/S04_AXIS] [get_bd_intf_pins filter_phase_1/outstream]
+  connect_bd_intf_net -intf_net filter_iq_0_outstream [get_bd_intf_pins filter_iq_0/outstream] [get_bd_intf_pins switchboard/S01_AXIS]
+  connect_bd_intf_net -intf_net filter_iq_1_outstream [get_bd_intf_pins filter_iq_1/outstream] [get_bd_intf_pins switchboard/S02_AXIS]
+  connect_bd_intf_net -intf_net filter_phase_0_outstream [get_bd_intf_pins filter_phase_0/outstream] [get_bd_intf_pins switchboard/S03_AXIS]
+  connect_bd_intf_net -intf_net filter_phase_1_outstream [get_bd_intf_pins filter_phase_1/outstream] [get_bd_intf_pins switchboard/S04_AXIS]
   connect_bd_intf_net -intf_net iq0_1 [get_bd_intf_pins iq0] [get_bd_intf_pins filter_iq_0/instream]
   connect_bd_intf_net -intf_net iq1_1 [get_bd_intf_pins iq1] [get_bd_intf_pins filter_iq_1/instream]
-  connect_bd_intf_net -intf_net pair_iq_0_out_r [get_bd_intf_pins Switchboard/S00_AXIS] [get_bd_intf_pins pair_iq_0/out_r]
+  connect_bd_intf_net -intf_net pair_iq_0_out_r [get_bd_intf_pins pair_iq_0/out_r] [get_bd_intf_pins switchboard/S00_AXIS]
   connect_bd_intf_net -intf_net phase1_1 [get_bd_intf_pins phase1] [get_bd_intf_pins filter_phase_1/instream]
   connect_bd_intf_net -intf_net raw_i_1 [get_bd_intf_pins raw_i] [get_bd_intf_pins axis_register_slice_0/S_AXIS]
   connect_bd_intf_net -intf_net raw_q_1 [get_bd_intf_pins raw_q] [get_bd_intf_pins axis_register_slice_1/S_AXIS]
 
   # Create port connections
-  connect_bd_net -net Net [get_bd_pins pipe_clk] [get_bd_pins Switchboard/pipe_clk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M01_ACLK] [get_bd_pins axi_interconnect_0/M02_ACLK] [get_bd_pins axi_interconnect_0/M03_ACLK] [get_bd_pins axi_interconnect_0/M04_ACLK] [get_bd_pins axi_interconnect_0/M05_ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axis_register_slice_0/aclk] [get_bd_pins axis_register_slice_1/aclk] [get_bd_pins filter_iq_0/ap_clk] [get_bd_pins filter_iq_1/ap_clk] [get_bd_pins filter_phase_0/ap_clk] [get_bd_pins filter_phase_1/ap_clk] [get_bd_pins pair_iq_0/ap_clk]
-  connect_bd_net -net Net1 [get_bd_pins axis2mm_clk] [get_bd_pins JebConnect/m_axis_aclk] [get_bd_pins Switchboard/axis2mm_clk] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axis2mm_0/S_AXI_ACLK]
-  connect_bd_net -net Net2 [get_bd_pins axis2mm_aresetn] [get_bd_pins JebConnect/S_AXI_ARESETN] [get_bd_pins Switchboard/axis2mm_aresetn] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axis2mm_0/S_AXI_ARESETN]
-  connect_bd_net -net ap_rst_n_1 [get_bd_pins pipe_aresetn] [get_bd_pins Switchboard/pipe_aresetn] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/M01_ARESETN] [get_bd_pins axi_interconnect_0/M02_ARESETN] [get_bd_pins axi_interconnect_0/M03_ARESETN] [get_bd_pins axi_interconnect_0/M04_ARESETN] [get_bd_pins axi_interconnect_0/M05_ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn] [get_bd_pins filter_iq_0/ap_rst_n] [get_bd_pins filter_iq_1/ap_rst_n] [get_bd_pins filter_phase_0/ap_rst_n] [get_bd_pins filter_phase_1/ap_rst_n] [get_bd_pins pair_iq_0/ap_rst_n]
-  connect_bd_net -net axis2mm_0_o_int [get_bd_pins o_int] [get_bd_pins axis2mm_0/o_int]
+  connect_bd_net -net Net [get_bd_pins pipe_clk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M01_ACLK] [get_bd_pins axi_interconnect_0/M02_ACLK] [get_bd_pins axi_interconnect_0/M03_ACLK] [get_bd_pins axi_interconnect_0/M04_ACLK] [get_bd_pins axi_interconnect_0/M05_ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axis_register_slice_0/aclk] [get_bd_pins axis_register_slice_1/aclk] [get_bd_pins filter_iq_0/ap_clk] [get_bd_pins filter_iq_1/ap_clk] [get_bd_pins filter_phase_0/ap_clk] [get_bd_pins filter_phase_1/ap_clk] [get_bd_pins pair_iq_0/ap_clk] [get_bd_pins switchboard/pipe_clk]
+  connect_bd_net -net Net1 [get_bd_pins axis2mm_clk] [get_bd_pins JebConnect/m_axis_aclk] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axis2mm/S_AXI_ACLK] [get_bd_pins switchboard/axis2mm_clk]
+  connect_bd_net -net Net2 [get_bd_pins axis2mm_aresetn] [get_bd_pins JebConnect/S_AXI_ARESETN] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axis2mm/S_AXI_ARESETN] [get_bd_pins switchboard/axis2mm_aresetn]
+  connect_bd_net -net ap_rst_n_1 [get_bd_pins pipe_aresetn] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/M01_ARESETN] [get_bd_pins axi_interconnect_0/M02_ARESETN] [get_bd_pins axi_interconnect_0/M03_ARESETN] [get_bd_pins axi_interconnect_0/M04_ARESETN] [get_bd_pins axi_interconnect_0/M05_ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn] [get_bd_pins filter_iq_0/ap_rst_n] [get_bd_pins filter_iq_1/ap_rst_n] [get_bd_pins filter_phase_0/ap_rst_n] [get_bd_pins filter_phase_1/ap_rst_n] [get_bd_pins pair_iq_0/ap_rst_n] [get_bd_pins switchboard/pipe_aresetn]
+  connect_bd_net -net axis2mm_0_o_int [get_bd_pins o_int] [get_bd_pins axis2mm/o_int]
   connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_pins c0_ddr4_ui_clk2] [get_bd_pins JebConnect/c0_ddr4_ui_clk2] [get_bd_pins ddr4_0/c0_ddr4_ui_clk]
   connect_bd_net -net xlconstant_0_dout [get_bd_pins ddr4_0/sys_rst] [get_bd_pins xlconstant_0/dout]
   connect_bd_net -net xlconstant_1_dout [get_bd_pins JebConnect/dout] [get_bd_pins ddr4_0/c0_ddr4_aresetn] [get_bd_pins xlconstant_1/dout]
@@ -3671,11 +3675,11 @@ proc create_root_design { parentCell } {
   # Create instance: capture
   create_hier_cell_capture [current_bd_instance .] capture
 
-  # Create instance: dac_table_axim_0, and set properties
-  set dac_table_axim_0 [ create_bd_cell -type ip -vlnv mazinlab:mkidgen3:dac_table_axim:1.33 dac_table_axim_0 ]
+  # Create instance: dac_table, and set properties
+  set dac_table [ create_bd_cell -type ip -vlnv mazinlab:mkidgen3:dac_table_axim:1.33 dac_table ]
   set_property -dict [ list \
    CONFIG.C_M_AXI_GMEM_DATA_WIDTH {128} \
- ] $dac_table_axim_0
+ ] $dac_table
 
   # Create instance: photon_pipe
   create_hier_cell_photon_pipe [current_bd_instance .] photon_pipe
@@ -5310,13 +5314,13 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_intf_net -intf_net axis_broadcaster_1_M01_AXIS [get_bd_intf_pins axis_broadcaster_1/M01_AXIS] [get_bd_intf_pins capture/raw_q]
   connect_bd_intf_net -intf_net capture_ddr4_sdram_075 [get_bd_intf_ports ddr4_sdram_075] [get_bd_intf_pins capture/ddr4_sdram_075]
   connect_bd_intf_net -intf_net dac1_clk_1 [get_bd_intf_ports dac1_clk] [get_bd_intf_pins rfdc/dac1_clk]
-  connect_bd_intf_net -intf_net dac_table_axim_0_iout [get_bd_intf_pins dac_table_axim_0/iout] [get_bd_intf_pins rfdc/s00_axis]
-connect_bd_intf_net -intf_net [get_bd_intf_nets dac_table_axim_0_iout] [get_bd_intf_pins dac_table_axim_0/iout] [get_bd_intf_pins system_ila_0/SLOT_0_AXIS]
+  connect_bd_intf_net -intf_net dac_table_axim_0_iout [get_bd_intf_pins dac_table/iout] [get_bd_intf_pins rfdc/s00_axis]
+connect_bd_intf_net -intf_net [get_bd_intf_nets dac_table_axim_0_iout] [get_bd_intf_pins dac_table/iout] [get_bd_intf_pins system_ila_0/SLOT_0_AXIS]
   set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_intf_nets dac_table_axim_0_iout]
-  connect_bd_intf_net -intf_net dac_table_axim_0_m_axi_gmem [get_bd_intf_pins dac_table_axim_0/m_axi_gmem] [get_bd_intf_pins zynq_ultra_ps_e_0/S_AXI_HP0_FPD]
+  connect_bd_intf_net -intf_net dac_table_axim_0_m_axi_gmem [get_bd_intf_pins dac_table/m_axi_gmem] [get_bd_intf_pins zynq_ultra_ps_e_0/S_AXI_HP0_FPD]
 connect_bd_intf_net -intf_net [get_bd_intf_nets dac_table_axim_0_m_axi_gmem] [get_bd_intf_pins system_ila_0/SLOT_1_AXI] [get_bd_intf_pins zynq_ultra_ps_e_0/S_AXI_HP0_FPD]
   set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_intf_nets dac_table_axim_0_m_axi_gmem]
-  connect_bd_intf_net -intf_net dac_table_axim_0_qout [get_bd_intf_pins dac_table_axim_0/qout] [get_bd_intf_pins rfdc/s01_axis]
+  connect_bd_intf_net -intf_net dac_table_axim_0_qout [get_bd_intf_pins dac_table/qout] [get_bd_intf_pins rfdc/s01_axis]
   connect_bd_intf_net -intf_net default_sysclk1_300mhz_1 [get_bd_intf_ports default_sysclk1_300mhz] [get_bd_intf_pins capture/default_sysclk1_300mhz]
   connect_bd_intf_net -intf_net instream_1 [get_bd_intf_pins capture/iq0] [get_bd_intf_pins photon_pipe/RAWIQ_AXIS]
   connect_bd_intf_net -intf_net istream_V_1 [get_bd_intf_pins axis_broadcaster_0/M00_AXIS] [get_bd_intf_pins photon_pipe/istream_V]
@@ -5326,7 +5330,7 @@ connect_bd_intf_net -intf_net [get_bd_intf_nets dac_table_axim_0_m_axi_gmem] [ge
   connect_bd_intf_net -intf_net ps8_0_axi_periph_M00_AXI [get_bd_intf_pins axi_intc_0/s_axi] [get_bd_intf_pins ps8_0_axi_periph/M00_AXI]
   connect_bd_intf_net -intf_net ps8_0_axi_periph_M01_AXI [get_bd_intf_pins ps8_0_axi_periph/M01_AXI] [get_bd_intf_pins rfdc/s_axi]
   connect_bd_intf_net -intf_net ps8_0_axi_periph_M02_AXI [get_bd_intf_pins axi_interconnect_1/S00_AXI] [get_bd_intf_pins ps8_0_axi_periph/M02_AXI]
-  connect_bd_intf_net -intf_net ps8_0_axi_periph_M03_AXI [get_bd_intf_pins dac_table_axim_0/s_axi_control] [get_bd_intf_pins ps8_0_axi_periph/M03_AXI]
+  connect_bd_intf_net -intf_net ps8_0_axi_periph_M03_AXI [get_bd_intf_pins dac_table/s_axi_control] [get_bd_intf_pins ps8_0_axi_periph/M03_AXI]
   connect_bd_intf_net -intf_net ps8_0_axi_periph_M04_AXI [get_bd_intf_pins photon_pipe/reload_control] [get_bd_intf_pins ps8_0_axi_periph/M04_AXI]
   connect_bd_intf_net -intf_net rfdc_vout12 [get_bd_intf_ports vout12] [get_bd_intf_pins rfdc/vout12]
   connect_bd_intf_net -intf_net rfdc_vout13 [get_bd_intf_ports vout13] [get_bd_intf_pins rfdc/vout13]
@@ -5351,24 +5355,24 @@ connect_bd_intf_net -intf_net [get_bd_intf_nets dac_table_axim_0_m_axi_gmem] [ge
   connect_bd_net -net resets_never_reset_256 [get_bd_pins resets/never_reset_256] [get_bd_pins system_ila_0/resetn]
   connect_bd_net -net resets_never_reset_512_256 [get_bd_pins capture/axis2mm_aresetn] [get_bd_pins resets/never_reset_512_256]
   connect_bd_net -net resets_peripheral_aresetn_100 [get_bd_pins resets/peripheral_aresetn_100] [get_bd_pins rfdc/s_axi_aresetn]
-  connect_bd_net -net resets_peripheral_aresetn_256 [get_bd_pins dac_table_axim_0/ap_rst_n] [get_bd_pins ps8_0_axi_periph/M03_ARESETN] [get_bd_pins resets/peripheral_aresetn_256] [get_bd_pins rfdc/s1_axis_aresetn]
+  connect_bd_net -net resets_peripheral_aresetn_256 [get_bd_pins dac_table/ap_rst_n] [get_bd_pins ps8_0_axi_periph/M03_ARESETN] [get_bd_pins resets/peripheral_aresetn_256] [get_bd_pins rfdc/s1_axis_aresetn]
   connect_bd_net -net resets_peripheral_aresetn_512 [get_bd_pins resets/peripheral_aresetn_512] [get_bd_pins rfdc/m2_axis_aresetn]
   connect_bd_net -net rfdc_irq [get_bd_pins rfdc/irq] [get_bd_pins xlconcat_0/In0]
   connect_bd_net -net usp_rf_data_converter_0_clk_adc1 [get_bd_pins axi_intc_0/s_axi_aclk] [get_bd_pins axi_interconnect_1/S00_ACLK] [get_bd_pins axi_protocol_convert_0/aclk] [get_bd_pins photon_pipe/reload_aclk] [get_bd_pins ps8_0_axi_periph/ACLK] [get_bd_pins ps8_0_axi_periph/M00_ACLK] [get_bd_pins ps8_0_axi_periph/M01_ACLK] [get_bd_pins ps8_0_axi_periph/M02_ACLK] [get_bd_pins ps8_0_axi_periph/M04_ACLK] [get_bd_pins ps8_0_axi_periph/S00_ACLK] [get_bd_pins resets/slowest_sync_clk1] [get_bd_pins rfdc/s_axi_aclk] [get_bd_pins zynq_ultra_ps_e_0/maxihpm0_fpd_aclk] [get_bd_pins zynq_ultra_ps_e_0/pl_clk0]
-  connect_bd_net -net usp_rf_data_converter_0_clk_dac1 [get_bd_pins dac_table_axim_0/ap_clk] [get_bd_pins ps8_0_axi_periph/M03_ACLK] [get_bd_pins resets/slowest_sync_clk2] [get_bd_pins rfdc/clk_dac0] [get_bd_pins system_ila_0/clk] [get_bd_pins zynq_ultra_ps_e_0/saxihp0_fpd_aclk]
+  connect_bd_net -net usp_rf_data_converter_0_clk_dac1 [get_bd_pins dac_table/ap_clk] [get_bd_pins ps8_0_axi_periph/M03_ACLK] [get_bd_pins resets/slowest_sync_clk2] [get_bd_pins rfdc/clk_dac0] [get_bd_pins system_ila_0/clk] [get_bd_pins zynq_ultra_ps_e_0/saxihp0_fpd_aclk]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins axi_intc_0/intr] [get_bd_pins xlconcat_0/dout]
   connect_bd_net -net zynq_ultra_ps_e_0_pl_resetn0 [get_bd_pins resets/ext_reset_in] [get_bd_pins zynq_ultra_ps_e_0/pl_resetn0]
 
   # Create address segments
-  assign_bd_address -offset 0x000800000000 -range 0x000800000000 -target_address_space [get_bd_addr_spaces dac_table_axim_0/Data_m_axi_gmem] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_DDR_HIGH] -force
-  assign_bd_address -offset 0x00000000 -range 0x80000000 -target_address_space [get_bd_addr_spaces dac_table_axim_0/Data_m_axi_gmem] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_DDR_LOW] -force
-  assign_bd_address -offset 0xC0000000 -range 0x20000000 -target_address_space [get_bd_addr_spaces dac_table_axim_0/Data_m_axi_gmem] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_QSPI] -force
+  assign_bd_address -offset 0x000800000000 -range 0x000800000000 -target_address_space [get_bd_addr_spaces dac_table/Data_m_axi_gmem] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_DDR_HIGH] -force
+  assign_bd_address -offset 0x00000000 -range 0x80000000 -target_address_space [get_bd_addr_spaces dac_table/Data_m_axi_gmem] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_DDR_LOW] -force
+  assign_bd_address -offset 0xC0000000 -range 0x20000000 -target_address_space [get_bd_addr_spaces dac_table/Data_m_axi_gmem] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_QSPI] -force
   assign_bd_address -offset 0xA00E0000 -range 0x00001000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs photon_pipe/phasematch/reload/axi_fifo_mm_s_0/S_AXI/Mem0] -force
   assign_bd_address -offset 0xA0000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs axi_intc_0/S_AXI/Reg] -force
-  assign_bd_address -offset 0xA0030000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs capture/axis2mm_0/S_AXIL/reg0] -force
-  assign_bd_address -offset 0xA0040000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs capture/Switchboard/axis_switch_0/S_AXI_CTRL/Reg] -force
+  assign_bd_address -offset 0xA0030000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs capture/axis2mm/S_AXIL/reg0] -force
+  assign_bd_address -offset 0xA0040000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs capture/switchboard/axis_switch_0/S_AXI_CTRL/Reg] -force
   assign_bd_address -offset 0xA0070000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs photon_pipe/reschan/bin_to_res/s_axi_control/Reg] -force
-  assign_bd_address -offset 0xA0060000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs dac_table_axim_0/s_axi_control/Reg] -force
+  assign_bd_address -offset 0xA0060000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs dac_table/s_axi_control/Reg] -force
   assign_bd_address -offset 0x000500000000 -range 0x000100000000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs capture/ddr4_0/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] -force
   assign_bd_address -offset 0xA00F0000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs photon_pipe/opfb/fft/fftscale/S_AXI/Reg] -force
   assign_bd_address -offset 0xA0010000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs capture/filter_iq_0/s_axi_control/Reg] -force
@@ -5377,16 +5381,15 @@ connect_bd_intf_net -intf_net [get_bd_intf_nets dac_table_axim_0_m_axi_gmem] [ge
   assign_bd_address -offset 0xA00D0000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs capture/filter_phase_1/s_axi_control/Reg] -force
   assign_bd_address -offset 0xA00C0000 -range 0x00010000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs photon_pipe/reschan/resonator_ddc/s_axi_control/Reg] -force
   assign_bd_address -offset 0xA0080000 -range 0x00040000 -target_address_space [get_bd_addr_spaces zynq_ultra_ps_e_0/Data] [get_bd_addr_segs rfdc/usp_rf_data_converter_0/s_axi/Reg] -force
-  assign_bd_address -offset 0x000500000000 -range 0x000100000000 -target_address_space [get_bd_addr_spaces capture/axis2mm_0/M_AXI] [get_bd_addr_segs capture/ddr4_0/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] -force
+  assign_bd_address -offset 0x000500000000 -range 0x000100000000 -target_address_space [get_bd_addr_spaces capture/axis2mm/M_AXI] [get_bd_addr_segs capture/ddr4_0/C0_DDR4_MEMORY_MAP/C0_DDR4_ADDRESS_BLOCK] -force
 
   # Exclude Address Segments
-  exclude_bd_addr_seg -offset 0xFF000000 -range 0x01000000 -target_address_space [get_bd_addr_spaces dac_table_axim_0/Data_m_axi_gmem] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_LPS_OCM]
+  exclude_bd_addr_seg -offset 0xFF000000 -range 0x01000000 -target_address_space [get_bd_addr_spaces dac_table/Data_m_axi_gmem] [get_bd_addr_segs zynq_ultra_ps_e_0/SAXIGP2/HP0_LPS_OCM]
 
 
   # Restore current instance
   current_bd_instance $oldCurInst
 
-  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -5398,4 +5401,6 @@ connect_bd_intf_net -intf_net [get_bd_intf_nets dac_table_axim_0_m_axi_gmem] [ge
 
 create_root_design ""
 
+
+common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
