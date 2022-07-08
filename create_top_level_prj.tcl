@@ -1,5 +1,5 @@
 # BD to source (relative to ${origin_dir}) and project name
-set bd_to_src "phasetest21.2_de.tcl"
+set bd_to_src "phasetest21.2.tcl"
 set _xil_proj_name_ "phasetest_prj"
 
 

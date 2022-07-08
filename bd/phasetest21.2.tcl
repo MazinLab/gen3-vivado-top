@@ -495,7 +495,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/4_tap_equiripple/lane0.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane0.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -543,7 +543,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/4_tap_equiripple/lane1.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane1.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -591,7 +591,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/4_tap_equiripple/lane2.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane2.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -639,7 +639,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/4_tap_equiripple/lane3.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane3.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -687,7 +687,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/4_tap_equiripple/lane4.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane4.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -735,7 +735,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/4_tap_equiripple/lane5.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane5.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -783,7 +783,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/4_tap_equiripple/lane6.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane6.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -831,7 +831,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/4_tap_equiripple/lane7.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane7.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -879,7 +879,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/4_tap_equiripple/lane8.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane8.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -927,7 +927,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/4_tap_equiripple/lane9.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane9.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -975,7 +975,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/4_tap_equiripple/lane10.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane10.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -1023,7 +1023,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/4_tap_equiripple/lane11.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane11.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -1071,7 +1071,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/4_tap_equiripple/lane12.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane12.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -1119,7 +1119,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/4_tap_equiripple/lane13.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane13.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -1167,7 +1167,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/4_tap_equiripple/lane14.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane14.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -1215,7 +1215,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/4_tap_equiripple/lane15.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane15.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -1577,7 +1577,7 @@ proc create_hier_cell_reschan { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Buffer_Type {Block} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/lowpass.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/lowpass.coe} \
    CONFIG.Coefficient_Fractional_Bits {17} \
    CONFIG.Coefficient_Sets {1} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -1774,7 +1774,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.BestPrecision {true} \
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/30-tap-unity_512x.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/30-tap-unity_512x.coe} \
    CONFIG.Coefficient_Fractional_Bits {15} \
    CONFIG.Coefficient_Reload {true} \
    CONFIG.Coefficient_Sets {512} \
@@ -1809,7 +1809,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.BestPrecision {true} \
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/30-tap-unity_512x.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/30-tap-unity_512x.coe} \
    CONFIG.Coefficient_Fractional_Bits {15} \
    CONFIG.Coefficient_Reload {true} \
    CONFIG.Coefficient_Sets {512} \
@@ -1844,7 +1844,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.BestPrecision {true} \
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/30-tap-unity_512x.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/30-tap-unity_512x.coe} \
    CONFIG.Coefficient_Fractional_Bits {15} \
    CONFIG.Coefficient_Reload {true} \
    CONFIG.Coefficient_Sets {512} \
@@ -1879,7 +1879,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.BestPrecision {true} \
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
-   CONFIG.Coefficient_File {c:/Users/one/xilinx_projects/gen3/data/30-tap-unity_512x.coe} \
+   CONFIG.Coefficient_File {../../../../../../../data/30-tap-unity_512x.coe} \
    CONFIG.Coefficient_Fractional_Bits {15} \
    CONFIG.Coefficient_Reload {true} \
    CONFIG.Coefficient_Sets {512} \
@@ -3372,7 +3372,7 @@ proc create_hier_cell_capture { parentCell nameHier } {
 
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 control
 
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 ddr4_sdram_075
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 ddr4_sdram
 
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 default_sysclk1_300mhz
 
@@ -3450,14 +3450,12 @@ proc create_hier_cell_capture { parentCell nameHier } {
    CONFIG.C0.DDR4_AxiDataWidth {512} \
    CONFIG.C0.DDR4_CLKFBOUT_MULT {10} \
    CONFIG.C0.DDR4_CLKOUT0_DIVIDE {3} \
-   CONFIG.C0.DDR4_CasLatency {19} \
-   CONFIG.C0.DDR4_DIVCLK_DIVIDE {3} \
    CONFIG.C0.DDR4_DataWidth {64} \
    CONFIG.C0.DDR4_InputClockPeriod {3334} \
    CONFIG.C0.DDR4_MemoryPart {MT40A512M16LY-075} \
    CONFIG.C0.DDR4_Specify_MandD {false} \
    CONFIG.C0_CLOCK_BOARD_INTERFACE {default_sysclk1_300mhz} \
-   CONFIG.C0_DDR4_BOARD_INTERFACE {ddr4_sdram_075} \
+   CONFIG.C0_DDR4_BOARD_INTERFACE {ddr4_sdram} \
  ] $ddr4_0
 
   # Create instance: filter_iq_0, and set properties
@@ -3491,7 +3489,7 @@ proc create_hier_cell_capture { parentCell nameHier } {
  ] $xlconstant_1
 
   # Create interface connections
-  connect_bd_intf_net -intf_net Conn1 [get_bd_intf_pins ddr4_sdram_075] [get_bd_intf_pins ddr4_0/C0_DDR4]
+  connect_bd_intf_net -intf_net Conn1 [get_bd_intf_pins ddr4_sdram] [get_bd_intf_pins ddr4_0/C0_DDR4]
   connect_bd_intf_net -intf_net Conn2 [get_bd_intf_pins default_sysclk1_300mhz] [get_bd_intf_pins ddr4_0/C0_SYS_CLK]
   connect_bd_intf_net -intf_net Conn3 [get_bd_intf_pins control] [get_bd_intf_pins axi_interconnect_0/S00_AXI]
   connect_bd_intf_net -intf_net Conn4 [get_bd_intf_pins phase0] [get_bd_intf_pins filter_phase_0/instream]
@@ -3576,27 +3574,27 @@ proc create_root_design { parentCell } {
    CONFIG.FREQ_HZ {409600000.0} \
    ] $dac1_clk
 
-  set ddr4_sdram_075 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 -portmaps { \
-   ACT_N { physical_name ddr4_sdram_075_act_n direction O } \
-   ADR { physical_name ddr4_sdram_075_adr direction O left 16 right 0 } \
-   BA { physical_name ddr4_sdram_075_ba direction O left 1 right 0 } \
-   BG { physical_name ddr4_sdram_075_bg direction O } \
-   CK_C { physical_name ddr4_sdram_075_ck_c direction O } \
-   CK_T { physical_name ddr4_sdram_075_ck_t direction O } \
-   CKE { physical_name ddr4_sdram_075_cke direction O } \
-   CS_N { physical_name ddr4_sdram_075_cs_n direction O } \
-   DM_N { physical_name ddr4_sdram_075_dm_n direction IO left 7 right 0 } \
-   DQ { physical_name ddr4_sdram_075_dq direction IO left 63 right 0 } \
-   DQS_C { physical_name ddr4_sdram_075_dqs_c direction IO left 7 right 0 } \
-   DQS_T { physical_name ddr4_sdram_075_dqs_t direction IO left 7 right 0 } \
-   ODT { physical_name ddr4_sdram_075_odt direction O } \
-   RESET_N { physical_name ddr4_sdram_075_reset_n direction O } \
+  set ddr4_sdram [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 -portmaps { \
+   ACT_N { physical_name ddr4_sdram_act_n direction O } \
+   ADR { physical_name ddr4_sdram_adr direction O left 16 right 0 } \
+   BA { physical_name ddr4_sdram_ba direction O left 1 right 0 } \
+   BG { physical_name ddr4_sdram_bg direction O } \
+   CK_C { physical_name ddr4_sdram_ck_c direction O } \
+   CK_T { physical_name ddr4_sdram_ck_t direction O } \
+   CKE { physical_name ddr4_sdram_cke direction O } \
+   CS_N { physical_name ddr4_sdram_cs_n direction O } \
+   DM_N { physical_name ddr4_sdram_dm_n direction IO left 7 right 0 } \
+   DQ { physical_name ddr4_sdram_dq direction IO left 63 right 0 } \
+   DQS_C { physical_name ddr4_sdram_dqs_c direction IO left 7 right 0 } \
+   DQS_T { physical_name ddr4_sdram_dqs_t direction IO left 7 right 0 } \
+   ODT { physical_name ddr4_sdram_odt direction O } \
+   RESET_N { physical_name ddr4_sdram_reset_n direction O } \
    } \
-  ddr4_sdram_075 ]
+  ddr4_sdram ]
   set_property -dict [ list \
    CONFIG.CAN_DEBUG {false} \
-   ] $ddr4_sdram_075
-  set_property HDL_ATTRIBUTE.LOCKED {TRUE} [get_bd_intf_ports ddr4_sdram_075]
+   ] $ddr4_sdram
+  set_property HDL_ATTRIBUTE.LOCKED {TRUE} [get_bd_intf_ports ddr4_sdram]
 
   set default_sysclk1_300mhz [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 -portmaps { \
    CLK_N { physical_name default_sysclk1_300mhz_clk_n direction I } \
@@ -5312,7 +5310,7 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_intf_net -intf_net axis_broadcaster_0_M01_AXIS [get_bd_intf_pins axis_broadcaster_0/M01_AXIS] [get_bd_intf_pins capture/raw_i]
   connect_bd_intf_net -intf_net axis_broadcaster_1_M00_AXIS [get_bd_intf_pins axis_broadcaster_1/M00_AXIS] [get_bd_intf_pins photon_pipe/qstream_V]
   connect_bd_intf_net -intf_net axis_broadcaster_1_M01_AXIS [get_bd_intf_pins axis_broadcaster_1/M01_AXIS] [get_bd_intf_pins capture/raw_q]
-  connect_bd_intf_net -intf_net capture_ddr4_sdram_075 [get_bd_intf_ports ddr4_sdram_075] [get_bd_intf_pins capture/ddr4_sdram_075]
+  connect_bd_intf_net -intf_net capture_ddr4_sdram [get_bd_intf_ports ddr4_sdram] [get_bd_intf_pins capture/ddr4_sdram]
   connect_bd_intf_net -intf_net dac1_clk_1 [get_bd_intf_ports dac1_clk] [get_bd_intf_pins rfdc/dac1_clk]
   connect_bd_intf_net -intf_net dac_table_axim_0_iout [get_bd_intf_pins dac_table/iout] [get_bd_intf_pins rfdc/s00_axis]
 connect_bd_intf_net -intf_net [get_bd_intf_nets dac_table_axim_0_iout] [get_bd_intf_pins dac_table/iout] [get_bd_intf_pins system_ila_0/SLOT_0_AXIS]
