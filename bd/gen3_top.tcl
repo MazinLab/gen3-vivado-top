@@ -1,6 +1,6 @@
 
 ################################################################
-# This is a generated script based on design: phasetest
+# This is a generated script based on design: gen3_top
 #
 # Though there are limitations about the generated script,
 # the main purpose of this utility is to make learning
@@ -35,7 +35,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 ################################################################
 
 # To test this script, run the following commands from Vivado Tcl console:
-# source phasetest_script.tcl
+# source gen3_top_script.tcl
 
 
 # The design that will be created by this Tcl script contains the following 
@@ -1777,11 +1777,11 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
   # Create instance: matched_filter_512x0, and set properties
   set matched_filter_512x0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:fir_compiler:7.2 matched_filter_512x0 ]
   set_property -dict [ list \
-   CONFIG.BestPrecision {true} \
+   CONFIG.BestPrecision {false} \
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_File {../../../../../../../data/30-tap-unity_512x.coe} \
-   CONFIG.Coefficient_Fractional_Bits {15} \
+   CONFIG.Coefficient_Fractional_Bits {0} \
    CONFIG.Coefficient_Reload {true} \
    CONFIG.Coefficient_Sets {512} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -1790,7 +1790,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.ColumnConfig {30} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
    CONFIG.DATA_TUSER_Width {1} \
-   CONFIG.Data_Fractional_Bits {14} \
+   CONFIG.Data_Fractional_Bits {13} \
    CONFIG.Data_Width {16} \
    CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
    CONFIG.Filter_Selection {1} \
@@ -1799,7 +1799,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.Number_Channels {512} \
    CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
    CONFIG.Output_Width {16} \
-   CONFIG.Quantization {Maximize_Dynamic_Range} \
+   CONFIG.Quantization {Integer_Coefficients} \
    CONFIG.RateSpecification {Input_Sample_Period} \
    CONFIG.S_CONFIG_Method {By_Channel} \
    CONFIG.S_DATA_Has_FIFO {false} \
@@ -1812,11 +1812,11 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
   # Create instance: matched_filter_512x1, and set properties
   set matched_filter_512x1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:fir_compiler:7.2 matched_filter_512x1 ]
   set_property -dict [ list \
-   CONFIG.BestPrecision {true} \
+   CONFIG.BestPrecision {false} \
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_File {../../../../../../../data/30-tap-unity_512x.coe} \
-   CONFIG.Coefficient_Fractional_Bits {15} \
+   CONFIG.Coefficient_Fractional_Bits {0} \
    CONFIG.Coefficient_Reload {true} \
    CONFIG.Coefficient_Sets {512} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -1825,7 +1825,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.ColumnConfig {30} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
    CONFIG.DATA_TUSER_Width {1} \
-   CONFIG.Data_Fractional_Bits {14} \
+   CONFIG.Data_Fractional_Bits {13} \
    CONFIG.Data_Width {16} \
    CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
    CONFIG.Filter_Selection {1} \
@@ -1834,7 +1834,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.Number_Channels {512} \
    CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
    CONFIG.Output_Width {16} \
-   CONFIG.Quantization {Maximize_Dynamic_Range} \
+   CONFIG.Quantization {Integer_Coefficients} \
    CONFIG.RateSpecification {Input_Sample_Period} \
    CONFIG.S_CONFIG_Method {By_Channel} \
    CONFIG.S_DATA_Has_FIFO {false} \
@@ -1847,11 +1847,11 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
   # Create instance: matched_filter_512x2, and set properties
   set matched_filter_512x2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:fir_compiler:7.2 matched_filter_512x2 ]
   set_property -dict [ list \
-   CONFIG.BestPrecision {true} \
+   CONFIG.BestPrecision {false} \
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_File {../../../../../../../data/30-tap-unity_512x.coe} \
-   CONFIG.Coefficient_Fractional_Bits {15} \
+   CONFIG.Coefficient_Fractional_Bits {0} \
    CONFIG.Coefficient_Reload {true} \
    CONFIG.Coefficient_Sets {512} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -1860,7 +1860,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.ColumnConfig {30} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
    CONFIG.DATA_TUSER_Width {1} \
-   CONFIG.Data_Fractional_Bits {14} \
+   CONFIG.Data_Fractional_Bits {13} \
    CONFIG.Data_Width {16} \
    CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
    CONFIG.Filter_Selection {1} \
@@ -1869,7 +1869,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.Number_Channels {512} \
    CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
    CONFIG.Output_Width {16} \
-   CONFIG.Quantization {Maximize_Dynamic_Range} \
+   CONFIG.Quantization {Integer_Coefficients} \
    CONFIG.RateSpecification {Input_Sample_Period} \
    CONFIG.S_CONFIG_Method {By_Channel} \
    CONFIG.S_DATA_Has_FIFO {false} \
@@ -1882,11 +1882,11 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
   # Create instance: matched_filter_512x3, and set properties
   set matched_filter_512x3 [ create_bd_cell -type ip -vlnv xilinx.com:ip:fir_compiler:7.2 matched_filter_512x3 ]
   set_property -dict [ list \
-   CONFIG.BestPrecision {true} \
+   CONFIG.BestPrecision {false} \
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_File {../../../../../../../data/30-tap-unity_512x.coe} \
-   CONFIG.Coefficient_Fractional_Bits {15} \
+   CONFIG.Coefficient_Fractional_Bits {0} \
    CONFIG.Coefficient_Reload {true} \
    CONFIG.Coefficient_Sets {512} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -1895,7 +1895,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.ColumnConfig {30} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
    CONFIG.DATA_TUSER_Width {1} \
-   CONFIG.Data_Fractional_Bits {14} \
+   CONFIG.Data_Fractional_Bits {13} \
    CONFIG.Data_Width {16} \
    CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
    CONFIG.Filter_Selection {1} \
@@ -1904,7 +1904,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.Number_Channels {512} \
    CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
    CONFIG.Output_Width {16} \
-   CONFIG.Quantization {Maximize_Dynamic_Range} \
+   CONFIG.Quantization {Integer_Coefficients} \
    CONFIG.RateSpecification {Input_Sample_Period} \
    CONFIG.S_CONFIG_Method {By_Channel} \
    CONFIG.S_DATA_Has_FIFO {false} \
@@ -5377,7 +5377,6 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   # Restore current instance
   current_bd_instance $oldCurInst
 
-  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -5389,4 +5388,6 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
 
 create_root_design ""
 
+
+common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
