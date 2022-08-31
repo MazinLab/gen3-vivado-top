@@ -159,8 +159,8 @@ mazinlab:mkidgen3:fir_to_fft:1.31\
 mazinlab:mkidgen3:attach_user:0.1\
 xilinx.com:ip:axis_combiner:1.1\
 xilinx.com:ip:axis_dwidth_converter:1.1\
-xilinx.com:ip:cordic:6.0\
 xilinx.com:ip:axis_subset_converter:1.1\
+xilinx.com:ip:cordic:6.0\
 xilinx.com:ip:fir_compiler:7.2\
 mazinlab:mkidgen3:bin_to_res:1.33\
 lazinlab:mkidgen3:dds_ddc_center:1.0\
@@ -1835,7 +1835,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.ColumnConfig {30} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
    CONFIG.DATA_TUSER_Width {1} \
-   CONFIG.Data_Fractional_Bits {13} \
+   CONFIG.Data_Fractional_Bits {14} \
    CONFIG.Data_Width {16} \
    CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
    CONFIG.Filter_Selection {1} \
@@ -1870,7 +1870,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.ColumnConfig {30} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
    CONFIG.DATA_TUSER_Width {1} \
-   CONFIG.Data_Fractional_Bits {13} \
+   CONFIG.Data_Fractional_Bits {14} \
    CONFIG.Data_Width {16} \
    CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
    CONFIG.Filter_Selection {1} \
@@ -1905,7 +1905,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.ColumnConfig {30} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
    CONFIG.DATA_TUSER_Width {1} \
-   CONFIG.Data_Fractional_Bits {13} \
+   CONFIG.Data_Fractional_Bits {14} \
    CONFIG.Data_Width {16} \
    CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
    CONFIG.Filter_Selection {1} \
@@ -1940,7 +1940,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.ColumnConfig {30} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
    CONFIG.DATA_TUSER_Width {1} \
-   CONFIG.Data_Fractional_Bits {13} \
+   CONFIG.Data_Fractional_Bits {14} \
    CONFIG.Data_Width {16} \
    CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
    CONFIG.Filter_Selection {1} \
@@ -2101,12 +2101,44 @@ proc create_hier_cell_phase { parentCell nameHier } {
    CONFIG.TUSER_BITS_PER_BYTE {0} \
  ] $axis_dwidth_converter_0
 
+  # Create instance: axis_subset_converter_0, and set properties
+  set axis_subset_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter:1.1 axis_subset_converter_0 ]
+  set_property -dict [ list \
+   CONFIG.M_TDATA_NUM_BYTES {2} \
+   CONFIG.S_TDATA_NUM_BYTES {3} \
+   CONFIG.TDATA_REMAP {tdata[15:0]} \
+ ] $axis_subset_converter_0
+
+  # Create instance: axis_subset_converter_1, and set properties
+  set axis_subset_converter_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter:1.1 axis_subset_converter_1 ]
+  set_property -dict [ list \
+   CONFIG.M_TDATA_NUM_BYTES {2} \
+   CONFIG.S_TDATA_NUM_BYTES {3} \
+   CONFIG.TDATA_REMAP {tdata[15:0]} \
+ ] $axis_subset_converter_1
+
+  # Create instance: axis_subset_converter_2, and set properties
+  set axis_subset_converter_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter:1.1 axis_subset_converter_2 ]
+  set_property -dict [ list \
+   CONFIG.M_TDATA_NUM_BYTES {2} \
+   CONFIG.S_TDATA_NUM_BYTES {3} \
+ ] $axis_subset_converter_2
+
+  # Create instance: axis_subset_converter_3, and set properties
+  set axis_subset_converter_3 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter:1.1 axis_subset_converter_3 ]
+  set_property -dict [ list \
+   CONFIG.M_TDATA_NUM_BYTES {2} \
+   CONFIG.S_TDATA_NUM_BYTES {3} \
+   CONFIG.TDATA_REMAP {tdata[15:0]} \
+ ] $axis_subset_converter_3
+
   # Create instance: cordic_0, and set properties
   set cordic_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:cordic:6.0 cordic_0 ]
   set_property -dict [ list \
    CONFIG.Coarse_Rotation {true} \
    CONFIG.Data_Format {SignedFraction} \
    CONFIG.Functional_Selection {Arc_Tan} \
+   CONFIG.Output_Width {17} \
    CONFIG.Phase_Format {Scaled_Radians} \
    CONFIG.Pipelining_Mode {Optimal} \
    CONFIG.Round_Mode {Truncate} \
@@ -2121,6 +2153,7 @@ proc create_hier_cell_phase { parentCell nameHier } {
    CONFIG.Coarse_Rotation {true} \
    CONFIG.Data_Format {SignedFraction} \
    CONFIG.Functional_Selection {Arc_Tan} \
+   CONFIG.Output_Width {17} \
    CONFIG.Phase_Format {Scaled_Radians} \
    CONFIG.Pipelining_Mode {Optimal} \
    CONFIG.Round_Mode {Truncate} \
@@ -2135,6 +2168,7 @@ proc create_hier_cell_phase { parentCell nameHier } {
    CONFIG.Coarse_Rotation {true} \
    CONFIG.Data_Format {SignedFraction} \
    CONFIG.Functional_Selection {Arc_Tan} \
+   CONFIG.Output_Width {17} \
    CONFIG.Phase_Format {Scaled_Radians} \
    CONFIG.Pipelining_Mode {Optimal} \
    CONFIG.Round_Mode {Truncate} \
@@ -2149,6 +2183,7 @@ proc create_hier_cell_phase { parentCell nameHier } {
    CONFIG.Coarse_Rotation {true} \
    CONFIG.Data_Format {SignedFraction} \
    CONFIG.Functional_Selection {Arc_Tan} \
+   CONFIG.Output_Width {17} \
    CONFIG.Phase_Format {Scaled_Radians} \
    CONFIG.Pipelining_Mode {Optimal} \
    CONFIG.Round_Mode {Truncate} \
@@ -2169,14 +2204,18 @@ proc create_hier_cell_phase { parentCell nameHier } {
   connect_bd_intf_net -intf_net axis_broadcaster_0_M03_AXIS [get_bd_intf_pins axis_broadcaster_0/M03_AXIS] [get_bd_intf_pins cordic_3/S_AXIS_CARTESIAN]
   connect_bd_intf_net -intf_net axis_combiner_0_M_AXIS [get_bd_intf_pins attach_user_0/in_r] [get_bd_intf_pins axis_combiner_0/M_AXIS]
   connect_bd_intf_net -intf_net axis_dwidth_converter_0_M_AXIS [get_bd_intf_pins axis_broadcaster_0/S_AXIS] [get_bd_intf_pins axis_dwidth_converter_0/M_AXIS]
-  connect_bd_intf_net -intf_net cordic_0_M_AXIS_DOUT [get_bd_intf_pins axis_combiner_0/S00_AXIS] [get_bd_intf_pins cordic_0/M_AXIS_DOUT]
-  connect_bd_intf_net -intf_net cordic_1_M_AXIS_DOUT [get_bd_intf_pins axis_combiner_0/S01_AXIS] [get_bd_intf_pins cordic_1/M_AXIS_DOUT]
-  connect_bd_intf_net -intf_net cordic_2_M_AXIS_DOUT [get_bd_intf_pins axis_combiner_0/S02_AXIS] [get_bd_intf_pins cordic_2/M_AXIS_DOUT]
-  connect_bd_intf_net -intf_net cordic_3_M_AXIS_DOUT [get_bd_intf_pins axis_combiner_0/S03_AXIS] [get_bd_intf_pins cordic_3/M_AXIS_DOUT]
+  connect_bd_intf_net -intf_net axis_subset_converter_0_M_AXIS [get_bd_intf_pins axis_combiner_0/S00_AXIS] [get_bd_intf_pins axis_subset_converter_0/M_AXIS]
+  connect_bd_intf_net -intf_net axis_subset_converter_1_M_AXIS [get_bd_intf_pins axis_combiner_0/S01_AXIS] [get_bd_intf_pins axis_subset_converter_1/M_AXIS]
+  connect_bd_intf_net -intf_net axis_subset_converter_2_M_AXIS [get_bd_intf_pins axis_combiner_0/S02_AXIS] [get_bd_intf_pins axis_subset_converter_2/M_AXIS]
+  connect_bd_intf_net -intf_net axis_subset_converter_3_M_AXIS [get_bd_intf_pins axis_combiner_0/S03_AXIS] [get_bd_intf_pins axis_subset_converter_3/M_AXIS]
+  connect_bd_intf_net -intf_net cordic_0_M_AXIS_DOUT [get_bd_intf_pins axis_subset_converter_0/S_AXIS] [get_bd_intf_pins cordic_0/M_AXIS_DOUT]
+  connect_bd_intf_net -intf_net cordic_1_M_AXIS_DOUT [get_bd_intf_pins axis_subset_converter_1/S_AXIS] [get_bd_intf_pins cordic_1/M_AXIS_DOUT]
+  connect_bd_intf_net -intf_net cordic_2_M_AXIS_DOUT [get_bd_intf_pins axis_subset_converter_2/S_AXIS] [get_bd_intf_pins cordic_2/M_AXIS_DOUT]
+  connect_bd_intf_net -intf_net cordic_3_M_AXIS_DOUT [get_bd_intf_pins axis_subset_converter_3/S_AXIS] [get_bd_intf_pins cordic_3/M_AXIS_DOUT]
 
   # Create port connections
-  connect_bd_net -net Net [get_bd_pins aclk] [get_bd_pins attach_user_0/ap_clk] [get_bd_pins axis_broadcaster_0/aclk] [get_bd_pins axis_combiner_0/aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins cordic_0/aclk] [get_bd_pins cordic_1/aclk] [get_bd_pins cordic_2/aclk] [get_bd_pins cordic_3/aclk]
-  connect_bd_net -net Net1 [get_bd_pins attach_user_0/ap_rst_n] [get_bd_pins attach_user_0/out_r_TREADY] [get_bd_pins axis_broadcaster_0/aresetn] [get_bd_pins axis_combiner_0/aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_dwidth_converter_0/m_axis_tready] [get_bd_pins xlconstant_0/dout]
+  connect_bd_net -net Net [get_bd_pins aclk] [get_bd_pins attach_user_0/ap_clk] [get_bd_pins axis_broadcaster_0/aclk] [get_bd_pins axis_combiner_0/aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_subset_converter_0/aclk] [get_bd_pins axis_subset_converter_1/aclk] [get_bd_pins axis_subset_converter_2/aclk] [get_bd_pins axis_subset_converter_3/aclk] [get_bd_pins cordic_0/aclk] [get_bd_pins cordic_1/aclk] [get_bd_pins cordic_2/aclk] [get_bd_pins cordic_3/aclk]
+  connect_bd_net -net Net1 [get_bd_pins attach_user_0/ap_rst_n] [get_bd_pins attach_user_0/out_r_TREADY] [get_bd_pins axis_broadcaster_0/aresetn] [get_bd_pins axis_combiner_0/aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_dwidth_converter_0/m_axis_tready] [get_bd_pins axis_subset_converter_0/aresetn] [get_bd_pins axis_subset_converter_1/aresetn] [get_bd_pins axis_subset_converter_2/aresetn] [get_bd_pins axis_subset_converter_3/aresetn] [get_bd_pins xlconstant_0/dout]
 
   # Restore current instance
   current_bd_instance $oldCurInst
