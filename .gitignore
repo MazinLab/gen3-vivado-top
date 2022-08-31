@@ -24,6 +24,7 @@ deleteme/
 b2rcaptest/
 
 # test system projects
+if111_throughphase_test1_prj/
 rfdc_test_prj/
 opfb_dac_loopback_prj/
 opfb_rfdc_loopback_prj/
