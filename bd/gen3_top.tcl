@@ -1835,7 +1835,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.ColumnConfig {30} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
    CONFIG.DATA_TUSER_Width {1} \
-   CONFIG.Data_Fractional_Bits {14} \
+   CONFIG.Data_Fractional_Bits {15} \
    CONFIG.Data_Width {16} \
    CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
    CONFIG.Filter_Selection {1} \
@@ -1843,7 +1843,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.Num_Reload_Slots {2} \
    CONFIG.Number_Channels {512} \
    CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
-   CONFIG.Output_Width {23} \
+   CONFIG.Output_Width {22} \
    CONFIG.Quantization {Integer_Coefficients} \
    CONFIG.RateSpecification {Input_Sample_Period} \
    CONFIG.S_CONFIG_Method {By_Channel} \
@@ -1870,7 +1870,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.ColumnConfig {30} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
    CONFIG.DATA_TUSER_Width {1} \
-   CONFIG.Data_Fractional_Bits {14} \
+   CONFIG.Data_Fractional_Bits {15} \
    CONFIG.Data_Width {16} \
    CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
    CONFIG.Filter_Selection {1} \
@@ -1878,7 +1878,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.Num_Reload_Slots {2} \
    CONFIG.Number_Channels {512} \
    CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
-   CONFIG.Output_Width {23} \
+   CONFIG.Output_Width {22} \
    CONFIG.Quantization {Integer_Coefficients} \
    CONFIG.RateSpecification {Input_Sample_Period} \
    CONFIG.S_CONFIG_Method {By_Channel} \
@@ -1905,7 +1905,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.ColumnConfig {30} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
    CONFIG.DATA_TUSER_Width {1} \
-   CONFIG.Data_Fractional_Bits {14} \
+   CONFIG.Data_Fractional_Bits {15} \
    CONFIG.Data_Width {16} \
    CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
    CONFIG.Filter_Selection {1} \
@@ -1913,7 +1913,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.Num_Reload_Slots {2} \
    CONFIG.Number_Channels {512} \
    CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
-   CONFIG.Output_Width {23} \
+   CONFIG.Output_Width {22} \
    CONFIG.Quantization {Integer_Coefficients} \
    CONFIG.RateSpecification {Input_Sample_Period} \
    CONFIG.S_CONFIG_Method {By_Channel} \
@@ -1940,7 +1940,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.ColumnConfig {30} \
    CONFIG.DATA_Has_TLAST {Vector_Framing} \
    CONFIG.DATA_TUSER_Width {1} \
-   CONFIG.Data_Fractional_Bits {14} \
+   CONFIG.Data_Fractional_Bits {15} \
    CONFIG.Data_Width {16} \
    CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
    CONFIG.Filter_Selection {1} \
@@ -1948,7 +1948,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.Num_Reload_Slots {2} \
    CONFIG.Number_Channels {512} \
    CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
-   CONFIG.Output_Width {23} \
+   CONFIG.Output_Width {22} \
    CONFIG.Quantization {Integer_Coefficients} \
    CONFIG.RateSpecification {Input_Sample_Period} \
    CONFIG.S_CONFIG_Method {By_Channel} \
@@ -2138,7 +2138,7 @@ proc create_hier_cell_phase { parentCell nameHier } {
    CONFIG.Coarse_Rotation {true} \
    CONFIG.Data_Format {SignedFraction} \
    CONFIG.Functional_Selection {Arc_Tan} \
-   CONFIG.Output_Width {17} \
+   CONFIG.Output_Width {18} \
    CONFIG.Phase_Format {Scaled_Radians} \
    CONFIG.Pipelining_Mode {Optimal} \
    CONFIG.Round_Mode {Truncate} \
@@ -2153,7 +2153,7 @@ proc create_hier_cell_phase { parentCell nameHier } {
    CONFIG.Coarse_Rotation {true} \
    CONFIG.Data_Format {SignedFraction} \
    CONFIG.Functional_Selection {Arc_Tan} \
-   CONFIG.Output_Width {17} \
+   CONFIG.Output_Width {18} \
    CONFIG.Phase_Format {Scaled_Radians} \
    CONFIG.Pipelining_Mode {Optimal} \
    CONFIG.Round_Mode {Truncate} \
@@ -2168,7 +2168,7 @@ proc create_hier_cell_phase { parentCell nameHier } {
    CONFIG.Coarse_Rotation {true} \
    CONFIG.Data_Format {SignedFraction} \
    CONFIG.Functional_Selection {Arc_Tan} \
-   CONFIG.Output_Width {17} \
+   CONFIG.Output_Width {18} \
    CONFIG.Phase_Format {Scaled_Radians} \
    CONFIG.Pipelining_Mode {Optimal} \
    CONFIG.Round_Mode {Truncate} \
@@ -2183,7 +2183,7 @@ proc create_hier_cell_phase { parentCell nameHier } {
    CONFIG.Coarse_Rotation {true} \
    CONFIG.Data_Format {SignedFraction} \
    CONFIG.Functional_Selection {Arc_Tan} \
-   CONFIG.Output_Width {17} \
+   CONFIG.Output_Width {18} \
    CONFIG.Phase_Format {Scaled_Radians} \
    CONFIG.Pipelining_Mode {Optimal} \
    CONFIG.Round_Mode {Truncate} \
