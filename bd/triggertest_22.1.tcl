@@ -468,14 +468,19 @@ proc create_hier_cell_trigger { parentCell nameHier } {
   set axis_broadcaster_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 axis_broadcaster_0 ]
   set_property -dict [ list \
    CONFIG.HAS_TKEEP {0} \
+   CONFIG.HAS_TLAST {1} \
    CONFIG.HAS_TREADY {0} \
    CONFIG.HAS_TSTRB {0} \
-   CONFIG.M00_TDATA_REMAP {56'b00000000000000000000000000000000000000000000000000000000,tdata[7:0]} \
+   CONFIG.M00_TDATA_REMAP {tdata[63:0]} \
    CONFIG.M00_TUSER_REMAP {tuser[12:0]} \
-   CONFIG.M01_TDATA_REMAP {56'b00000000000000000000000000000000000000000000000000000000,tdata[7:0]} \
+   CONFIG.M01_TDATA_REMAP {tdata[63:0]} \
    CONFIG.M01_TUSER_REMAP {tuser[12:0]} \
    CONFIG.M_TDATA_NUM_BYTES {8} \
+   CONFIG.M_TUSER_WIDTH {13} \
    CONFIG.S_TDATA_NUM_BYTES {8} \
+   CONFIG.S_TUSER_WIDTH {13} \
+   CONFIG.TDEST_WIDTH {0} \
+   CONFIG.TID_WIDTH {0} \
  ] $axis_broadcaster_0
 
   # Create instance: axis_clock_converter_0, and set properties
@@ -709,30 +714,51 @@ proc create_hier_cell_phase { parentCell nameHier } {
   # Create instance: axis_broadcaster_0, and set properties
   set axis_broadcaster_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 axis_broadcaster_0 ]
   set_property -dict [ list \
+   CONFIG.HAS_TKEEP {0} \
    CONFIG.HAS_TLAST {1} \
    CONFIG.HAS_TREADY {0} \
+   CONFIG.HAS_TSTRB {0} \
    CONFIG.M00_TDATA_REMAP {tdata[31:0]} \
    CONFIG.M01_TDATA_REMAP {tdata[63:32]} \
    CONFIG.M02_TDATA_REMAP {tdata[95:64]} \
    CONFIG.M03_TDATA_REMAP {tdata[127:96]} \
    CONFIG.M_TDATA_NUM_BYTES {4} \
+   CONFIG.M_TUSER_WIDTH {0} \
    CONFIG.NUM_MI {4} \
    CONFIG.S_TDATA_NUM_BYTES {16} \
+   CONFIG.S_TUSER_WIDTH {0} \
+   CONFIG.TDEST_WIDTH {0} \
+   CONFIG.TID_WIDTH {0} \
  ] $axis_broadcaster_0
 
   # Create instance: axis_broadcaster_1, and set properties
   set axis_broadcaster_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 axis_broadcaster_1 ]
   set_property -dict [ list \
+   CONFIG.HAS_TKEEP {0} \
+   CONFIG.HAS_TLAST {1} \
    CONFIG.HAS_TREADY {0} \
+   CONFIG.HAS_TSTRB {0} \
    CONFIG.M00_TDATA_REMAP {tdata[127:0]} \
    CONFIG.M01_TDATA_REMAP {tdata[127:0]} \
+   CONFIG.M_TDATA_NUM_BYTES {16} \
+   CONFIG.M_TUSER_WIDTH {0} \
+   CONFIG.S_TDATA_NUM_BYTES {16} \
+   CONFIG.S_TUSER_WIDTH {0} \
+   CONFIG.TDEST_WIDTH {0} \
+   CONFIG.TID_WIDTH {0} \
  ] $axis_broadcaster_1
 
   # Create instance: axis_combiner_0, and set properties
   set axis_combiner_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_combiner:1.1 axis_combiner_0 ]
   set_property -dict [ list \
+   CONFIG.HAS_TKEEP {0} \
    CONFIG.HAS_TLAST {1} \
+   CONFIG.HAS_TSTRB {0} \
    CONFIG.NUM_SI {4} \
+   CONFIG.TDATA_NUM_BYTES {2} \
+   CONFIG.TDEST_WIDTH {0} \
+   CONFIG.TID_WIDTH {0} \
+   CONFIG.TUSER_WIDTH {0} \
  ] $axis_combiner_0
 
   # Create instance: axis_dwidth_converter_0, and set properties
@@ -2071,12 +2097,15 @@ proc create_hier_cell_photon_pipe { parentCell nameHier } {
    CONFIG.M_TUSER_WIDTH {8} \
    CONFIG.S_TDATA_NUM_BYTES {32} \
    CONFIG.S_TUSER_WIDTH {8} \
+   CONFIG.TDEST_WIDTH {0} \
+   CONFIG.TID_WIDTH {0} \
  ] $axis_broadcaster_1
 
   # Create instance: axis_broadcaster_2, and set properties
   set axis_broadcaster_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 axis_broadcaster_2 ]
   set_property -dict [ list \
    CONFIG.HAS_TKEEP {0} \
+   CONFIG.HAS_TLAST {1} \
    CONFIG.HAS_TREADY {0} \
    CONFIG.HAS_TSTRB {0} \
    CONFIG.M00_TDATA_REMAP {tdata[63:0]} \
@@ -2084,7 +2113,11 @@ proc create_hier_cell_photon_pipe { parentCell nameHier } {
    CONFIG.M01_TDATA_REMAP {tdata[63:0]} \
    CONFIG.M01_TUSER_REMAP {tuser[15:0]} \
    CONFIG.M_TDATA_NUM_BYTES {8} \
+   CONFIG.M_TUSER_WIDTH {16} \
    CONFIG.S_TDATA_NUM_BYTES {8} \
+   CONFIG.S_TUSER_WIDTH {16} \
+   CONFIG.TDEST_WIDTH {0} \
+   CONFIG.TID_WIDTH {0} \
  ] $axis_broadcaster_2
 
   # Create instance: axis_register_slice_3, and set properties
