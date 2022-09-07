@@ -2263,7 +2263,7 @@ proc create_hier_cell_capture { parentCell nameHier } {
 
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 control
 
-  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 ddr4_sdram_075
+  create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 ddr4_sdram
 
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 default_sysclk1_300mhz
 
@@ -2347,7 +2347,7 @@ proc create_hier_cell_capture { parentCell nameHier } {
    CONFIG.C0.DDR4_MemoryPart {MT40A512M16LY-075} \
    CONFIG.C0.DDR4_Specify_MandD {false} \
    CONFIG.C0_CLOCK_BOARD_INTERFACE {default_sysclk1_300mhz} \
-   CONFIG.C0_DDR4_BOARD_INTERFACE {ddr4_sdram_075} \
+   CONFIG.C0_DDR4_BOARD_INTERFACE {ddr4_sdram} \
  ] $ddr4_0
 
   # Create instance: filter_iq_0, and set properties
@@ -2372,7 +2372,7 @@ proc create_hier_cell_capture { parentCell nameHier } {
  ] $xlconstant_1
 
   # Create interface connections
-  connect_bd_intf_net -intf_net Conn1 [get_bd_intf_pins ddr4_sdram_075] [get_bd_intf_pins ddr4_0/C0_DDR4]
+  connect_bd_intf_net -intf_net Conn1 [get_bd_intf_pins ddr4_sdram] [get_bd_intf_pins ddr4_0/C0_DDR4]
   connect_bd_intf_net -intf_net Conn2 [get_bd_intf_pins default_sysclk1_300mhz] [get_bd_intf_pins ddr4_0/C0_SYS_CLK]
   connect_bd_intf_net -intf_net Conn3 [get_bd_intf_pins control] [get_bd_intf_pins axi_interconnect_0/S00_AXI]
   connect_bd_intf_net -intf_net Conn4 [get_bd_intf_pins phase0] [get_bd_intf_pins filter_phase_0/instream]
@@ -2451,27 +2451,27 @@ proc create_root_design { parentCell } {
    CONFIG.FREQ_HZ {409600000.0} \
    ] $dac1_clk
 
-  set ddr4_sdram_075 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 -portmaps { \
-   ACT_N { physical_name ddr4_sdram_075_act_n direction O } \
-   ADR { physical_name ddr4_sdram_075_adr direction O left 16 right 0 } \
-   BA { physical_name ddr4_sdram_075_ba direction O left 1 right 0 } \
-   BG { physical_name ddr4_sdram_075_bg direction O } \
-   CK_C { physical_name ddr4_sdram_075_ck_c direction O } \
-   CK_T { physical_name ddr4_sdram_075_ck_t direction O } \
-   CKE { physical_name ddr4_sdram_075_cke direction O } \
-   CS_N { physical_name ddr4_sdram_075_cs_n direction O } \
-   DM_N { physical_name ddr4_sdram_075_dm_n direction IO left 7 right 0 } \
-   DQ { physical_name ddr4_sdram_075_dq direction IO left 63 right 0 } \
-   DQS_C { physical_name ddr4_sdram_075_dqs_c direction IO left 7 right 0 } \
-   DQS_T { physical_name ddr4_sdram_075_dqs_t direction IO left 7 right 0 } \
-   ODT { physical_name ddr4_sdram_075_odt direction O } \
-   RESET_N { physical_name ddr4_sdram_075_reset_n direction O } \
+  set ddr4_sdram [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 -portmaps { \
+   ACT_N { physical_name ddr4_sdram_act_n direction O } \
+   ADR { physical_name ddr4_sdram_adr direction O left 16 right 0 } \
+   BA { physical_name ddr4_sdram_ba direction O left 1 right 0 } \
+   BG { physical_name ddr4_sdram_bg direction O } \
+   CK_C { physical_name ddr4_sdram_ck_c direction O } \
+   CK_T { physical_name ddr4_sdram_ck_t direction O } \
+   CKE { physical_name ddr4_sdram_cke direction O } \
+   CS_N { physical_name ddr4_sdram_cs_n direction O } \
+   DM_N { physical_name ddr4_sdram_dm_n direction IO left 7 right 0 } \
+   DQ { physical_name ddr4_sdram_dq direction IO left 63 right 0 } \
+   DQS_C { physical_name ddr4_sdram_dqs_c direction IO left 7 right 0 } \
+   DQS_T { physical_name ddr4_sdram_dqs_t direction IO left 7 right 0 } \
+   ODT { physical_name ddr4_sdram_odt direction O } \
+   RESET_N { physical_name ddr4_sdram_reset_n direction O } \
    } \
-  ddr4_sdram_075 ]
+  ddr4_sdram ]
   set_property -dict [ list \
    CONFIG.CAN_DEBUG {false} \
-   ] $ddr4_sdram_075
-  set_property HDL_ATTRIBUTE.LOCKED {TRUE} [get_bd_intf_ports ddr4_sdram_075]
+   ] $ddr4_sdram
+  set_property HDL_ATTRIBUTE.LOCKED {TRUE} [get_bd_intf_ports ddr4_sdram]
 
   set default_sysclk1_300mhz [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 -portmaps { \
    CLK_N { physical_name default_sysclk1_300mhz_clk_n direction I } \
@@ -4261,7 +4261,7 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   connect_bd_intf_net -intf_net axis_broadcaster_0_M01_AXIS [get_bd_intf_pins axis_broadcaster_0/M01_AXIS] [get_bd_intf_pins capture/raw_i]
   connect_bd_intf_net -intf_net axis_broadcaster_1_M00_AXIS [get_bd_intf_pins axis_broadcaster_1/M00_AXIS] [get_bd_intf_pins photon_pipe/qstream_V]
   connect_bd_intf_net -intf_net axis_broadcaster_1_M01_AXIS [get_bd_intf_pins axis_broadcaster_1/M01_AXIS] [get_bd_intf_pins capture/raw_q]
-  connect_bd_intf_net -intf_net capture_ddr4_sdram_075 [get_bd_intf_ports ddr4_sdram_075] [get_bd_intf_pins capture/ddr4_sdram_075]
+  connect_bd_intf_net -intf_net capture_ddr4_sdram [get_bd_intf_ports ddr4_sdram] [get_bd_intf_pins capture/ddr4_sdram]
 connect_bd_intf_net -intf_net cordic0_in [get_bd_intf_pins photon_pipe/M_AXIS] [get_bd_intf_pins system_ila_1/SLOT_6_AXIS]
 connect_bd_intf_net -intf_net cordic0_out [get_bd_intf_pins photon_pipe/cordic0_out] [get_bd_intf_pins system_ila_1/SLOT_5_AXIS]
   connect_bd_intf_net -intf_net dac1_clk_1 [get_bd_intf_ports dac1_clk] [get_bd_intf_pins rfdc/dac1_clk]
