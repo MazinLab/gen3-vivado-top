@@ -10,11 +10,12 @@ set origin_dir "."
 set ip_repo "./blocks"
 
 # Create project
- create_project ${_xil_proj_name_} ./${_xil_proj_name_} -part xczu28dr-ffvg1517-2-e
+ create_project ${_xil_proj_name_} ./${_xil_proj_name_} -part xczu48dr-ffvg1517-2-e
 
 # Set project properties
 set obj [current_project]
-set_property -name "board_part" -value "xilinx.com:zcu111:part0:1.2" -objects $obj
+set_property -name "board_part_repo_paths" -value "[file normalize "$origin_dir/../../RFSoC4x2-BSP/board_files/rfsoc4x2"]" -objects $obj
+set_property -name "board_part" -value "realdigital.org:rfsoc4x2:part0:1.0" -objects $obj
 
 # Set IP repository paths
 set obj [get_filesets sources_1]
