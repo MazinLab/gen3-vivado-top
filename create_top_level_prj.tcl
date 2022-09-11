@@ -37,9 +37,13 @@ add_files -norecurse -fileset $obj $files
 # Build block design
 source ${origin_dir}/bd/${bd_to_src}
 
-# Add constraints
+# Add IF111 constraints
 update_compile_order -fileset sources_1
 add_files -fileset constrs_1 -norecurse ${origin_dir}/constraints.xdc
+
+# Add DDR4 constraints
+update_compile_order -fileset sources_1
+add_files -fileset constrs_1 -norecurse ${origin_dir}/ddr4.xdc
 
 # Generate HDL Wrapper
 make_wrapper -files [get_files ${origin_dir}/${_xil_proj_name_}/${_xil_proj_name_}.srcs/sources_1/bd/${design_name}/${design_name}.bd] -top
