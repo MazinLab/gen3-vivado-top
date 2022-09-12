@@ -1,6 +1,6 @@
 # BD to source (relative to ${origin_dir}) and project name
 set bd_to_src "gen3_top.tcl"
-set _xil_proj_name_ "gen3_top_prj"
+set _xil_proj_name_ "gen3_top_2x4_prj"
 
 
 # Set project origin
@@ -37,13 +37,9 @@ add_files -norecurse -fileset $obj $files
 # Build block design
 source ${origin_dir}/bd/${bd_to_src}
 
-# Add IF111 constraints
+# Add all base overlay 4x2 constraints
 update_compile_order -fileset sources_1
-add_files -fileset constrs_1 -norecurse ${origin_dir}/constraints.xdc
-
-# Add DDR4 constraints
-update_compile_order -fileset sources_1
-add_files -fileset constrs_1 -norecurse ${origin_dir}/ddr4.xdc
+add_files -fileset constrs_1 -norecurse ${origin_dir}/base.xdc
 
 # Generate HDL Wrapper
 make_wrapper -files [get_files ${origin_dir}/${_xil_proj_name_}/${_xil_proj_name_}.srcs/sources_1/bd/${design_name}/${design_name}.bd] -top
