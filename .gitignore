@@ -1,3 +1,6 @@
+rfsoc4x2_board_files/
+ddr4_ila_prj/
+gen3_top_2x4_prj/
 top/
 .*
 *.log
