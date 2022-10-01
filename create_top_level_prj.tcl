@@ -1,6 +1,6 @@
 # BD to source (relative to ${origin_dir}) and project name
 set bd_to_src "gen3_top.tcl"
-set _xil_proj_name_ "gen3_top_prj"
+set _xil_proj_name_ "gen3_top_4x2_prj"
 
 
 # Set project origin
@@ -14,7 +14,7 @@ set ip_repo "./blocks"
 
 # Set project properties
 set obj [current_project]
-set_property -name "board_part_repo_paths" -value "[file normalize "$origin_dir/../../RFSoC4x2-BSP/board_files/rfsoc4x2"]" -objects $obj
+set_property -name "board_part_repo_paths" -value "[file normalize "$origin_dir/rfsoc4x2_board_files/board_files/rfsoc4x2"]" -objects $obj
 set_property -name "board_part" -value "realdigital.org:rfsoc4x2:part0:1.0" -objects $obj
 
 # Set IP repository paths
