@@ -1,6 +1,6 @@
 # BD to source (relative to ${origin_dir}) and project name
-set bd_to_src "gen3_top.tcl"
-set _xil_proj_name_ "gen3_top_prj"
+set bd_to_src "vivado_2022_2_ilas.tcl"
+set _xil_proj_name_ "vivado_2022_2_ilas_prj"
 
 
 # Set project origin
