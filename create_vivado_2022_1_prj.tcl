@@ -1,6 +1,6 @@
 # BD to source (relative to ${origin_dir}) and project name
-set bd_to_src "vivado_2022_1_export.tcl"
-set _xil_proj_name_ "vivado_2022_1_export_prj"
+set bd_to_src "vivado_2022_1.tcl"
+set _xil_proj_name_ "vivado_2022_1_prj"
 
 
 # Set project origin
