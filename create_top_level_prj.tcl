@@ -1,6 +1,6 @@
 # BD to source (relative to ${origin_dir}) and project name
-set bd_to_src "gen3_top.tcl"
-set _xil_proj_name_ "gen3_top_prj"
+set bd_to_src "ddc_bram_ilas_stripped.tcl"
+set _xil_proj_name_ "ddc_bram_stripped_ilas"
 
 
 # Set project origin
