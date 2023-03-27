@@ -1,5 +1,5 @@
 # BD to source (relative to ${origin_dir}) and project name
-set bd_to_src "gen3_top.tcl"
+set bd_to_src "4x2_fresh_build.tcl"
 set _xil_proj_name_ "gen3_top_4x2_prj"
 
 
