@@ -1,4 +1,27 @@
 ## Constraints file for RFSoC4x2 base overlay Vivado project
+## MTS Constraints V1
+# Pin Assignments -- all other pins handled by board BSP
+set_property PACKAGE_PIN AP18 [get_ports PL_SYSREF[0]]
+set_property PACKAGE_PIN AN11 [get_ports PL_CLK[0]]
+
+set_property IOSTANDARD LVCMOS18 [get_ports {PL_CLK[*]}]
+set_property IOSTANDARD LVCMOS18 [get_ports {PL_SYSREF[*]}]
+
+# Input Delay for PL_SYSREF to ensure MTS requirements via PG269
+create_clock -period 3.90625 -name PL_CLK   [get_ports {PL_CLK}]
+
+# Input Delay for PL_SYSREF to ensure MTS requirements via PG269
+set_input_delay -clock [get_clocks PL_CLK] -min -add_delay 2.000 [get_ports PL_SYSREF]
+set_input_delay -clock [get_clocks PL_CLK] -max -add_delay 2.031 [get_ports PL_SYSREF]
+set_property CLOCK_DEDICATED_ROUTE ANY_CMT_COLUMN [get_nets gen3_top_i/clocktreeMTS/BUFG_PL_CLK/U0/BUFG_O[0]]
+
+#set_false_path -from [get_ports reset]
+#set_false_path -from [get_pins {mts_i/gpio_control/axi_gpio_dac/U0/gpio_core_1/Not_Dual.gpio_Data_Out_reg[*]/C}]
+#set_false_path -from [get_pins {mts_i/clocktreeMTS/RFegressReset/U0/ACTIVE_LOW_PR_OUT_DFF[*].*/C}]
+
+# Constrain the user_sysref clocks
+set_max_delay -from [get_pins {gen3_top_i/clocktreeMTS/synchronize_PL_SYSREF/inst/xsingle/syncstages_ff_reg[1]/C}] 1.0
+set_max_delay -from [get_pins {gen3_top_i/clocktreeMTS/synchronize_PL_SYSREF/inst/xsingle/src_ff_reg/C}] 1.0
 
 # 156.25 MHz USER_MGT_SI570_CLOCK - CMAC input clock
 set_property PACKAGE_PIN AA34      [get_ports "diff_clock_rtl_clk_n"] ;# Bank 128 - MGTREFCLK0N_128 RFSoC4x2 GT CLK
@@ -233,6 +256,9 @@ set_property PACKAGE_PIN B9			    [get_ports {syzygy_std0_tri_io[31]}];  # C2P_C
 
 set_property IOSTANDARD LVCMOS18        [get_ports -of_objects [get_iobanks 84]];
 set_property IOSTANDARD LVCMOS18        [get_ports -of_objects [get_iobanks 87]];
+
+set_property LOC MMCM_X0Y2 [get_cells -hier -filter {NAME =~ */u_ddr4_infrastructure/gen_mmcme*.u_mmcme_adv_inst}]
+
 
 set_property BITSTREAM.GENERAL.COMPRESS TRUE [get_designs impl_1]
 set_property BITSTREAM.CONFIG.OVERTEMPSHUTDOWN ENABLE [get_designs impl_1]

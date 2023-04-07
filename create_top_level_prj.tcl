@@ -1,6 +1,6 @@
 # BD to source (relative to ${origin_dir}) and project name
-set bd_to_src "4x2_fresh_build.tcl"
-set _xil_proj_name_ "gen3_top_4x2_prj"
+set bd_to_src "simplified_mts.tcl"
+set _xil_proj_name_ "mts_test_prj"
 
 
 # Set project origin
@@ -40,6 +40,7 @@ source ${origin_dir}/bd/${bd_to_src}
 # Add all base overlay 4x2 constraints
 update_compile_order -fileset sources_1
 add_files -fileset constrs_1 -norecurse ${origin_dir}/base.xdc
+
 
 # Generate HDL Wrapper
 make_wrapper -files [get_files ${origin_dir}/${_xil_proj_name_}/${_xil_proj_name_}.srcs/sources_1/bd/${design_name}/${design_name}.bd] -top
