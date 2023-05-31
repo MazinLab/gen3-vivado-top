@@ -50,8 +50,8 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 set list_projs [get_projects -quiet]
 if { $list_projs eq "" } {
-   create_project project_1 myproj -part xczu48dr-fsvg1517-2-e
-   set_property BOARD_PART xilinx.com:zcu208:part0:2.0 [current_project]
+   create_project project_1 myproj -part xczu48dr-ffvg1517-2-e
+   set_property BOARD_PART realdigital.org:rfsoc4x2:part0:1.0 [current_project]
 }
 
 
@@ -906,38 +906,38 @@ proc create_hier_cell_rfdc { parentCell nameHier } {
    CONFIG.ADC1_Enable {0} \
    CONFIG.ADC1_Fabric_Freq {0.0} \
    CONFIG.ADC1_Multi_Tile_Sync {false} \
-   CONFIG.ADC1_Outclk_Freq {250.000} \
+   CONFIG.ADC1_Outclk_Freq {15.625} \
    CONFIG.ADC1_PLL_Enable {false} \
-   CONFIG.ADC1_Refclk_Freq {4000.000} \
-   CONFIG.ADC1_Sampling_Rate {4.0} \
+   CONFIG.ADC1_Refclk_Freq {2000.000} \
+   CONFIG.ADC1_Sampling_Rate {2.0} \
    CONFIG.ADC2_Clock_Dist {0} \
    CONFIG.ADC2_Clock_Source {2} \
    CONFIG.ADC2_Enable {0} \
    CONFIG.ADC2_Fabric_Freq {0.0} \
    CONFIG.ADC2_Multi_Tile_Sync {false} \
-   CONFIG.ADC2_Outclk_Freq {32.000} \
+   CONFIG.ADC2_Outclk_Freq {15.625} \
    CONFIG.ADC2_PLL_Enable {false} \
-   CONFIG.ADC2_Refclk_Freq {4096.000} \
-   CONFIG.ADC2_Sampling_Rate {4.096} \
+   CONFIG.ADC2_Refclk_Freq {2000.000} \
+   CONFIG.ADC2_Sampling_Rate {2.0} \
    CONFIG.ADC3_Clock_Source {3} \
    CONFIG.ADC3_Enable {0} \
    CONFIG.ADC3_Fabric_Freq {0.0} \
-   CONFIG.ADC3_Outclk_Freq {250.000} \
+   CONFIG.ADC3_Outclk_Freq {15.625} \
    CONFIG.ADC3_PLL_Enable {false} \
-   CONFIG.ADC3_Refclk_Freq {4000.000} \
-   CONFIG.ADC3_Sampling_Rate {4.0} \
+   CONFIG.ADC3_Refclk_Freq {2000.000} \
+   CONFIG.ADC3_Sampling_Rate {2.0} \
    CONFIG.ADC_Coarse_Mixer_Freq02 {3} \
    CONFIG.ADC_Coarse_Mixer_Freq03 {3} \
-   CONFIG.ADC_Coarse_Mixer_Freq10 {3} \
-   CONFIG.ADC_Coarse_Mixer_Freq11 {3} \
+   CONFIG.ADC_Coarse_Mixer_Freq10 {0} \
+   CONFIG.ADC_Coarse_Mixer_Freq11 {0} \
    CONFIG.ADC_Coarse_Mixer_Freq12 {0} \
    CONFIG.ADC_Coarse_Mixer_Freq13 {0} \
-   CONFIG.ADC_Coarse_Mixer_Freq20 {3} \
-   CONFIG.ADC_Coarse_Mixer_Freq21 {3} \
-   CONFIG.ADC_Coarse_Mixer_Freq22 {3} \
-   CONFIG.ADC_Coarse_Mixer_Freq23 {3} \
-   CONFIG.ADC_Coarse_Mixer_Freq30 {3} \
-   CONFIG.ADC_Coarse_Mixer_Freq31 {3} \
+   CONFIG.ADC_Coarse_Mixer_Freq20 {0} \
+   CONFIG.ADC_Coarse_Mixer_Freq21 {0} \
+   CONFIG.ADC_Coarse_Mixer_Freq22 {0} \
+   CONFIG.ADC_Coarse_Mixer_Freq23 {0} \
+   CONFIG.ADC_Coarse_Mixer_Freq30 {0} \
+   CONFIG.ADC_Coarse_Mixer_Freq31 {0} \
    CONFIG.ADC_Data_Width00 {8} \
    CONFIG.ADC_Data_Width01 {8} \
    CONFIG.ADC_Data_Width02 {8} \
@@ -1302,7 +1302,7 @@ proc create_hier_cell_clocktreeMTS { parentCell nameHier } {
    CONFIG.CLKOUT2_JITTER {79.214} \
    CONFIG.CLKOUT2_MATCHED_ROUTING {false} \
    CONFIG.CLKOUT2_PHASE_ERROR {71.499} \
-   CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {250.0} \
+   CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {100.000} \
    CONFIG.CLKOUT2_USED {false} \
    CONFIG.CLKOUT3_DRIVES {Buffer} \
    CONFIG.CLKOUT4_DRIVES {Buffer} \
@@ -3375,7 +3375,6 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   # Restore current instance
   current_bd_instance $oldCurInst
 
-  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -3387,4 +3386,6 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
 
 create_root_design ""
 
+
+common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
