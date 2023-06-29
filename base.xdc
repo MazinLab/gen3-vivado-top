@@ -1,23 +1,24 @@
 ## Constraints file for RFSoC4x2 base overlay Vivado project
 ## MTS Constraints V1
 # Pin Assignments -- all other pins handled by board BSP
-set_property PACKAGE_PIN AP18 [get_ports PL_SYSREF[0]]
-set_property PACKAGE_PIN AN11 [get_ports PL_CLK[0]]
+set_property PACKAGE_PIN AP18 [get_ports PL_SYSREF_clk_p]
+set_property PACKAGE_PIN AN11 [get_ports PL_CLK_clk_p]
 
-set_property IOSTANDARD LVCMOS18 [get_ports {PL_CLK[*]}]
-set_property IOSTANDARD LVCMOS18 [get_ports {PL_SYSREF[*]}]
+set_property IOSTANDARD LVDS [get_ports {PL_CLK_clk_p}]
+set_property IOSTANDARD LVDS [get_ports {PL_CLK_clk_n}]
+set_property IOSTANDARD LVDS [get_ports {PL_SYSREF_clk_p}]
+set_property IOSTANDARD LVDS [get_ports {PL_SYSREF_clk_n}]
+
+# Input Period for PL_CLK to ensure MTS requirements via PG269
+create_clock -period 1.953 -name PL_CLK_clk  [get_ports {PL_CLK_clk_p}]
 
 # Input Delay for PL_SYSREF to ensure MTS requirements via PG269
-create_clock -period 3.90625 -name PL_CLK   [get_ports {PL_CLK}]
-
-# Input Delay for PL_SYSREF to ensure MTS requirements via PG269
-set_input_delay -clock [get_clocks PL_CLK] -min -add_delay 2.000 [get_ports PL_SYSREF]
-set_input_delay -clock [get_clocks PL_CLK] -max -add_delay 2.031 [get_ports PL_SYSREF]
-set_property CLOCK_DEDICATED_ROUTE ANY_CMT_COLUMN [get_nets gen3_top_i/clocktreeMTS/BUFG_PL_CLK/U0/BUFG_O[0]]
+set_input_delay -clock [get_clocks PL_CLK_clk] -min -add_delay 2.000 [get_ports PL_SYSREF_clk_p]
+set_input_delay -clock [get_clocks PL_CLK_clk] -max -add_delay 2.031 [get_ports PL_SYSREF_clk_p]
+# set_property CLOCK_DEDICATED_ROUTE ANY_CMT_COLUMN [get_nets gen3_top_i/clocktreeMTS/BUFG_PL_CLK/U0/BUFG_O[0]]
 
 #set_false_path -from [get_ports reset]
-#set_false_path -from [get_pins {mts_i/gpio_control/axi_gpio_dac/U0/gpio_core_1/Not_Dual.gpio_Data_Out_reg[*]/C}]
-#set_false_path -from [get_pins {mts_i/clocktreeMTS/RFegressReset/U0/ACTIVE_LOW_PR_OUT_DFF[*].*/C}]
+set_false_path -from [get_pins {gen_3_top_i/clocktreeMTS/RFegressReset/U0/ACTIVE_LOW_PR_OUT_DFF[*].*/C}]
 
 # Constrain the user_sysref clocks
 set_max_delay -from [get_pins {gen3_top_i/clocktreeMTS/synchronize_PL_SYSREF/inst/xsingle/syncstages_ff_reg[1]/C}] 1.0
@@ -201,10 +202,10 @@ set_property PACKAGE_PIN AF17			[get_ports {pmod0[5]}]
 set_property PACKAGE_PIN AH17			[get_ports {pmod0[6]}]
 set_property PACKAGE_PIN AK16			[get_ports {pmod0[7]}]
 set_property IOSTANDARD LVCMOS18		[get_ports {pmod0[?]}]
-set_property PULLUP true			    [get_ports {pmod0[2]}]
-set_property PULLUP true			    [get_ports {pmod0[3]}]
-set_property PULLUP true			    [get_ports {pmod0[6]}]
-set_property PULLUP true			    [get_ports {pmod0[7]}]
+set_property PULLUP true			[get_ports {pmod0[2]}]
+set_property PULLUP true			[get_ports {pmod0[3]}]
+set_property PULLUP true			[get_ports {pmod0[6]}]
+set_property PULLUP true			[get_ports {pmod0[7]}]
 
 set_property PACKAGE_PIN AW13			[get_ports {pmod1[0]}]
 set_property PACKAGE_PIN AR13			[get_ports {pmod1[1]}]
@@ -215,47 +216,47 @@ set_property PACKAGE_PIN AP14			[get_ports {pmod1[5]}]
 set_property PACKAGE_PIN AT15			[get_ports {pmod1[6]}]
 set_property PACKAGE_PIN AU14			[get_ports {pmod1[7]}]
 set_property IOSTANDARD LVCMOS18		[get_ports {pmod1[?]}]
-set_property PULLUP true			    [get_ports {pmod1[2]}]
-set_property PULLUP true			    [get_ports {pmod1[3]}]
-set_property PULLUP true			    [get_ports {pmod1[6]}]
-set_property PULLUP true			    [get_ports {pmod1[7]}]
+set_property PULLUP true			[get_ports {pmod1[2]}]
+set_property PULLUP true			[get_ports {pmod1[3]}]
+set_property PULLUP true			[get_ports {pmod1[6]}]
+set_property PULLUP true			[get_ports {pmod1[7]}]
 
 ## SYZYGY Expansion connector - bank 84 and bank 87
-set_property PACKAGE_PIN AU2		    [get_ports {syzygy_std0_tri_io[0]}];   # S0_D0P, Pin 5
-set_property PACKAGE_PIN A7			    [get_ports {syzygy_std0_tri_io[1]}];   # S1_D1P, Pin 6
+set_property PACKAGE_PIN AU2			[get_ports {syzygy_std0_tri_io[0]}];   # S0_D0P, Pin 5
+set_property PACKAGE_PIN A7			[get_ports {syzygy_std0_tri_io[1]}];   # S1_D1P, Pin 6
 set_property PACKAGE_PIN AU1			[get_ports {syzygy_std0_tri_io[2]}];   # S2_D0N, Pin 7
-set_property PACKAGE_PIN A6			    [get_ports {syzygy_std0_tri_io[3]}];   # S3_D1N, Pin 8
+set_property PACKAGE_PIN A6			[get_ports {syzygy_std0_tri_io[3]}];   # S3_D1N, Pin 8
 set_property PACKAGE_PIN AV3			[get_ports {syzygy_std0_tri_io[4]}];   # S4_D2P, Pin 9
-set_property PACKAGE_PIN C8			    [get_ports {syzygy_std0_tri_io[5]}];   # S5_D3P, Pin 10
+set_property PACKAGE_PIN C8			[get_ports {syzygy_std0_tri_io[5]}];   # S5_D3P, Pin 10
 set_property PACKAGE_PIN AV2			[get_ports {syzygy_std0_tri_io[6]}];   # S6_D2N, Pin 11
-set_property PACKAGE_PIN C7			    [get_ports {syzygy_std0_tri_io[7]}];   # S7_D3N, Pin 12
+set_property PACKAGE_PIN C7			[get_ports {syzygy_std0_tri_io[7]}];   # S7_D3N, Pin 12
 set_property PACKAGE_PIN AW4			[get_ports {syzygy_std0_tri_io[8]}];   # S8_D4P, Pin 13
-set_property PACKAGE_PIN E9			    [get_ports {syzygy_std0_tri_io[9]}];   # S9_D5P, Pin 14
+set_property PACKAGE_PIN E9			[get_ports {syzygy_std0_tri_io[9]}];   # S9_D5P, Pin 14
 set_property PACKAGE_PIN AW3			[get_ports {syzygy_std0_tri_io[10]}];  # S10_D4N, Pin 15
-set_property PACKAGE_PIN E8			    [get_ports {syzygy_std0_tri_io[11]}];  # S11_D5N, Pin 16
+set_property PACKAGE_PIN E8			[get_ports {syzygy_std0_tri_io[11]}];  # S11_D5N, Pin 16
 set_property PACKAGE_PIN AT7			[get_ports {syzygy_std0_tri_io[12]}];  # S12_D6P, Pin 17
-set_property PACKAGE_PIN F6			    [get_ports {syzygy_std0_tri_io[13]}];  # S13_D7P, Pin 18
+set_property PACKAGE_PIN F6			[get_ports {syzygy_std0_tri_io[13]}];  # S13_D7P, Pin 18
 set_property PACKAGE_PIN AT6			[get_ports {syzygy_std0_tri_io[14]}];  # S14_D6N, Pin 19
-set_property PACKAGE_PIN E6			    [get_ports {syzygy_std0_tri_io[15]}];  # S15_D7N, Pin 20
-set_property PACKAGE_PIN B8			    [get_ports {syzygy_std0_tri_io[16]}];  # S16, Pin 21
+set_property PACKAGE_PIN E6			[get_ports {syzygy_std0_tri_io[15]}];  # S15_D7N, Pin 20
+set_property PACKAGE_PIN B8			[get_ports {syzygy_std0_tri_io[16]}];  # S16, Pin 21
 set_property PACKAGE_PIN AR6			[get_ports {syzygy_std0_tri_io[17]}];  # S17, Pin 22
-set_property PACKAGE_PIN D6			    [get_ports {syzygy_std0_tri_io[18]}];  # S18, Pin 23
+set_property PACKAGE_PIN D6			[get_ports {syzygy_std0_tri_io[18]}];  # S18, Pin 23
 set_property PACKAGE_PIN AR7			[get_ports {syzygy_std0_tri_io[19]}];  # S19, Pin 24
-set_property PACKAGE_PIN C6			    [get_ports {syzygy_std0_tri_io[20]}];  # S20, Pin 25
+set_property PACKAGE_PIN C6			[get_ports {syzygy_std0_tri_io[20]}];  # S20, Pin 25
 set_property PACKAGE_PIN AU7			[get_ports {syzygy_std0_tri_io[21]}];  # S21, Pin 26
-set_property PACKAGE_PIN B5			    [get_ports {syzygy_std0_tri_io[22]}];  # S22, Pin 27
+set_property PACKAGE_PIN B5			[get_ports {syzygy_std0_tri_io[22]}];  # S22, Pin 27
 set_property PACKAGE_PIN AV7			[get_ports {syzygy_std0_tri_io[23]}];  # S23, Pin 28
-set_property PACKAGE_PIN A5			    [get_ports {syzygy_std0_tri_io[24]}];  # S24, Pin 29
+set_property PACKAGE_PIN A5			[get_ports {syzygy_std0_tri_io[24]}];  # S24, Pin 29
 set_property PACKAGE_PIN AU8			[get_ports {syzygy_std0_tri_io[25]}];  # S25, Pin 30
-set_property PACKAGE_PIN C5			    [get_ports {syzygy_std0_tri_io[26]}];  # S26, Pin 31
+set_property PACKAGE_PIN C5			[get_ports {syzygy_std0_tri_io[26]}];  # S26, Pin 31
 set_property PACKAGE_PIN AV8			[get_ports {syzygy_std0_tri_io[27]}];  # S27, Pin 32
 set_property PACKAGE_PIN AV6			[get_ports {syzygy_std0_tri_io[28]}];  # P2C_CLKP, Pin 33
 set_property PACKAGE_PIN B10			[get_ports {syzygy_std0_tri_io[29]}];  # C2P_CLKP, Pin 34 
 set_property PACKAGE_PIN AV5			[get_ports {syzygy_std0_tri_io[30]}];  # P2C_CLKN, Pin 35
-set_property PACKAGE_PIN B9			    [get_ports {syzygy_std0_tri_io[31]}];  # C2P_CLKN, Pin 36
+set_property PACKAGE_PIN B9			[get_ports {syzygy_std0_tri_io[31]}];  # C2P_CLKN, Pin 36
 
-set_property IOSTANDARD LVCMOS18        [get_ports -of_objects [get_iobanks 84]];
-set_property IOSTANDARD LVCMOS18        [get_ports -of_objects [get_iobanks 87]];
+set_property IOSTANDARD LVCMOS18		[get_ports -of_objects [get_iobanks 84]];
+set_property IOSTANDARD LVCMOS18		[get_ports -of_objects [get_iobanks 87]];
 
 set_property LOC MMCM_X0Y2 [get_cells -hier -filter {NAME =~ */u_ddr4_infrastructure/gen_mmcme*.u_mmcme_adv_inst}]
 
