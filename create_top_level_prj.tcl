@@ -1,7 +1,9 @@
 # BD to source (relative to ${origin_dir}) and project name
-set bd_to_src "simplified_mts.tcl"
-set _xil_proj_name_ "mts_test_prj"
+set bd_to_src "gen3_top_mts.tcl"
+set _xil_proj_name_ "gen3_top_mts_prj"
 
+# set mts_design 0
+set mts_design 1
 
 # Set project origin
 set origin_dir "."
@@ -27,6 +29,7 @@ update_ip_catalog -rebuild
 # Set 'sources_1' fileset object
 set obj [get_filesets sources_1]
  set files [list \
+  [file normalize "${origin_dir}/rtl/lfsr_div.v"] \
   [file normalize "${ip_repo}/wb2axip/rtl/sfifo.v"] \
   [file normalize "${ip_repo}/wb2axip/rtl/axis2mm.v"] \
   [file normalize "${ip_repo}/wb2axip/rtl/skidbuffer.v"] \
@@ -39,7 +42,12 @@ source ${origin_dir}/bd/${bd_to_src}
 
 # Add all base overlay 4x2 constraints
 update_compile_order -fileset sources_1
-add_files -fileset constrs_1 -norecurse ${origin_dir}/base.xdc
+
+if { $mts_design } {
+  add_files -fileset constrs_1 -norecurse ${origin_dir}/base-mts.xdc
+} else {
+  add_files -fileset constrs_1 -norecurse ${origin_dir}/base.xdc
+}
 
 
 # Generate HDL Wrapper
