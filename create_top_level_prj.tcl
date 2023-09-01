@@ -33,7 +33,8 @@ set obj [get_filesets sources_1]
   [file normalize "${ip_repo}/wb2axip/rtl/sfifo.v"] \
   [file normalize "${ip_repo}/wb2axip/rtl/axis2mm.v"] \
   [file normalize "${ip_repo}/wb2axip/rtl/skidbuffer.v"] \
-    ]
+  [file normalize "${ip_repo}/pps-synchronizer/src/verilog/pps_synch.v"] \
+]
 add_files -norecurse -fileset $obj $files
 
 
