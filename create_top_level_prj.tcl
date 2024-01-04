@@ -1,6 +1,6 @@
 # BD to source (relative to ${origin_dir}) and project name
-set bd_to_src "j_newclk_newdac_noresets_23.tcl"
-set _xil_proj_name_ "j_newclk_newdac_noresets_23_prj"
+set bd_to_src "gen3_top_featurecomplete.tcl"
+set _xil_proj_name_ "gen3_top_featurecomplete_prj"
 
 # Set project origin
 set origin_dir "."

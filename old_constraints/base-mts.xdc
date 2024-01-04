@@ -1,14 +1,5 @@
 ## Constraints file for RFSoC4x2 base overlay Vivado project
 
-# Synthesis Guidance
-set_property BLOCK_SYNTH.RETIMING 1 [get_cells gen3_top_i/capture/ddr4_0/*]
-set_property BLOCK_SYNTH.STRATEGY {PERFORMANCE_OPTIMIZED} [get_cells gen3_top_i/capture/ddr4_0/*]
-
-set_property BLOCK_SYNTH.RETIMING 1 [get_cells {gen3_top_i/rfdc/usp_rf_data_converter_0/*}]
-set_property BLOCK_SYNTH.STRATEGY {PERFORMANCE_OPTIMIZED} [get_cells {gen3_top_i/rfdc/usp_rf_data_converter_0/*}]
-
-set_property BLOCK_SYNTH.RETIMING 1 [get_cells {gen3_top_i/DACCDC*/axis_dwidth_converter_0/*}]
-set_property BLOCK_SYNTH.STRATEGY {PERFORMANCE_OPTIMIZED} [get_cells {gen3_top_i/DACCDC*/axis_dwidth_converter_0/*}]
 
 # Constrain PL Clock Pins
 set_property PACKAGE_PIN AP18 [get_ports {PL_SYSREF_clk_p[0]}]
@@ -194,15 +185,18 @@ set_property PACKAGE_PIN AP8 [get_ports {rgbleds_6bits[4]}]
 set_property PACKAGE_PIN AR12 [get_ports {rgbleds_6bits[5]}]
 set_property IOSTANDARD LVCMOS18 [get_ports {rgbleds_6bits[?]}]
 set_property IOSTANDARD LVCMOS18 [get_ports {rgbleds_6bits[?]}]
-
 set_false_path -to [get_ports {rgbleds_6bits[?]}]
 
+#set_false_path -from [get_pins {gen3_top_i/Clocktree/PL_RF_512_Reset/U0/*BSR_OUT_DFF[*].*/C}] -to [get_pins -of_objects [get_cells -hier -regexp .*dactable.*] -leaf -filter {REF_PIN_NAME=~R}]
+#set_false_path -from [get_pins {gen3_top_i/Clocktree/PL_RF_512_Reset/U0/*BSR_OUT_DFF[*].*/C}] -to [get_pins -of_objects [get_cells -hier -regexp .*trigger_system.*] -leaf -filter {REF_PIN_NAME=~R}]
+#set_false_path -from [get_pins {gen3_top_i/Clocktree/PL_RF_512_Reset/U0/*BSR_OUT_DFF[*].*/C}] -to [get_pins -of_objects [get_cells -hier -regexp .*photon_pipe.*] -leaf -filter {REF_PIN_NAME=~R}]
+#set_false_path -from [get_pins {gen3_top_i/Clocktree/PL_RF_512_Reset/U0/*BSR_OUT_DFF[*].*/C}] -to [get_pins -of_objects [get_cells -hier -regexp .*pps_synchronizer_con.*] -leaf -filter {REF_PIN_NAME=~R}]
 set_false_path -from [get_pins {gen3_top_i/Clocktree/AXI_100_RESET/U0/BSR_OUT_DFF[*].*/C}]
-set_property CLOCK_BUFFER_TYPE BUFG [get_nets {gen3_top_i/Clocktree/AXI_100_RESET/interconnect_aresetn[0]}]
-set_property CLOCK_BUFFER_TYPE BUFG [get_nets {gen3_top_i/Clocktree/PL_RF_256_Reset/interconnect_aresetn[0]}]
-set_property CLOCK_BUFFER_TYPE BUFG [get_nets {gen3_top_i/Clocktree/PL_RF_512_Reset/interconnect_aresetn[0]}]
-set_property CLOCK_BUFFER_TYPE BUFG [get_nets {gen3_top_i/photon_pipe/opfb/adc_to_opfb_0/inst/process_lanes_U0/regslice_both_lanes_V_data_V_U/even_delay_Array_ce0}]
-set_property CLOCK_BUFFER_TYPE BUFG [get_nets {gen3_top_i/photon_pipe/opfb/adc_to_opfb_0/inst/process_lanes_U0/regslice_both_lanes_V_data_V_U/odd_delay_Array_ce0}]
+#set_property CLOCK_BUFFER_TYPE BUFG [get_nets {gen3_top_i/Clocktree/AXI_100_RESET/interconnect_aresetn[0]}]
+#set_property CLOCK_BUFFER_TYPE BUFG [get_nets {gen3_top_i/Clocktree/PL_RF_256_Reset/interconnect_aresetn[0]}]
+#set_property CLOCK_BUFFER_TYPE BUFG [get_nets {gen3_top_i/Clocktree/PL_RF_512_Reset/interconnect_aresetn[0]}]
+#set_property CLOCK_BUFFER_TYPE BUFG [get_nets {gen3_top_i/photon_pipe/opfb/adc_to_opfb_0/inst/process_lanes_U0/regslice_both_lanes_V_data_V_U/even_delay_Array_ce0}]
+#set_property CLOCK_BUFFER_TYPE BUFG [get_nets {gen3_top_i/photon_pipe/opfb/adc_to_opfb_0/inst/process_lanes_U0/regslice_both_lanes_V_data_V_U/odd_delay_Array_ce0}]
 #set_property CLOCK_BUFFER_TYPE BUFG [get_nets {gen3_top_i/photon_pipe/reschan/dds_ddc_center/inst/grp_phase_sincos_LUT_*/accumulator_TVALID_0}]
 
 #set_false_path -from [get_ports {pps_trig}]
@@ -210,20 +204,20 @@ set_property CLOCK_BUFFER_TYPE BUFG [get_nets {gen3_top_i/photon_pipe/opfb/adc_t
 
 
 # Placement Guidance
-create_pblock daccdc_spineleft
-resize_pblock [get_pblocks daccdc_spineleft] -add {CLOCKREGION_X2Y4:CLOCKREGION_X3Y5}
-add_cells_to_pblock [get_pblocks daccdc_spineleft] [get_cells -quiet [list gen3_top_i/DACCDC0/axis_clock_converter_0 gen3_top_i/DACCDC1/axis_clock_converter_0]]
+#create_pblock daccdc_spineleft
+#resize_pblock [get_pblocks daccdc_spineleft] -add {CLOCKREGION_X2Y4:CLOCKREGION_X3Y5}
+#add_cells_to_pblock [get_pblocks daccdc_spineleft] [get_cells -quiet [list gen3_top_i/DACCDC0/axis_clock_converter_0 gen3_top_i/DACCDC1/axis_clock_converter_0]]
 
-create_pblock daccdc_spineright
-resize_pblock [get_pblocks daccdc_spineright] -add {CLOCKREGION_X4Y4:CLOCKREGION_X5Y5}
-add_cells_to_pblock [get_pblocks daccdc_spineright] [get_cells -quiet [list gen3_top_i/DACCDC0/axis_dwidth_converter_0 gen3_top_i/DACCDC1/axis_dwidth_converter_0]]
+#create_pblock daccdc_spineright
+#resize_pblock [get_pblocks daccdc_spineright] -add {CLOCKREGION_X4Y4:CLOCKREGION_X5Y5}
+#add_cells_to_pblock [get_pblocks daccdc_spineright] [get_cells -quiet [list gen3_top_i/DACCDC0/axis_dwidth_converter_0 gen3_top_i/DACCDC1/axis_dwidth_converter_0]]
 
-create_pblock ddr4_pblock
-add_cells_to_pblock [get_pblocks ddr4_pblock] [get_cells -quiet [list gen3_top_i/capture/ddr4_0]]
-resize_pblock [get_pblocks ddr4_pblock] -add {SLICE_X86Y240:SLICE_X89Y359 SLICE_X38Y180:SLICE_X85Y359}
-resize_pblock [get_pblocks ddr4_pblock] -add {DSP48E2_X16Y96:DSP48E2_X17Y143 DSP48E2_X6Y72:DSP48E2_X15Y143}
-resize_pblock [get_pblocks ddr4_pblock] -add {RAMB18_X4Y72:RAMB18_X8Y143}
-resize_pblock [get_pblocks ddr4_pblock] -add {RAMB36_X4Y36:RAMB36_X8Y71}
+#create_pblock ddr4_pblock
+#add_cells_to_pblock [get_pblocks ddr4_pblock] [get_cells -quiet [list gen3_top_i/capture/ddr4_0]]
+#resize_pblock [get_pblocks ddr4_pblock] -add {SLICE_X86Y240:SLICE_X89Y359 SLICE_X38Y180:SLICE_X85Y359}
+#resize_pblock [get_pblocks ddr4_pblock] -add {DSP48E2_X16Y96:DSP48E2_X17Y143 DSP48E2_X6Y72:DSP48E2_X15Y143}
+#resize_pblock [get_pblocks ddr4_pblock] -add {RAMB18_X4Y72:RAMB18_X8Y143}
+#resize_pblock [get_pblocks ddr4_pblock] -add {RAMB36_X4Y36:RAMB36_X8Y71}
 
 # Debug Hub
 set_property C_CLK_INPUT_FREQ_HZ 300000000 [get_debug_cores dbg_hub]
