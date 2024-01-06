@@ -6,9 +6,16 @@ Please see design.md for an overview of the gateware design.
 
 ## Building the Project
 
-After recursively cloning this repository projects can be built in a few ways. On linux with you can use make to create and build various versions of the project and test benches. While within the project directory run: 
+### Clone the Repo
+```
+git clone --recurse-submodules https://github.com/MazinLab/gen3-vivado-top.git
 
-`make <design_name>`
+```
+### Build the Bitstream
+```
+source <path/to/vivado/2022.1>
+make gen3_top
+```
 
 On windows, within vivado switch to the directory of the design and execute 
 
