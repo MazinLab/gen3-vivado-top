@@ -7,10 +7,8 @@ Please see design.md for an overview of the gateware design.
 ## Building the Project
 
 ### Clone the Repo
-```
-git clone --recurse-submodules https://github.com/MazinLab/gen3-vivado-top.git
+`git clone --recurse-submodules https://github.com/MazinLab/gen3-vivado-top.git`
 
-```
 ### Build the Bitstream
 ```
 source <path/to/vivado/2022.1>
