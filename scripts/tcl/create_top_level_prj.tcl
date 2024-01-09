@@ -1,15 +1,16 @@
 # BD to source and project name
 set bd_to_src [lindex $argv 0]
 set _xil_proj_name_ [lindex $argv 1]
+set _xil_proj_dir_ [lindex $argv 2]
 
 # Set project origin
 set origin_dir $::env(ORIGIN_DIR)
 
 # Set IP Repo
-set ip_repo "./blocks"
+set ip_repo "${origin_dir}/blocks"
 
 # Create project
-create_project ${_xil_proj_name_} ./${_xil_proj_name_} -part xczu48dr-ffvg1517-2-e
+create_project ${_xil_proj_name_} ${_xil_proj_dir_} -part xczu48dr-ffvg1517-2-e
 
 # Set project properties
 set obj [current_project]
@@ -44,8 +45,8 @@ update_compile_order -fileset sources_1
 add_files -fileset constrs_1 ${origin_dir}/constraints/
 
 # Generate HDL Wrapper
-make_wrapper -files [get_files ${origin_dir}/${_xil_proj_name_}/${_xil_proj_name_}.srcs/sources_1/bd/${design_name}/${design_name}.bd] -top
-add_files -norecurse ${origin_dir}/${_xil_proj_name_}/${_xil_proj_name_}.srcs/sources_1/bd/${design_name}/hdl/${design_name}_wrapper.v
+make_wrapper -files [get_files ${origin_dir}/${_xil_proj_dir_}/${_xil_proj_name_}.srcs/sources_1/bd/${design_name}/${design_name}.bd] -top
+add_files -norecurse ${origin_dir}/${_xil_proj_dir_}/${_xil_proj_name_}.srcs/sources_1/bd/${design_name}/hdl/${design_name}_wrapper.v
 
 set_property top ${design_name}_wrapper [current_fileset]
 update_compile_order -fileset sources_1
