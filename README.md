@@ -6,7 +6,16 @@ Please see design.md for an overview of the gateware design.
 
 ## Building the Project
 
-To build the Gen3 gateware recursively clone this repository in order to fetch all of the dependencies, source the `settings64.sh` for the version of vivado you would like to use (at time of writing this should be 2022.1) so that vivado is in your path and run `make` in this folder. When that completes the bitstream and hardware description files will be available in `build/`.
+### Clone the Repo
+`git clone --recurse-submodules https://github.com/MazinLab/gen3-vivado-top.git`
+
+### Build the Bitstream
+```
+source <path/to/vivado/2022.1/settings64.sh>
+make
+```
+
+This will produce output products in the `build/` directory
 
 By default this will build the `gen3_top` gateware project, as of the time of writing that includes the full hardware design with a 30 tap matched filter. If you would like to build one of the other designs in the `bd/` folder you may do so by running `make DESIGN=mydesign` where mydesign does not include the .tcl extension of the file in the `bd/` folder
 
