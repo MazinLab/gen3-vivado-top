@@ -6,24 +6,24 @@ Please see design.md for an overview of the gateware design.
 
 ## Building the Project
 
-After recursively cloning this repository projects can be built in a few ways. On linux with you can use make to create and build various versions of the project and test benches. While within the project directory run: 
+To build the Gen3 gateware recursively clone this repository in order to fetch all of the dependencies, source the `settings64.sh` for the version of vivado you would like to use (at time of writing this should be 2022.1) so that vivado is in your path and run `make` in this folder. When that completes the bitstream and hardware description files will be available in `build/`.
 
-`make <design_name>`
+By default this will build the `gen3_top` gateware project, as of the time of writing that includes the full hardware design with a 30 tap matched filter. If you would like to build one of the other designs in the `bd/` folder you may do so by running `make DESIGN=mydesign` where mydesign does not include the .tcl extension of the file in the `bd/` folder
 
-On windows, within vivado switch to the directory of the design and execute 
+If you would like to override the name of the generated project (to test various changes) you may do so with `make PROJECT_NAME=myotherproject_prj` which will produce a correspondingly named folder in `build/`
 
-`source .\write_prj.tcl`
+Various convenience targets are provided for working with the generated projects:
 
-Valid design names are given by the folder names in `tests`.
+1. `make project` will just generate the project directory allowing you to open it in the vivado gui
+2. `make shell` will open a tcl console in the created project
+3. `make backup/restore` while backup and restore project folders (But not the generated bitstreams/hwh files in the build folder)
+4. `make hwh` will generate just the `.hwh` file (without running through synth and impl)
+5. `make bitstream` will generate just the bitstream
+6. `make clean` will nuke your current project
+7. `make cleanall` will nuke all of your projects
+8. `make all` (the default target) will build project, bitstream and hwh
 
-Additional designs may be manually recreated by using the following steps.
-
-1. Open vivado, create a new project with the ZCU111 board in a subdirectory of the folder containing this repo, (adding it to gitignore).
-2. cd to the repo directory
-3. Run `add_files -norecurse {./blocks/wb2axip/rtl/axis2mm.v ./blocks/wb2axip/rtl/skidbuffer.v ./blocks/wb2axip/rtl/sfifo.v}`
-4. source ./bd/<desired_bd_tcl>
-
-The present most complete design is iqtest.tcl on branch 2021.2.
+When using a non-defualt project name or design, make sure you pass the PROJECT_NAME directive to make
 
 ## Potentially timesaving TCL commands 
 
