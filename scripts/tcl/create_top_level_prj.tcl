@@ -60,6 +60,3 @@ set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.IS_ENABLED true [get_runs impl_1]
 set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore [get_runs impl_1]
 
 update_compile_order -fileset sources_1
-
-#launch_runs impl_1 -to_step write_bitstream -jobs 4
-#wait_on_run impl_1
