@@ -1,6 +1,6 @@
 ORIGIN_DIR := .
-BUILD_DIR := ${ORIGIN_DIR}/build/
-SCRIPT_DIR := ${ORIGIN_DIR}/scripts/
+BUILD_DIR := ${ORIGIN_DIR}/build
+SCRIPT_DIR := ${ORIGIN_DIR}/scripts
 
 DESIGN ?= gen3_top
 PROJECT_NAME ?= ${DESIGN}_prj
@@ -40,12 +40,23 @@ project: ${PROJECT_DIR}/${PROJECT_NAME}.xpr
 shell: project
 	cd ${ORIGIN_DIR}; ${VIVADO} -mode tcl ${VIVADO_ARGS} ${PROJECT_DIR}/${PROJECT_NAME}.xpr
 
-timing: ${BUILD_DIR}/${DESIGN}.bit
+timing: ${BUILD_DIR}/${PROJECT_NAME}.bit
 	less ${PROJECT_DIR}/${DESIGN}_prj.runs/impl_1/${DESIGN}_wrapper_timing_summary_postroute_physopted.rpt
 
+backup:
+	cd ${BUILD_DIR}; tar czf ${PROJECT_NAME}.tar.gz ${PROJECT_NAME}
+
+restore:
+	cd ${BUILD_DIR}; rm -rf ${PROJECT_NAME}; tar zxf ${PROJECT_NAME}.tar.gz
+
 clean:
+	rm -rf ${PROJECT_DIR}
+	rm -rf ${BUILD_DIR}/${PROJECT_NAME}.bit
+	rm -rf ${BUILD_DIR}/${PROJECT_NAME}.hwh
+
+cleanall:
 	rm -rf ${BUILD_DIR}/*_prj
 	rm -rf ${BUILD_DIR}/*.bit
 	rm -rf ${BUILD_DIR}/*.hwh
 
-.PHONY: clean all project hwh bitstream shell timing
+.PHONY: all clean cleanall backup restore project shell hwh bitstream timing

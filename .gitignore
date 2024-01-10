@@ -6,3 +6,4 @@
 build/*_prj
 build/*.hwh
 build/*.bit
+build/*_prj.tar.gz
