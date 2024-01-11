@@ -1,15 +1,16 @@
-# BD to source (relative to ${origin_dir}) and project name
-set bd_to_src "gen3_top.tcl"
-set _xil_proj_name_ "gen3_top_prj"
+# BD to source and project name
+set bd_to_src [lindex $argv 0]
+set _xil_proj_name_ [lindex $argv 1]
+set _xil_proj_dir_ [lindex $argv 2]
 
 # Set project origin
-set origin_dir "."
+set origin_dir $::env(ORIGIN_DIR)
 
 # Set IP Repo
-set ip_repo "./blocks"
+set ip_repo "${origin_dir}/blocks"
 
 # Create project
- create_project ${_xil_proj_name_} ./${_xil_proj_name_} -part xczu48dr-ffvg1517-2-e
+create_project ${_xil_proj_name_} ${_xil_proj_dir_} -part xczu48dr-ffvg1517-2-e
 
 # Set project properties
 set obj [current_project]
@@ -35,7 +36,7 @@ set obj [get_filesets sources_1]
 add_files -norecurse -fileset $obj $files
 
 # Build block design
-source ${origin_dir}/bd/${bd_to_src}
+source ${bd_to_src}
 
 # Add all base overlay 4x2 constraints
 update_compile_order -fileset sources_1
@@ -44,8 +45,8 @@ update_compile_order -fileset sources_1
 add_files -fileset constrs_1 ${origin_dir}/constraints/
 
 # Generate HDL Wrapper
-make_wrapper -files [get_files ${origin_dir}/${_xil_proj_name_}/${_xil_proj_name_}.srcs/sources_1/bd/${design_name}/${design_name}.bd] -top
-add_files -norecurse ${origin_dir}/${_xil_proj_name_}/${_xil_proj_name_}.srcs/sources_1/bd/${design_name}/hdl/${design_name}_wrapper.v
+make_wrapper -files [get_files ${origin_dir}/${_xil_proj_dir_}/${_xil_proj_name_}.srcs/sources_1/bd/${design_name}/${design_name}.bd] -top
+add_files -norecurse ${origin_dir}/${_xil_proj_dir_}/${_xil_proj_name_}.srcs/sources_1/bd/${design_name}/hdl/${design_name}_wrapper.v
 
 set_property top ${design_name}_wrapper [current_fileset]
 update_compile_order -fileset sources_1
@@ -58,8 +59,4 @@ set_property STEPS.PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore [get_runs im
 set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.IS_ENABLED true [get_runs impl_1]
 set_property STEPS.POST_ROUTE_PHYS_OPT_DESIGN.ARGS.DIRECTIVE AggressiveExplore [get_runs impl_1]
 
-
-#Uncomment below to run through bitstream generation
-#update_compile_order -fileset sources_1
-#launch_runs impl_1 -to_step write_bitstream -jobs 4
-#wait_on_run impl_1
+update_compile_order -fileset sources_1

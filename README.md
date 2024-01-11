@@ -11,24 +11,28 @@ Please see design.md for an overview of the gateware design.
 
 ### Build the Bitstream
 ```
-source <path/to/vivado/2022.1>
-make gen3_top
+source <path/to/vivado/2022.1/settings64.sh>
+make
 ```
 
-On windows, within vivado switch to the directory of the design and execute 
+This will produce output products in the `build/` directory
 
-`source .\write_prj.tcl`
+By default this will build the `gen3_top` gateware project, as of the time of writing that includes the full hardware design with a 30 tap matched filter. If you would like to build one of the other designs in the `bd/` folder you may do so by running `make DESIGN=mydesign` where mydesign does not include the .tcl extension of the file in the `bd/` folder
 
-Valid design names are given by the folder names in `tests`.
+If you would like to override the name of the generated project (to test various changes) you may do so with `make PROJECT_NAME=myotherproject_prj` which will produce a correspondingly named folder in `build/`
 
-Additional designs may be manually recreated by using the following steps.
+Various convenience targets are provided for working with the generated projects:
 
-1. Open vivado, create a new project with the ZCU111 board in a subdirectory of the folder containing this repo, (adding it to gitignore).
-2. cd to the repo directory
-3. Run `add_files -norecurse {./blocks/wb2axip/rtl/axis2mm.v ./blocks/wb2axip/rtl/skidbuffer.v ./blocks/wb2axip/rtl/sfifo.v}`
-4. source ./bd/<desired_bd_tcl>
+1. `make project` will just generate the project directory allowing you to open it in the vivado gui
+2. `make shell` will open a tcl console in the created project
+3. `make backup/restore` while backup and restore project folders (But not the generated bitstreams/hwh files in the build folder)
+4. `make hwh` will generate just the `.hwh` file (without running through synth and impl)
+5. `make bitstream` will generate just the bitstream
+6. `make clean` will nuke your current project
+7. `make cleanall` will nuke all of your projects
+8. `make all` (the default target) will build project, bitstream and hwh
 
-The present most complete design is iqtest.tcl on branch 2021.2.
+When using a non-defualt project name or design, make sure you pass the appropriate directives to make or set them as environment variables.
 
 ## Potentially timesaving TCL commands 
 
