@@ -32,7 +32,7 @@ Various convenience targets are provided for working with the generated projects
 7. `make cleanall` will nuke all of your projects
 8. `make all` (the default target) will build project, bitstream and hwh
 
-When using a non-defualt project name or design, make sure you pass the PROJECT_NAME directive to make
+When using a non-defualt project name or design, make sure you pass the appropriate directives to make or set them as environment variables.
 
 ## Potentially timesaving TCL commands 
 
