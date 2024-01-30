@@ -2,8 +2,15 @@
 *.jou
 *.str
 
+.cxl*
+*.prj
+*.daidir
+synopsys_sim.setup
+
 # test system projects
 build/*_prj
+sim/*_prj
+simlibs/xilinx
 build/*.hwh
 build/*.bit
 build/*_prj.tar.gz
