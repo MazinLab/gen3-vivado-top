@@ -1,0 +1,31 @@
+[project]
+name = "mkidaranth"
+version = "0.1.0"
+description = "amaranth blocks for MKID Readout"
+authors = [
+    {name = "Aled Cuda", email = "aled@ucsb.edu"},
+]
+dependencies = [
+    "amaranth>=0.5.2",
+    "amaranth-soc>=0",
+]
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "GPL"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+
+[tool.pdm]
+distribution = true
+
+[tool.pdm.scripts]
+test.composite = ["test-code"]
+test-code.cmd = "python -m coverage run -m unittest discover -t . -s tests -v"
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "coverage>=7.6.1",
+]
