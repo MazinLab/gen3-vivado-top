@@ -4,6 +4,7 @@ from amaranth.sim import Simulator
 
 from mkidaranth.trigger import *
 
+
 async def stream_get(ctx, stream):
     ctx.set(stream.ready, 1)
     (payload,) = await ctx.tick().sample(stream.payload).until(stream.valid)
@@ -44,23 +45,17 @@ class PackageTestCase(unittest.TestCase):
         packagedpc = lambda i: data.StructLayout(
             {
                 "beat": 9,
-                "iq": data.ArrayLayout(
-                    data.StructLayout({"real": signed(16), "imag": signed(16)}), 4
-                ),
+                "iq": data.ArrayLayout(data.StructLayout({"real": signed(16), "imag": signed(16)}), 4),
                 "phase": data.ArrayLayout(signed(16), 4),
             }
         ).const(
             {
                 "beat": i,
                 "iq": data.ArrayLayout(iq, 4).from_bits(
-                    sum(
-                        [n << (j * 32) for j, n in enumerate(range(i * 4, (i + 1) * 4))]
-                    )
+                    sum([n << (j * 32) for j, n in enumerate(range(i * 4, (i + 1) * 4))])
                 ),
                 "phase": data.ArrayLayout(signed(16), 4).from_bits(
-                    sum(
-                        [n << (j * 16) for j, n in enumerate(range(i * 4, (i + 1) * 4))]
-                    )
+                    sum([n << (j * 16) for j, n in enumerate(range(i * 4, (i + 1) * 4))])
                 ),
             }
         )
@@ -143,9 +138,7 @@ class Trigger1xTestCase(unittest.TestCase):
         async def process_counter(ctx):
             cycle = 0
             read = 0
-            async for clk_edge, rst, pvalid in ctx.tick().sample(
-                dut.postage_stream.valid
-            ):
+            async for clk_edge, rst, pvalid in ctx.tick().sample(dut.postage_stream.valid):
                 if rst:
                     cycle = 0
                     read = 0
@@ -168,29 +161,21 @@ class Trigger1xTestCase(unittest.TestCase):
 
             for _ in range(4):
                 await ctx.tick()
-                self.assertEqual(
-                    ctx.get(dut.output_state.state), TriggerState.State.RESET.value
-                )
+                self.assertEqual(ctx.get(dut.output_state.state), TriggerState.State.RESET.value)
 
             for v in [-30, -20, -5, -4, 100, -10]:
                 await stream_put_hold(
                     ctx,
                     dut.input_stream,
-                    trigger_input.const(
-                        {"bin": 32, "iq": {"real": v + 1, "imag": v + 2}, "phase": v}
-                    ),
+                    trigger_input.const({"bin": 32, "iq": {"real": v + 1, "imag": v + 2}, "phase": v}),
                 )
-                self.assertEqual(
-                    ctx.get(dut.output_state.state), TriggerState.State.WAITING.value
-                )
+                self.assertEqual(ctx.get(dut.output_state.state), TriggerState.State.WAITING.value)
 
             for v in [-20, -30, -40, -50, -40, -20]:
                 await stream_put_hold(
                     ctx,
                     dut.input_stream,
-                    trigger_input.const(
-                        {"bin": 32, "iq": {"real": v + 1, "imag": v + 2}, "phase": v}
-                    ),
+                    trigger_input.const({"bin": 32, "iq": {"real": v + 1, "imag": v + 2}, "phase": v}),
                 )
 
             self.assertEqual(
@@ -202,27 +187,19 @@ class Trigger1xTestCase(unittest.TestCase):
                 await stream_put_hold(
                     ctx,
                     dut.input_stream,
-                    trigger_input.const(
-                        {"bin": 32, "iq": {"real": v + 1, "imag": v + 2}, "phase": v}
-                    ),
+                    trigger_input.const({"bin": 32, "iq": {"real": v + 1, "imag": v + 2}, "phase": v}),
                 )
                 self.assertEqual(ctx.get(dut.event_stream.valid), 0)
 
             for v in range(24):
-                self.assertEqual(
-                    ctx.get(dut.output_state.state), TriggerState.State.HOLDING.value
-                )
+                self.assertEqual(ctx.get(dut.output_state.state), TriggerState.State.HOLDING.value)
                 await stream_put_hold(
                     ctx,
                     dut.input_stream,
-                    trigger_input.const(
-                        {"bin": 32, "iq": {"real": v + 1, "imag": v + 2}, "phase": v}
-                    ),
+                    trigger_input.const({"bin": 32, "iq": {"real": v + 1, "imag": v + 2}, "phase": v}),
                 )
 
-            self.assertEqual(
-                ctx.get(dut.output_state.state), TriggerState.State.WAITING.value
-            )
+            self.assertEqual(ctx.get(dut.output_state.state), TriggerState.State.WAITING.value)
             self.assertEqual(ctx.get(dut.output_state.info.waiting.maxseen), 23)
 
         sim = Simulator(dut)
@@ -263,9 +240,7 @@ class Trigger1xTestCase(unittest.TestCase):
                 await stream_put_hold(
                     ctx,
                     dut.input_stream,
-                    trigger_input.const(
-                        {"bin": 32, "iq": {"real": v + 1, "imag": v + 2}, "phase": v}
-                    ),
+                    trigger_input.const({"bin": 32, "iq": {"real": v + 1, "imag": v + 2}, "phase": v}),
                 )
                 self.assertEqual(ctx.get(dut.dropped), 0)
 
@@ -276,9 +251,7 @@ class Trigger1xTestCase(unittest.TestCase):
                 await stream_put_hold(
                     ctx,
                     dut.input_stream,
-                    trigger_input.const(
-                        {"bin": 32, "iq": {"real": v + 1, "imag": v + 2}, "phase": v}
-                    ),
+                    trigger_input.const({"bin": 32, "iq": {"real": v + 1, "imag": v + 2}, "phase": v}),
                 )
                 if v == -19:
                     self.assertEqual(ctx.get(dut.dropped), 1)
@@ -294,10 +267,46 @@ class Trigger1xTestCase(unittest.TestCase):
 
 
 class PostageFIFOTestCase(unittest.TestCase):
-    def test_trigger(self):
-        dut = PostageFIFO(8, 128-8, 4)
+    def test_trigger(self, point=12):
+        dut = PostageFIFO(8, 32, 4)
 
         async def testbench(ctx):
+            for _ in range(16):
+                await ctx.tick()
+            ctx.set(dut.count, 2)
+            for i in range(64):
+                for j in range(6):
+                    if j < 2:
+                        ctx.set(dut.postage_stream.valid, 1)
+                        ctx.set(
+                            dut.postage_stream.payload,
+                            dut.postage_stream.payload.shape().const(
+                                {
+                                    "triggered": i == point,
+                                    "iq": iq.from_bits(i),
+                                    "bin": j,
+                                    "cycle": i,
+                                    "read": 1,
+                                }
+                            ),
+                        )
+                    else:
+                        ctx.set(
+                            dut.postage_stream.payload,
+                            dut.postage_stream.payload.shape().from_bits(0xFFFF_FFFF),
+                        )
+                        ctx.set(dut.postage_stream.valid, 0)
+                    await ctx.tick()
+            ch0 = []
+            for _ in range(32):
+                blah = await stream_get(ctx, dut.output_streams[0])
+                ch0.append(blah.iq.real)
+            self.assertEqual(ch0, list(range(point - dut._before, point - dut._before + dut._length)))
+            ch1 = []
+            for _ in range(32):
+                blah = await stream_get(ctx, dut.output_streams[1])
+                ch1.append(blah.iq.real)
+            self.assertEqual(ch1, list(range(point - dut._before, point - dut._before + dut._length)))
             for _ in range(16):
                 await ctx.tick()
 
