@@ -295,31 +295,62 @@ class Trigger1xTestCase(unittest.TestCase):
 
 
 class PostageFIFOTestCase(unittest.TestCase):
-    def photons(self, ctx, dut, points, channels):
-        i = 0
-        async for edge, rst in ctx.tick():
-            if rst:
-                i = 0
-            elif edge:
-                counter = i // channels
-                channel = i % channels
-                ctx.set(
-                    dut.postage_stream.payload,
-                    dut.postage_stream.payload.shape().const(
-                        {
-                            "triggered": (channel in points.keys())
-                            and (counter in points[channel]),
-                            "iq": iq.from_bits(
-                                counter if channel in points.keys() else 0
-                            ),
-                            "bin": channel,
-                            "cycle": counter * 8,
-                            "read": 1,
-                        }
+    def photons(self, dut, points, channels):
+        async def process(ctx):
+            i = 0
+            async for edge, rst in ctx.tick():
+                if rst:
+                    i = 0
+                elif edge:
+                    counter = i // channels
+                    channel = i % channels
+                    ctx.set(
+                        dut.postage_stream.payload,
+                        dut.postage_stream.payload.shape().const(
+                            {
+                                "triggered": (channel in points.keys())
+                                and (counter in points[channel]),
+                                "iq": iq.from_bits(
+                                    counter if channel in points.keys() else 0
+                                ),
+                                "bin": channel,
+                                "cycle": counter * 8,
+                                "read": 1,
+                            }
+                        )
                     )
-                )
-                ctx.set(dut.postage_stream.valid, channel in points.keys())
-                i += 1
+                    ctx.set(dut.postage_stream.valid, channel in points.keys())
+                    i += 1
+        return process
+
+    def nofault(self, dut):
+        async def process(ctx):
+            async for edge, rst, fault in ctx.tick().sample(dut.fault):
+                if edge and not rst:
+                    self.assertEqual(fault, 0)
+        return process
+
+    def nodrop(self, dut):
+        async def process(ctx):
+            async for edge, rst, drop in ctx.tick().sample(dut.dropped):
+                if edge and not rst:
+                    self.assertEqual(drop, 0)
+        return process
+
+    def getpackets(self, stream, metadata, packets):
+        async def process(ctx):
+            nonlocal metadata
+            ctx.set(stream.ready, 1)
+            current_packet = None
+            async for edge, rst, valid, payload, meta in ctx.tick().sample(stream.valid, stream.payload, metadata):
+                if edge and valid and not rst:
+                    if current_packet is None:
+                        current_packet = []
+                        metadata.append({""})
+                    if payload.last:
+                        packets.append(current_packet)
+                        current_packet = None
+        return process
 
     def test_fifo(self, point=12):
         dut = PostageFIFO(8, 32, 4)
@@ -328,29 +359,6 @@ class PostageFIFOTestCase(unittest.TestCase):
             for _ in range(16):
                 await ctx.tick()
             ctx.set(dut.count, 2)
-            for i in range(64):
-                for j in range(6):
-                    if j < 2:
-                        ctx.set(dut.postage_stream.valid, 1)
-                        ctx.set(
-                            dut.postage_stream.payload,
-                            dut.postage_stream.payload.shape().const(
-                                {
-                                    "triggered": i == point,
-                                    "iq": iq.from_bits(i),
-                                    "bin": j,
-                                    "cycle": i,
-                                    "read": 1,
-                                }
-                            ),
-                        )
-                    else:
-                        ctx.set(
-                            dut.postage_stream.payload,
-                            dut.postage_stream.payload.shape().from_bits(0xFFFF_FFFF),
-                        )
-                        ctx.set(dut.postage_stream.valid, 0)
-                    await ctx.tick()
             ch0 = []
             for _ in range(32):
                 blah = await stream_get(ctx, dut.output_streams[0])
@@ -358,6 +366,7 @@ class PostageFIFOTestCase(unittest.TestCase):
             self.assertEqual(
                 ch0, list(range(point - dut._before, point - dut._before + dut._length))
             )
+
             ch1 = []
             for _ in range(32):
                 blah = await stream_get(ctx, dut.output_streams[1])
@@ -371,5 +380,8 @@ class PostageFIFOTestCase(unittest.TestCase):
         sim = Simulator(dut)
         sim.add_clock(1e-6)
         sim.add_testbench(testbench)
+        sim.add_process(self.photons(dut, {0: [12], 1: [13]}, 8))
+        sim.add_process(self.nofault(dut))
+        sim.add_process(self.nodrop(dut))
         with sim.write_vcd("test_postagefifo.vcd"):
             sim.run()
