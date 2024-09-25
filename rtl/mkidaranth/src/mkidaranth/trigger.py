@@ -268,7 +268,7 @@ class PostageFIFO(wiring.Component):
         # Trigger to all active state machines to write out their buffers and stop
         flush = Signal(reset_less=True)
         # Responses from all active state machines
-        flushed = Signal(range(self._count + 1), reset_less=True)
+        flushed = Signal(self._count, reset_less=True)
 
         # Internally copy the count so that we can flush properly
         count = Signal(range(self._count + 1), reset_less=True)
@@ -294,11 +294,11 @@ class PostageFIFO(wiring.Component):
             m.d.sync += flush.eq(1)
             # When told to stop don't stop or report flushed until all active state machines
             # finish writing data to the postage writer
-            with m.If(flushed == count):
+            with m.If(flushed == (1 << count) - 1):
                 m.d.sync += [
                     started.eq(0),
                     count.eq(0),
-                    flushed.eq(1),
+                    self.flushed.eq(1),
                 ]
 
         buffer_fifos = []
@@ -341,10 +341,10 @@ class PostageFIFO(wiring.Component):
                         m.d.sync += [written_internal.eq(0), written.eq(0)]
                         with m.If(fsrs.valid):
                             m.next = "flushing"
+                        with m.If(flush):
+                            m.d.sync += flushed[i].eq(1)
                         with m.If(
-                            self.postage_stream.payload.triggered
-                            & (leadin_counter == leadin_point)
-                            & ~flush
+                            self.postage_stream.payload.triggered & (leadin_counter == leadin_point) & ~flush
                         ):
                             with m.If(fsws.ready):
                                 m.d.sync += fsws.valid.eq(1)
@@ -378,19 +378,21 @@ class PostageFIFO(wiring.Component):
                     m.d.sync += fsws.valid.eq(0)
                     with m.If(written == self._length):
                         with m.If(flush):
-                            m.d.sync += flushed.eq(flushed + 1)
+                            m.d.sync += flushed[i].eq(1)
                         m.next = "waiting"
 
                 with m.State("flushing"):
                     m.d.sync += fsws.valid.eq(0)
                     with m.If(fs.level == 0 & ~fsrs.valid):
                         with m.If(flush):
-                            flushed.eq(flushed + 1)
+                            m.d.sync += flushed[i].eq(1)
                         m.next = "waiting"
 
             with m.If(self.postage_stream.valid & (lane_counter == i)):
                 with m.If(
-                    self.postage_stream.payload.triggered & ~(f.ongoing("waiting") | f.ongoing("triggered"))
+                    self.postage_stream.payload.triggered
+                    & ~(f.ongoing("waiting") | f.ongoing("triggered"))
+                    & ~flush
                 ):
                     m.d.sync += self.dropped[i].eq(1)
                 with m.If((leadin_counter == leadin_point) & ~fbrs.valid):
