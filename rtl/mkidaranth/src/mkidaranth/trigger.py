@@ -1,7 +1,11 @@
 from amaranth import *
-from amaranth.lib import stream, wiring, data, enum, fifo
+from amaranth.lib import stream, wiring, data, enum, fifo, memory
 from amaranth.lib.wiring import In, Out
 
+# TODO: Fully parameterize
+CYCLE_BITS = 24
+LANES = 4
+BINS = 2048
 
 trigger_config = data.StructLayout(
     {
@@ -32,7 +36,7 @@ class TriggerState(data.Struct):
 trigger_event = data.StructLayout(
     {
         "phase": signed(16),
-        "cycle": 24,
+        "cycle": CYCLE_BITS,
         "bin": 11,
         "read": 2,
     }
@@ -64,7 +68,7 @@ packaged = data.StructLayout(
 postage_event = data.StructLayout(
     {
         "iq": iq,
-        "cycle": 24,
+        "cycle": CYCLE_BITS,
         "bin": 11,
         "read": 2,
         "triggered": 1,
@@ -73,8 +77,12 @@ postage_event = data.StructLayout(
 
 trigger_input = data.StructLayout({"bin": 11, "iq": iq, "phase": signed(16)})
 
-iq_stream = stream.Signature(data.StructLayout({"beat": 8, "payload": data.ArrayLayout(iq, 8)}))
-phase_stream = stream.Signature(data.StructLayout({"beat": 9, "payload": data.ArrayLayout(signed(16), 4)}))
+iq_stream = stream.Signature(
+    data.StructLayout({"beat": 8, "payload": data.ArrayLayout(iq, LANES * 2)})
+)
+phase_stream = stream.Signature(
+    data.StructLayout({"beat": 9, "payload": data.ArrayLayout(signed(16), LANES)})
+)
 timestamp_stream = stream.Signature(timestamp, always_ready=True, always_valid=True)
 
 packaged_stream = stream.Signature(packaged, always_ready=True)
@@ -82,6 +90,227 @@ postage_stream = stream.Signature(postage_event, always_ready=True)
 
 trigger_stream = stream.Signature(trigger_input, always_ready=True)
 event_stream = stream.Signature(trigger_event)
+
+
+class ValvePositions(enum.Enum):
+    OPEN = 0b00
+    CLOSED = 0b01
+    DUMP = 0b10
+    MAGIC = 0b11
+
+
+class StreamValve(wiring.Component):
+    def __init__(self, shape, magic=None):
+        self.magic = magic
+        super().__init__(
+            {
+                "input": In(stream.Signature(shape)),
+                "output": Out(stream.Signature(shape)),
+                "turn": In(ValvePositions),
+                "turning": Out(ValvePositions),
+            }
+        )
+
+    def elaborate(self, platform):
+        m = Module()
+
+        with m.If(~self.output.valid | (self.output.valid & self.output.ready)):
+            m.d.sync += self.turning.eq(self.turn)
+
+        with m.If(self.turning == ValvePositions.OPEN):
+            m.d.comb += [
+                self.output.valid.eq(self.input.valid),
+                self.input.ready.eq(self.output.ready),
+                self.output.payload.eq(self.output.payload),
+            ]
+        with m.Elif(self.turning == ValvePositions.CLOSED):
+            m.d.comb += [
+                self.output.valid.eq(0),
+                self.input.ready.eq(0),
+                self.output.payload.eq(self.input.payload),
+            ]
+        with m.Elif(self.turning == ValvePositions.DUMP):
+            m.d.comb += [
+                self.output.valid.eq(0),
+                self.input.ready.eq(1),
+                self.output.payload.eq(self.input.payload),
+            ]
+        with m.Elif(self.turning == ValvePositions.MAGIC):
+            m.d.comb += [
+                self.output.valid.eq(1),
+                self.input.ready.eq(0),
+                self.output.payload.eq(
+                    self.input.payload if self.magic is None else self.magic
+                ),
+            ]
+        return m
+
+
+# Stolen shamelessly from lib.fifo
+def _incr(signal, modulo):
+    if modulo == 2 ** len(signal):
+        return (signal + 1)[: len(signal)]
+    else:
+        return Mux(signal == modulo - 1, 0, signal + 1)[: len(signal)]
+
+
+class MultiwidthFIFO(wiring.Component):
+    def __init__(self, input_shape, multiplier, depth):
+        self.input_shape = input_shape
+        self.multiplier = multiplier
+        self.depth = depth
+
+        super().__init__(
+            {
+                "input": In(stream.Signature(input_shape)),
+                "output": Out(
+                    stream.Signature(data.ArrayLayout(input_shape, multiplier))
+                ),
+                "level": Out(range(depth * multiplier + 1)),
+            }
+        )
+
+    def elaborate(self, platform):
+        m = Module()
+
+        primed = Signal()
+        skid = Signal(self.output.payload.shape())
+
+        wpoint = Signal(range(self.multiplier * self.depth))
+        rpoint = Signal(range(self.depth))
+
+        mem = m.submodules.mem = memory.Memory(
+            shape=self.input_shape, depth=self.multiplier * self.depth, init=[]
+        )
+
+        m.d.sync += self.level.eq(
+            self.level
+            + (self.input.ready & self.input.valid)
+            - (self.output.ready & self.output.valid) * self.multiplier
+        )
+
+        with m.If(self.input.valid & self.input.ready):
+            m.d.sync += wpoint.eq(_incr(wpoint, self.multiplier * self.depth))
+        with m.If(self.output.valid & self.output.ready):
+            m.d.sync += rpoint.eq(_incr(rpoint, self.depth))
+            m.d.sync += primed.eq(0)
+
+        with m.If(self.level > self.multiplier):
+            m.d.comb += self.output.valid.eq(1)
+        with m.If(self.level < self.multiplier * self.depth):
+            m.d.comb += self.input.ready.eq(1)
+
+        writer = mem.write_port()
+        readers = [mem.read_port(domain="sync") for _ in range(self.multiplier)]
+
+        m.d.comb += [
+            writer.en.eq(self.input.valid & self.input.ready),
+            writer.addr.eq(wpoint),
+            writer.data.eq(self.input.payload),
+        ]
+
+        with m.If(
+            ~(self.output.valid & self.output.ready)
+            & ~primed
+            & (self.level > self.multiplier)
+        ):
+            m.d.sync += skid.eq(Cat(*[r.data for r in readers]))
+            m.d.sync += primed.eq(1)
+
+        glorb = Signal(unsigned(32))
+        m.d.comb += glorb.eq(_incr(rpoint, self.depth))
+        m.d.comb += [
+            r.addr.eq(
+                Mux(
+                    primed | (self.output.valid & self.output.ready),
+                    _incr(rpoint, self.depth),
+                    rpoint,
+                )
+                * self.multiplier
+                + i
+            )
+            for i, r in enumerate(readers)
+        ]
+
+        m.d.comb += self.output.payload.eq(
+            Mux(primed, skid, Cat(*[r.data for r in readers]))
+        )
+
+        return m
+
+
+class StreamArbiter(wiring.Component):
+    def __init__(self, shape, inputs, packet=False, credits=None):
+        if credits is not None:
+            assert credits > 0
+        self.ninputs = inputs
+        self.packet = packet
+        self.credits = credits
+        self.shape = shape
+        return super().__init__(
+            {
+                "inputs": In(stream.Signature(shape)).array(inputs),
+                "output": Out(stream.Signature(shape)),
+            }
+        )
+
+    def elaborate(self, platform):
+        m = Module()
+
+        input = Signal(range(self.ninputs))
+        if self.packet:
+            platch = Signal()
+        if self.credits:
+            credits = Signal(data.ArrayLayout(unsigned(self.credits), self.ninputs))
+
+        for i in range(self.ninputs):
+            with m.If(i == input):
+                with m.If(
+                    ~self.inputs[i].valid
+                    & (
+                        1
+                        if not self.packet
+                        else (self.inputs[i].payload.last | ~platch)
+                    )
+                ):
+                    m.d.sync += input.eq(_incr(input, self.ninputs))
+                    if self.credits:
+                        with m.If(credits[i] < ((1 << self.credits) - 1)):
+                            m.d.sync += credits[i].eq(credits[i] + 1)
+
+                with m.If(self.inputs[i].valid & self.output.ready):
+                    if self.credits:
+                        with m.If(
+                            (1 if not self.packet else self.inputs[i].payload.last)
+                            & credits[i]
+                            > 0
+                        ):
+                            m.d.sync += credits[input].eq(credits[i] - 1)
+                        with m.Elif(
+                            1 if not self.packet else self.inputs[i].payload.last
+                        ):
+                            m.d.sync += input.eq(_incr(input, self.ninputs))
+                    else:
+                        with m.If(
+                            1 if not self.packet else self.inputs[i].payload.last
+                        ):
+                            m.d.sync += input.eq(_incr(input, self.ninputs))
+                    if self.packet:
+                        with m.If(self.inputs[i].payload.last):
+                            m.d.sync += platch.eq(0)
+                        with m.Else():
+                            m.d.sync += platch.eq(1)
+
+                m.d.comb += [
+                    self.output.valid.eq(self.inputs[i].valid),
+                    self.inputs[i].ready.eq(self.output.ready),
+                    self.output.payload.eq(self.inputs[i].payload),
+                ]
+
+            with m.Else():
+                m.d.comb += self.inputs[i].ready.eq(0)
+
+        return m
 
 
 class PackageStreams(wiring.Component):
@@ -95,8 +324,8 @@ class PackageStreams(wiring.Component):
         m = Module()
 
         started = Signal()
-        iq_latch = Signal(data.ArrayLayout(iq, 4), reset_less=True)
-        iq_this = Signal(data.ArrayLayout(iq, 4))
+        iq_latch = Signal(data.ArrayLayout(iq, LANES), reset_less=True)
+        iq_this = Signal(data.ArrayLayout(iq, LANES))
 
         fault_sticky = Signal(reset_less=True)
 
@@ -118,8 +347,8 @@ class PackageStreams(wiring.Component):
                     & (self.phase.valid | ~started)
                 )
             )
-            m.d.sync += iq_latch.eq(self.iq.payload.payload[4:])
-            m.d.comb += iq_this.eq(self.iq.payload.payload[:4])
+            m.d.sync += iq_latch.eq(self.iq.payload.payload[LANES:])
+            m.d.comb += iq_this.eq(self.iq.payload.payload[:LANES])
         with m.Else():
             m.d.comb += iq_this.eq(iq_latch)
 
@@ -145,7 +374,7 @@ class Trigger1x(wiring.Component):
     event_stream: Out(event_stream)
     postage_stream: Out(postage_stream)
 
-    cycle: In(24)
+    cycle: In(CYCLE_BITS)
     read: In(2)
 
     dropped: Out(1)
@@ -180,12 +409,15 @@ class Trigger1x(wiring.Component):
                     self.output_state.info.waiting.maxseen.eq(-(1 << 15)),
                 ]
             with m.Case(TriggerState.State.WAITING):
-                with m.If(self.input_state.info.waiting.maxseen <= self.config.threshold):
+                with m.If(
+                    self.input_state.info.waiting.maxseen <= self.config.threshold
+                ):
                     m.d.sync += [
                         self.output_state.state.eq(TriggerState.State.WAITING),
                         self.output_state.info.waiting.maxseen.eq(
                             Mux(
-                                self.output_state.info.waiting.maxseen > self.input_stream.payload.phase,
+                                self.output_state.info.waiting.maxseen
+                                > self.input_stream.payload.phase,
                                 self.output_state.info.waiting.maxseen,
                                 self.input_stream.payload.phase,
                             )
@@ -194,19 +426,27 @@ class Trigger1x(wiring.Component):
                 with m.Elif(self.input_stream.payload.phase < self.config.threshold):
                     m.d.sync += [
                         self.output_state.state.eq(TriggerState.State.TRIGGERED),
-                        self.output_state.info.triggered.minseen.eq(self.input_stream.payload.phase),
+                        self.output_state.info.triggered.minseen.eq(
+                            self.input_stream.payload.phase
+                        ),
                     ]
                 with m.Else():
                     m.d.sync += self.output_state.info.waiting.maxseen.eq(
                         Mux(
-                            self.output_state.info.waiting.maxseen > self.input_stream.payload.phase,
+                            self.output_state.info.waiting.maxseen
+                            > self.input_stream.payload.phase,
                             self.output_state.info.waiting.maxseen,
                             self.input_stream.payload.phase,
                         )
                     )
             with m.Case(TriggerState.State.TRIGGERED):
-                with m.If(self.input_state.info.triggered.minseen >= self.input_stream.payload.phase):
-                    m.d.sync += self.output_state.info.triggered.minseen.eq(self.input_stream.payload.phase)
+                with m.If(
+                    self.input_state.info.triggered.minseen
+                    >= self.input_stream.payload.phase
+                ):
+                    m.d.sync += self.output_state.info.triggered.minseen.eq(
+                        self.input_stream.payload.phase
+                    )
                 with m.Else():
                     m.d.sync += [
                         self.output_state.state.eq(TriggerState.State.HOLDING),
@@ -215,8 +455,12 @@ class Trigger1x(wiring.Component):
 
                     with m.If(~self.event_stream.valid | self.event_stream.ready):
                         m.d.sync += [
-                            self.event_stream.payload.phase.eq(self.input_state.info.triggered.minseen),
-                            self.event_stream.payload.bin.eq(self.input_stream.payload.bin),
+                            self.event_stream.payload.phase.eq(
+                                self.input_state.info.triggered.minseen
+                            ),
+                            self.event_stream.payload.bin.eq(
+                                self.input_stream.payload.bin
+                            ),
                             self.event_stream.payload.cycle.eq(self.cycle),
                             self.event_stream.payload.read.eq(self.read),
                             self.event_stream.valid.eq(1),
@@ -228,7 +472,9 @@ class Trigger1x(wiring.Component):
                 with m.If(self.input_state.info.holding.holdoff == 0):
                     m.d.sync += [
                         self.output_state.state.eq(TriggerState.State.WAITING),
-                        self.output_state.info.waiting.maxseen.eq(self.input_stream.payload.phase),
+                        self.output_state.info.waiting.maxseen.eq(
+                            self.input_stream.payload.phase
+                        ),
                     ]
                 with m.Else():
                     m.d.sync += self.output_state.info.holding.holdoff.eq(
@@ -247,15 +493,18 @@ class PostageFIFO(wiring.Component):
         super().__init__(
             {
                 "postage_stream": In(postage_stream),
-                "output_streams": Out(stream.Signature(data.StructLayout({"iq": iq, "last": 1}))).array(
-                    count
-                ),
+                "output_streams": Out(
+                    stream.Signature(data.StructLayout({"iq": iq, "last": 1}))
+                ).array(count),
                 "output_metadata": Out(
-                    data.ArrayLayout(data.StructLayout({"bin": 11, "cycle": 24, "read": 2}), count)
+                    data.ArrayLayout(
+                        data.StructLayout({"bin": 11, "cycle": 24, "read": 2}), count
+                    )
                 ),
                 "count": In(range(count + 1)),
                 "flushed": Out(1),
                 "dropped": Out(count),
+                "cleardropped": In(1),
                 "fault": Out(count),
             }
         )
@@ -276,7 +525,9 @@ class PostageFIFO(wiring.Component):
         # Counts up for each lane we get postage from wrapping at the internal count
         lane_counter = Signal(range(self._count), reset_less=True)
         with m.If(started & self.postage_stream.valid):
-            m.d.sync += lane_counter.eq(Mux(lane_counter + 1 == count, 0, lane_counter + 1))
+            m.d.sync += lane_counter.eq(
+                Mux(lane_counter + 1 == count, 0, lane_counter + 1)
+            )
 
         # When started explicitly reset the required state
         with m.If((count == 0) & (self.count > 0)):
@@ -300,6 +551,8 @@ class PostageFIFO(wiring.Component):
                     count.eq(0),
                     self.flushed.eq(1),
                 ]
+        with m.If(self.cleardropped):
+            self.dropped.eq(0)
 
         buffer_fifos = []
         storage_fifos = []
@@ -320,14 +573,20 @@ class PostageFIFO(wiring.Component):
             leadin_counter = Signal(range(self._before + 1), reset_less=True)
             leadin_point = self._before
 
-            with m.If(self.postage_stream.valid & (lane_counter == i) & (leadin_counter != leadin_point)):
+            with m.If(
+                self.postage_stream.valid
+                & (lane_counter == i)
+                & (leadin_counter != leadin_point)
+            ):
                 m.d.sync += leadin_counter.eq(leadin_counter + 1)
 
             m.d.sync += [
                 fbws.payload.eq(self.postage_stream.payload.iq),
                 fbws.valid.eq(self.postage_stream.valid & (lane_counter == i)),
                 fbrs.ready.eq(
-                    self.postage_stream.valid & (lane_counter == i) & (leadin_counter == leadin_point)
+                    self.postage_stream.valid
+                    & (lane_counter == i)
+                    & (leadin_counter == leadin_point)
                 ),
                 fsws.payload.eq(fbrs.payload),
             ]
@@ -344,18 +603,29 @@ class PostageFIFO(wiring.Component):
                         with m.If(flush):
                             m.d.sync += flushed[i].eq(1)
                         with m.If(
-                            self.postage_stream.payload.triggered & (leadin_counter == leadin_point) & ~flush
+                            self.postage_stream.payload.triggered
+                            & (leadin_counter == leadin_point)
+                            & ~flush
                         ):
                             with m.If(fsws.ready):
                                 m.d.sync += fsws.valid.eq(1)
                                 m.d.sync += [
-                                    self.output_metadata[i].bin.eq(self.postage_stream.payload.bin),
-                                    self.output_metadata[i].cycle.eq(self.postage_stream.payload.cycle),
-                                    self.output_metadata[i].read.eq(self.postage_stream.payload.read),
+                                    self.output_metadata[i].bin.eq(
+                                        self.postage_stream.payload.bin
+                                    ),
+                                    self.output_metadata[i].cycle.eq(
+                                        self.postage_stream.payload.cycle
+                                    ),
+                                    self.output_metadata[i].read.eq(
+                                        self.postage_stream.payload.read
+                                    ),
                                     written_internal.eq(written_internal + 1),
                                 ]
                                 with m.If(~fsws.ready):
-                                    m.d.sync += [self.dropped[i].eq(1), self.fault[i].eq(1)]
+                                    m.d.sync += [
+                                        self.dropped[i].eq(1),
+                                        self.fault[i].eq(1),
+                                    ]
                                     m.next = "flushing"
                                 with m.Else():
                                     m.next = "triggered"
@@ -403,9 +673,12 @@ class PostageFIFO(wiring.Component):
             m.d.comb += [
                 fsrs.ready.eq(
                     f.ongoing("flushing")
-                    | self.output_streams[i].ready & (f.ongoing("triggered") | f.ongoing("writing"))
+                    | self.output_streams[i].ready
+                    & (f.ongoing("triggered") | f.ongoing("writing"))
                 ),
-                self.output_streams[i].valid.eq(fsrs.valid & (f.ongoing("triggered") | f.ongoing("writing"))),
+                self.output_streams[i].valid.eq(
+                    fsrs.valid & (f.ongoing("triggered") | f.ongoing("writing"))
+                ),
                 self.output_streams[i].payload.iq.eq(fsrs.payload),
                 self.output_streams[i].payload.last.eq(written + 1 == self._length),
             ]
