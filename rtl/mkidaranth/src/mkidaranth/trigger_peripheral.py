@@ -22,7 +22,7 @@ from .trigger import (
 
 class AXIDMA(wiring.Component):
     class AddressFIFO(csr.Register, access="rw"):
-        def __init__(self, addr_width, depth):
+        def __init__(self, addr_width):
             super().__init__(
                 {
                     "address": csr.Field(csr.action.W, addr_width),
@@ -34,8 +34,7 @@ class AXIDMA(wiring.Component):
 
     class DMAControl(csr.Register, access="rw"):
         buffer_size: csr.Field(csr.action.RW, 24)
-        # flush: csr.Field(csr.action.RW, 1)
-        # devnull: csr.Field(csr.action.RW, 1)
+        flush: csr.Field(csr.action.RW, 1)
 
     class DebugReg(csr.Register, access="r"):
         def __init__(self, addr_width):
@@ -72,7 +71,7 @@ class AXIDMA(wiring.Component):
 
         regs = csr.Builder(addr_width=8, data_width=ctl_data_width)
         self._afifo = regs.add(
-            "AddressFIFO", self.AddressFIFO(addr_width, address_depth)
+            "AddressFIFO", self.AddressFIFO(addr_width)
         )
         self._dmactl = regs.add("DMAControl", self.DMAControl())
         self._bridge = csr.Bridge(regs.as_memory_map())
