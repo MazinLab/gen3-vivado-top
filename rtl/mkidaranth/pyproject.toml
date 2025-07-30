@@ -7,6 +7,7 @@ authors = [
 ]
 dependencies = [
     "amaranth>=0.5.2",
+    "amaranth-soc @ git+https://github.com/amaranth-lang/amaranth-soc",
 ]
 requires-python = ">=3.10"
 readme = "README.md"
@@ -28,5 +29,4 @@ test-code.cmd = "python -m coverage run -m unittest discover -t . -s tests -v"
 dev = [
     "coverage>=7.6.1",
     "ipython>=8.29.0",
-    "-e file:///Users/aled/Workspace/research/amaranth-soc#egg=amaranth-soc",
 ]
