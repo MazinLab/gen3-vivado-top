@@ -1,6 +1,68 @@
+from amaranth import *
 from amaranth.sim import Simulator
-from src.mkidaranth.image_cuber import Harness
+from amaranth.lib.wiring import In, Out, Component
+from amaranth.lib import stream
+from src.mkidaranth.image_cuber import ImageCuber
 import unittest
+from src.mkidaranth.trigger import trigger_event, CYCLE_BITS
+
+class Producer(Component):
+    event_stream: Out(stream.Signature(trigger_event))
+
+    def elaborate(self, platform):
+        m = Module()
+
+        with m.If((self.event_stream.valid == 1) & (self.event_stream.ready == 1)):
+            m.d.sync += self.event_stream.valid.eq(0)
+        
+        return m
+
+
+class Harness(Component):
+    test_phase: In(signed(16))
+    test_bin: In(11)
+    test_cycle: In(CYCLE_BITS)
+    photon_event: In(1)
+    valid: In(1)
+    cycle_counter: Out(CYCLE_BITS)
+    
+    def __init__(self):
+        super().__init__()
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.d.sync += self.cycle_counter.eq(self.cycle_counter + 1)
+
+        m.submodules.producer = producer = Producer()
+        m.submodules.cuber = cuber = ImageCuber()
+
+        m.d.comb += cuber.cycles_per_frame.eq(2560)
+
+        m.d.comb += [
+            cuber.i_stream.payload.eq(producer.event_stream.payload),
+            cuber.i_stream.valid.eq(producer.event_stream.valid),
+            producer.event_stream.ready.eq(cuber.i_stream.ready)
+        ]
+
+        cycle_last = Signal(CYCLE_BITS)
+
+        with m.If(self.photon_event):
+            m.d.comb += producer.event_stream.payload.cycle.eq(self.test_cycle)
+            m.d.sync += cycle_last.eq(self.test_cycle)
+            m.d.sync += self.photon_event.eq(0)
+        with m.Else():
+            m.d.comb += producer.event_stream.payload.cycle.eq(cycle_last)
+
+        m.d.comb += producer.event_stream.payload.phase.eq(self.test_phase)
+        m.d.comb += producer.event_stream.payload.bin.eq(self.test_bin)
+        m.d.comb += producer.event_stream.valid.eq(self.valid)
+        
+        with m.If(producer.event_stream.ready == 1):
+            m.d.sync += self.valid.eq(0)
+
+        return m
+
 
 
 

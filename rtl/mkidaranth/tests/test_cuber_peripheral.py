@@ -1,7 +1,63 @@
 import unittest
-
+from amaranth import *
 from amaranth.sim import Simulator
-from mkidaranth.image_cuber_perhipheral import CuberPeri, Harness
+from amaranth.lib.wiring import In, Out, Component
+from amaranth.lib import wiring
+from mkidaranth.image_cuber_perhipheral import CuberPeri
+from src.mkidaranth.trigger import CYCLE_BITS
+from src.mkidaranth import axi
+from .test_cuber import Producer
+
+
+class Harness(Component):
+    test_phase: In(signed(16))
+    test_bin: In(11)
+    test_cycle: In(CYCLE_BITS)
+    photon_event: In(1)
+    valid: In(1)
+    membus: In(axi.Signature(axi.Axi4Properties(QOS_Present=False, PROT_Present=False, CACHE_Present=False, Exclusive_Accesses=False, READ_WRITE_MODE=axi.ReadWriteMode.READ_ONLY, ADDR_WIDTH=16, REGION_Present=False, DATA_WIDTH=64, WSTRB_Present=False, WLAST_Present=False, ID_W_WIDTH=0, ID_R_WIDTH=2)))
+    cycle_counter: Out(CYCLE_BITS)
+    
+    def __init__(self):
+        super().__init__()
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.d.sync += self.cycle_counter.eq(self.cycle_counter + 1)
+
+        m.submodules.producer = producer = Producer()
+        m.submodules.cuber_peri = cuber_peri = CuberPeri(addr_width=8, data_width=16)
+
+        self.cuber_peri = cuber_peri
+
+        m.d.comb += [
+            cuber_peri.trigger_stream.payload.eq(producer.event_stream.payload),
+            cuber_peri.trigger_stream.valid.eq(producer.event_stream.valid),
+            producer.event_stream.ready.eq(cuber_peri.trigger_stream.ready)
+        ]
+
+        wiring.connect(m, wiring.flipped(self.membus), cuber_peri.membus)
+
+        cycle_last = Signal(CYCLE_BITS)
+
+        with m.If(self.photon_event):
+            m.d.comb += producer.event_stream.payload.cycle.eq(self.test_cycle)
+            m.d.sync += cycle_last.eq(self.test_cycle)
+            m.d.sync += self.photon_event.eq(0)
+        with m.Else():
+            m.d.comb += producer.event_stream.payload.cycle.eq(cycle_last)
+
+        m.d.comb += producer.event_stream.payload.phase.eq(self.test_phase)
+        m.d.comb += producer.event_stream.payload.bin.eq(self.test_bin)
+        m.d.comb += producer.event_stream.valid.eq(self.valid)
+        
+        with m.If(producer.event_stream.ready == 1):
+            m.d.sync += self.valid.eq(0)
+
+        return m
+
+
 
 async def _csr_access(self, ctx, bus, addr, r_stb=0, w_stb=0, w_data=0):
     ctx.set(bus.addr, addr)
@@ -16,51 +72,6 @@ async def _csr_access(self, ctx, bus, addr, r_stb=0, w_stb=0, w_data=0):
     ctx.set(bus.r_stb, 0)
     ctx.set(bus.w_stb, 0)
     return ret
-
-def axi_reciever(bus, storage, addr_wait=0, data_wait=0, resp_wait=0):
-    async def recv(ctx):
-        address = 0
-        incr = 0
-        limit = 0
-        ctx.set(bus.awready, 1)
-        ctx.set(bus.bvalid, 1)
-        async for (
-            edge,
-            _,
-            wready,
-            wvalid,
-            wdata,
-            awready,
-            awvalid,
-            awaddr,
-            awsize,
-            awlen,
-        ) in ctx.tick().sample(
-            bus.wready,
-            bus.wvalid,
-            bus.wdata,
-            bus.awready,
-            bus.awvalid,
-            bus.awaddr,
-            bus.awsize,
-            bus.awlen,
-        ):
-            if edge:
-                if wready & wvalid:
-                    storage[address] = wdata
-                    address += incr
-                    if address == limit:
-                        ctx.set(bus.wready, 0)
-                        ctx.set(bus.awready, 1)
-                if awready & awvalid:
-                    address = awaddr
-                    incr = 1 << awsize
-                    limit = address + (awlen + 1) * incr
-                    ctx.set(bus.awready, 0)
-                    ctx.set(bus.wready, 1)
-
-    return recv
-
 
 dut = Harness()
 
@@ -130,6 +141,8 @@ class PeripheralTestCase(unittest.TestCase):
             generate_photon_event(ctx, 1000, 202)
             await ctx.tick().repeat(2)
             generate_photon_event(ctx, 2049, 200)
+            await ctx.tick().repeat(2)
+            generate_photon_event(ctx, 2049, 200)
             await ctx.tick().repeat(4)
             await write_generate(1)
             await ctx.tick().repeat(4)
@@ -142,7 +155,9 @@ class PeripheralTestCase(unittest.TestCase):
             #await write_wavelengthLUT(5, 0b0000000100000000, 0b0000001100000000, 0b0000111100000000, 0b0011111100000000, 0b0111111100000000)
             await ctx.tick().repeat(500)
             await axi_burst(20, 3, 1, 2440, 0)
-            await ctx.tick().repeat(3100)
+            await ctx.tick().repeat(200)
+            generate_photon_event(ctx, 8194, 4)
+            await ctx.tick().repeat(2955)
             await axi_burst(16, 0b011, 1, 0, 3)
             await ctx.tick().repeat(1000)
             for j in range(16):
