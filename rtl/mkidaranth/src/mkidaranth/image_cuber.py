@@ -12,6 +12,9 @@ class ImageCuber(wiring.Component):
         self.fifo_depth = fifo_depth
         self.wavelength_cutoff_precision = wavelength_cutoff_precision
 
+        self.mem1 = Memory(shape=unsigned(64), depth=2048, init=[])
+        self.mem2 = Memory(shape=unsigned(64), depth=2048, init=[])
+
         self.event_payload_bits = 16 + 11 + 2 + CYCLE_BITS
         super().__init__(
             {
@@ -41,8 +44,8 @@ class ImageCuber(wiring.Component):
 
         wiring.connect(m, wiring.flipped(self.i_stream), fifo_inst.w_stream)
 
-        m.submodules.dmem1 = mem1 = Memory(shape=unsigned(64), depth=2048, init=[])
-        m.submodules.dmem2 = mem2 = Memory(shape=unsigned(64), depth=2048, init=[])
+        m.submodules.dmem1 = mem1 = self.mem1
+        m.submodules.dmem2 = mem2 = self.mem2
 
         read_port1 = mem1.read_port(domain="comb")
         write_port11 = mem1.write_port(domain="sync")
@@ -56,28 +59,28 @@ class ImageCuber(wiring.Component):
 
         uploading = Signal()
 
-        pixel_LUT_init = []
         """
         For testing purposes, can use the following:
 
+        pixel_LUT_init = []
         for xx in range(14):
             for yy in range(146):
                 pixel_LUT_init.append((xx<<8) | yy)
         """
-        for _ in range(14*146):
-            pixel_LUT_init.append(0)
-
-        m.submodules.pixel_LUT = pixel_LUT = Memory(shape = unsigned(12), depth = 2048, init = pixel_LUT_init)
+        m.submodules.pixel_LUT = pixel_LUT = Memory(shape = unsigned(12), depth = 2048, init = [])
         pixel_LUT_write = pixel_LUT.write_port(domain="sync")
         wiring.connect(m, self.pixel_LUT_write, pixel_LUT_write)
         pixel_LUT_read = pixel_LUT.read_port(domain="comb")
 
+        """
+        For testing purposes, can use the following:
+
         wavelength_LUT_init = []
         for _ in range(2048):
-            #For testing purposes, can use  wavelength_LUT_init.append(0b0111111100011111000001110000001100000001)
-            wavelength_LUT_init.append(0)
+            wavelength_LUT_init.append(0b0111111100011111000001110000001100000001)
+        """
 
-        m.submodules.wavelength_LUT = wavelength_LUT = Memory(shape = unsigned(5*self.wavelength_cutoff_precision), depth = 2048, init = wavelength_LUT_init)
+        m.submodules.wavelength_LUT = wavelength_LUT = Memory(shape = unsigned(5*self.wavelength_cutoff_precision), depth = 2048, init = [])
         wavelength_LUT_write = wavelength_LUT.write_port(domain="sync")
         wiring.connect(m, self.wavelength_LUT_write, wavelength_LUT_write)
         wavelength_LUT_read = wavelength_LUT.read_port(domain="comb")
@@ -192,9 +195,13 @@ class ImageCuber(wiring.Component):
 
                             byte_array_new = Array([Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8)])
 
+                            m.d.sync += self.count_overflow_flag.eq(0)
                             for j in range(8):
                                 with m.If((j == index) & (byte_array[j] != 0b11111111) & (not_within_bin == 0)):
                                     m.d.comb += byte_array_new[j].eq((byte_array[j] + 1)[:8])
+                                with m.Elif((j == index) & (byte_array[j] == 0b11111111) & (not_within_bin == 0)):
+                                    m.d.comb += byte_array_new[j].eq(byte_array[j])
+                                    m.d.sync += self.count_overflow_flag.eq(1)
                                 with m.Else():
                                     m.d.comb += byte_array_new[j].eq(byte_array[j])
 

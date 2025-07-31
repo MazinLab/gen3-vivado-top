@@ -123,6 +123,7 @@ class CuberPeri(wiring.Component):
     
 
     def __init__(self, *, addr_width, data_width):
+        self.cuber = ImageCuber()
         regs = csr.Builder(addr_width=addr_width, data_width=data_width)
         self._cpf = regs.add("CPF", self.CPF())
         self._runcuber = regs.add("RunCuber", self.RunCuber())
@@ -160,7 +161,7 @@ class CuberPeri(wiring.Component):
         count_overflow = Signal(16, reset_less=True)
         m.d.comb += self._errorcounts.f.count_overflow.r_data.eq(count_overflow)
 
-        m.submodules.cuber = cuber = ImageCuber()
+        m.submodules.cuber = cuber = self.cuber
         wiring.connect(m, wiring.flipped(self.trigger_stream), cuber.i_stream)
 
         m.d.comb += cuber.cycles_per_frame.eq(cpf)

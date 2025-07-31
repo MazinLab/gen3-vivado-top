@@ -1,10 +1,13 @@
 from amaranth import *
 from amaranth.sim import Simulator
 from amaranth.lib.wiring import In, Out, Component
-from amaranth.lib import stream
+from amaranth.lib import stream, wiring, data, enum, fifo, memory
+from amaranth.lib.memory import Memory, WritePort, ReadPort
 from src.mkidaranth.image_cuber import ImageCuber
 import unittest
 from src.mkidaranth.trigger import trigger_event, CYCLE_BITS
+
+test_wavelength_cutoff_precision = 8
 
 class Producer(Component):
     event_stream: Out(stream.Signature(trigger_event))
@@ -23,10 +26,11 @@ class Harness(Component):
     test_bin: In(11)
     test_cycle: In(CYCLE_BITS)
     photon_event: In(1)
-    valid: In(1)
+    valid_photon: In(1)
     cycle_counter: Out(CYCLE_BITS)
     
     def __init__(self):
+        self.cuber = ImageCuber(wavelength_cutoff_precision = test_wavelength_cutoff_precision)
         super().__init__()
 
     def elaborate(self, platform):
@@ -35,9 +39,7 @@ class Harness(Component):
         m.d.sync += self.cycle_counter.eq(self.cycle_counter + 1)
 
         m.submodules.producer = producer = Producer()
-        m.submodules.cuber = cuber = ImageCuber()
-
-        m.d.comb += cuber.cycles_per_frame.eq(2560)
+        m.submodules.cuber = cuber = self.cuber
 
         m.d.comb += [
             cuber.i_stream.payload.eq(producer.event_stream.payload),
@@ -56,44 +58,76 @@ class Harness(Component):
 
         m.d.comb += producer.event_stream.payload.phase.eq(self.test_phase)
         m.d.comb += producer.event_stream.payload.bin.eq(self.test_bin)
-        m.d.comb += producer.event_stream.valid.eq(self.valid)
+        m.d.comb += producer.event_stream.valid.eq(self.valid_photon)
         
         with m.If(producer.event_stream.ready == 1):
-            m.d.sync += self.valid.eq(0)
+            m.d.sync += self.valid_photon.eq(0)
 
         return m
 
 
 
 
-dut = Harness()
-
-def generate_photon_event(ctx, phase, bin):
-    ctx.set(dut.test_phase, phase)
-    ctx.set(dut.test_bin, bin)
-    ctx.set(dut.photon_event, 1)
-    ctx.set(dut.valid, 1)
-
-async def process_counter(ctx):
-    cycle = 0
-    async for clk_edge, rst in ctx.tick():
-        if rst:
-            cycle = 0
-        if clk_edge:
-            cycle = cycle + 1
-        ctx.set(dut.test_cycle, cycle)
 
 class CuberTest(unittest.TestCase):
     def test_cuber(self):
+        dut = Harness()
+
+        def generate_photon_event(ctx, phase, bin):
+            ctx.set(dut.test_phase, phase)
+            ctx.set(dut.test_bin, bin)
+            ctx.set(dut.photon_event, 1)
+            ctx.set(dut.valid_photon, 1)
+
+        async def process_counter(ctx):
+            cycle = 0
+            async for clk_edge, rst in ctx.tick():
+                if rst:
+                    cycle = 0
+                if clk_edge:
+                    cycle = cycle + 1
+                ctx.set(dut.test_cycle, cycle)
+
+        async def generate_sample_pixel_LUT(ctx):
+            addr = 0
+            ctx.set(dut.cuber.pixel_LUT_write.en, 1)
+            for xx in range(14):
+                for yy in range(146):
+                    ctx.set(dut.cuber.pixel_LUT_write.addr, addr)
+                    ctx.set(dut.cuber.pixel_LUT_write.data, (xx<<8) | yy)
+                    await ctx.tick()
+                    addr += 1
+            ctx.set(dut.cuber.pixel_LUT_write.en, 0)
+
+        async def generate_sample_wavelength_LUT(ctx):
+            addr = 0
+            ctx.set(dut.cuber.wavelength_LUT_write.en, 1)
+            for _ in range(2048):
+                ctx.set(dut.cuber.wavelength_LUT_write.addr, addr)
+                ctx.set(dut.cuber.wavelength_LUT_write.data, 0b0111111100011111000001110000001100000001)
+                await ctx.tick()
+                addr += 1
+            ctx.set(dut.cuber.wavelength_LUT_write.en, 0)
+
+
         async def testbench(ctx):
-            ctx.set(dut.test_phase, 0)
+            ctx.set(dut.cuber.cycles_per_frame, 2560)
             await ctx.tick().repeat(5)
+            await generate_sample_pixel_LUT(ctx)
+            await ctx.tick().repeat(2)
+            await generate_sample_wavelength_LUT(ctx)
+            await ctx.tick().repeat(4)
+            ctx.set(dut.cuber.generate_cubes, 1)
+            await ctx.tick().repeat(2)
             generate_photon_event(ctx, 570, 200)
             await ctx.tick().repeat(5)
             generate_photon_event(ctx, 800, 202)
             await ctx.tick().repeat(1035)
             generate_photon_event(ctx, 4097, 200)
-            await ctx.tick().repeat(2040)
+            await ctx.tick().repeat(1102)
+            self.assertEqual(ctx.get(dut.cuber.mem1.data[0b00100110110]), 0b00000000_00000001_00000000_00000001)
+            self.assertEqual(ctx.get(dut.cuber.mem1.data[0b00100111000]), 0b00000000_00000000_00000001_00000000)
+            await ctx.tick()
 
         sim = Simulator(dut)
         sim.add_clock(3.90625e-9)
@@ -101,4 +135,139 @@ class CuberTest(unittest.TestCase):
         sim.add_process(process_counter)
 
         with sim.write_vcd("test_cuber.vcd"):
+            sim.run()
+
+    def test_fifo_overflow(self):
+        dut = Harness()
+
+        def generate_photon_event(ctx, phase, bin):
+            ctx.set(dut.test_phase, phase)
+            ctx.set(dut.test_bin, bin)
+            ctx.set(dut.photon_event, 1)
+            ctx.set(dut.valid_photon, 1)
+
+        async def process_counter(ctx):
+            cycle = 0
+            async for clk_edge, rst in ctx.tick():
+                if rst:
+                    cycle = 0
+                if clk_edge:
+                    cycle = cycle + 1
+                ctx.set(dut.test_cycle, cycle)
+
+        async def generate_sample_pixel_LUT(ctx):
+            addr = 0
+            ctx.set(dut.cuber.pixel_LUT_write.en, 1)
+            for xx in range(14):
+                for yy in range(146):
+                    ctx.set(dut.cuber.pixel_LUT_write.addr, addr)
+                    ctx.set(dut.cuber.pixel_LUT_write.data, (xx<<8) | yy)
+                    await ctx.tick()
+                    addr += 1
+            ctx.set(dut.cuber.pixel_LUT_write.en, 0)
+
+        async def generate_sample_wavelength_LUT(ctx):
+            addr = 0
+            ctx.set(dut.cuber.wavelength_LUT_write.en, 1)
+            for _ in range(2048):
+                ctx.set(dut.cuber.wavelength_LUT_write.addr, addr)
+                ctx.set(dut.cuber.wavelength_LUT_write.data, 0b0111111100011111000001110000001100000001)
+                await ctx.tick()
+                addr += 1
+            ctx.set(dut.cuber.wavelength_LUT_write.en, 0)
+
+
+        async def testbench(ctx):
+            ctx.set(dut.cuber.cycles_per_frame, 2560)
+            await ctx.tick().repeat(5)
+            await generate_sample_pixel_LUT(ctx)
+            await ctx.tick().repeat(2)
+            await generate_sample_wavelength_LUT(ctx)
+            await ctx.tick().repeat(4)
+            ctx.set(dut.cuber.generate_cubes, 1)
+            await ctx.tick().repeat(2)
+            for _ in range(3000):
+                generate_photon_event(ctx, 570, 200)
+                await ctx.tick()
+            generate_photon_event(ctx, 570, 200)
+            self.assertEqual(ctx.get(dut.cuber.lost_photon_flag), 1)
+            await ctx.tick().repeat(2)
+            self.assertEqual(ctx.get(dut.cuber.lost_photon_flag), 0)
+
+        sim = Simulator(dut)
+        sim.add_clock(3.90625e-9)
+        sim.add_testbench(testbench)
+        sim.add_process(process_counter)
+
+        with sim.write_vcd("test_fifo_overflow.vcd"):
+            sim.run()
+
+    def test_count_overflow(self):
+        dut = Harness()
+
+        def generate_photon_event(ctx, phase, bin):
+            ctx.set(dut.test_phase, phase)
+            ctx.set(dut.test_bin, bin)
+            ctx.set(dut.photon_event, 1)
+            ctx.set(dut.valid_photon, 1)
+
+        async def process_counter(ctx):
+            cycle = 0
+            async for clk_edge, rst in ctx.tick():
+                if rst:
+                    cycle = 0
+                if clk_edge:
+                    cycle = cycle + 1
+                ctx.set(dut.test_cycle, cycle)
+
+        async def generate_sample_pixel_LUT(ctx):
+            addr = 0
+            ctx.set(dut.cuber.pixel_LUT_write.en, 1)
+            for xx in range(14):
+                for yy in range(146):
+                    ctx.set(dut.cuber.pixel_LUT_write.addr, addr)
+                    ctx.set(dut.cuber.pixel_LUT_write.data, (xx<<8) | yy)
+                    await ctx.tick()
+                    addr += 1
+            ctx.set(dut.cuber.pixel_LUT_write.en, 0)
+
+        async def generate_sample_wavelength_LUT(ctx):
+            addr = 0
+            ctx.set(dut.cuber.wavelength_LUT_write.en, 1)
+            for _ in range(2048):
+                ctx.set(dut.cuber.wavelength_LUT_write.addr, addr)
+                ctx.set(dut.cuber.wavelength_LUT_write.data, 0b0111111100011111000001110000001100000001)
+                await ctx.tick()
+                addr += 1
+            ctx.set(dut.cuber.wavelength_LUT_write.en, 0)
+
+
+        async def testbench(ctx):
+            ctx.set(dut.cuber.cycles_per_frame, 2560)
+            await ctx.tick().repeat(5)
+            await generate_sample_pixel_LUT(ctx)
+            await ctx.tick().repeat(2)
+            await generate_sample_wavelength_LUT(ctx)
+            await ctx.tick().repeat(4)
+            ctx.set(dut.cuber.generate_cubes, 1)
+            await ctx.tick().repeat(2)
+            for _ in range(255):
+                generate_photon_event(ctx, 570, 200)
+                await ctx.tick()
+            await ctx.tick().repeat(1600)
+            self.assertEqual(ctx.get(dut.cuber.mem1.data[310]), 0b11111111)
+            self.assertEqual(ctx.get(dut.cuber.count_overflow_flag), 0)
+            await ctx.tick()
+            generate_photon_event(ctx, 570, 200)
+            await ctx.tick().repeat(3)
+            self.assertEqual(ctx.get(dut.cuber.mem1.data[310]), 0b11111111)
+            self.assertEqual(ctx.get(dut.cuber.count_overflow_flag), 1)
+            await ctx.tick().repeat(3)
+
+        sim = Simulator(dut)
+        sim.add_clock(3.90625e-9)
+        sim.add_testbench(testbench)
+        sim.add_process(process_counter)
+
+        with sim.write_vcd("test_count_overflow.vcd"):
             sim.run()

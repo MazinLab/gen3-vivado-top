@@ -19,6 +19,7 @@ class Harness(Component):
     cycle_counter: Out(CYCLE_BITS)
     
     def __init__(self):
+        self.cuber_peri = CuberPeri(addr_width=8, data_width=16)
         super().__init__()
 
     def elaborate(self, platform):
@@ -27,7 +28,7 @@ class Harness(Component):
         m.d.sync += self.cycle_counter.eq(self.cycle_counter + 1)
 
         m.submodules.producer = producer = Producer()
-        m.submodules.cuber_peri = cuber_peri = CuberPeri(addr_width=8, data_width=16)
+        m.submodules.cuber_peri = cuber_peri = self.cuber_peri
 
         self.cuber_peri = cuber_peri
 
@@ -73,27 +74,28 @@ async def _csr_access(self, ctx, bus, addr, r_stb=0, w_stb=0, w_data=0):
     ctx.set(bus.w_stb, 0)
     return ret
 
-dut = Harness()
-
-def generate_photon_event(ctx, phase, bin):
-    ctx.set(dut.test_phase, phase)
-    ctx.set(dut.test_bin, bin)
-    ctx.set(dut.photon_event, 1)
-    ctx.set(dut.valid, 1)
-
-async def process_counter(ctx):
-    cycle = 0
-    async for clk_edge, rst in ctx.tick():
-        if rst:
-            cycle = 0
-        if clk_edge:
-            cycle = cycle + 1
-        ctx.set(dut.test_cycle, cycle)
 
 class PeripheralTestCase(unittest.TestCase):
     def test_config(self):
+        dut = Harness()
+
+        def generate_photon_event(ctx, phase, bin):
+            ctx.set(dut.test_phase, phase)
+            ctx.set(dut.test_bin, bin)
+            ctx.set(dut.photon_event, 1)
+            ctx.set(dut.valid, 1)
+
+        async def process_counter(ctx):
+            cycle = 0
+            async for clk_edge, rst in ctx.tick():
+                if rst:
+                    cycle = 0
+                if clk_edge:
+                    cycle = cycle + 1
+                ctx.set(dut.test_cycle, cycle)
+
+
         async def testbench(ctx):
-            
             async def write_cpf(cpf):
                 r = dut.cuber_peri.bus.memory_map.find_resource(dut.cuber_peri._cpf)
                 await _csr_access(self, ctx, dut.cuber_peri.bus, r.start, 0, 1, cpf)
@@ -116,6 +118,108 @@ class PeripheralTestCase(unittest.TestCase):
                     cyc_dat = (data >> (16*i)) & 0xffff
                     await _csr_access(self, ctx, dut.cuber_peri.bus, r.start + i, 0, 1, cyc_dat)
             
+            async def generate_sample_pixel_LUT():
+                addr = 0
+                for xx in range(14):
+                    for yy in range(146):
+                        await write_pixelLUT(addr, xx, yy)
+                        addr += 1
+            
+            async def generate_sample_wavelength_LUT():
+                addr = 0
+                for _ in range(2048):
+                    await write_wavelengthLUT(addr, 0b0000000100000000, 0b0000001100000000, 0b0000011100000000, 0b0001111100000000, 0b0111111100000000)
+                    addr += 1
+
+            await ctx.tick()
+            self.assertEqual(ctx.get(dut.cuber_peri.cuber.generate_cubes), 0)
+            await write_cpf(2561)
+            await ctx.tick().repeat(5)
+            self.assertEqual(ctx.get(dut.cuber_peri.cuber.cycles_per_frame), 2561)
+            await ctx.tick()
+            await generate_sample_pixel_LUT()
+            await generate_sample_wavelength_LUT()
+            await ctx.tick()
+            await write_generate(1)
+            await ctx.tick()
+            self.assertEqual(ctx.get(dut.cuber_peri.cuber.generate_cubes), 1)
+            await ctx.tick()
+            generate_photon_event(ctx, 570, 200)
+            await ctx.tick().repeat(5)
+            generate_photon_event(ctx, 800, 202)
+            await ctx.tick().repeat(1035)
+            generate_photon_event(ctx, 4097, 200)
+            await ctx.tick().repeat(1102)
+            self.assertEqual(ctx.get(dut.cuber_peri.cuber.mem1.data[0b00100110110]), 0b00000000_00000001_00000000_00000001)
+            self.assertEqual(ctx.get(dut.cuber_peri.cuber.mem1.data[0b00100111000]), 0b00000000_00000000_00000001_00000000)
+            await ctx.tick()
+
+
+
+        sim = Simulator(dut)
+        sim.add_clock(3.90625e-9)
+        sim.add_testbench(testbench)
+        sim.add_process(process_counter)
+
+        with sim.write_vcd("test_config.vcd"):
+            sim.run()
+
+
+    def test_axi(self):
+        dut = Harness()
+
+        def generate_photon_event(ctx, phase, bin):
+            ctx.set(dut.test_phase, phase)
+            ctx.set(dut.test_bin, bin)
+            ctx.set(dut.photon_event, 1)
+            ctx.set(dut.valid, 1)
+
+        async def process_counter(ctx):
+            cycle = 0
+            async for clk_edge, rst in ctx.tick():
+                if rst:
+                    cycle = 0
+                if clk_edge:
+                    cycle = cycle + 1
+                ctx.set(dut.test_cycle, cycle)
+
+
+        async def testbench(ctx):
+            async def write_cpf(cpf):
+                r = dut.cuber_peri.bus.memory_map.find_resource(dut.cuber_peri._cpf)
+                await _csr_access(self, ctx, dut.cuber_peri.bus, r.start, 0, 1, cpf)
+            
+            async def write_generate(run):
+                r = dut.cuber_peri.bus.memory_map.find_resource(dut.cuber_peri._runcuber)
+                await _csr_access(self, ctx, dut.cuber_peri.bus, r.start, 0, 1, run)
+            
+            async def write_pixelLUT(bin, x, y):
+                r = dut.cuber_peri.bus.memory_map.find_resource(dut.cuber_peri._pixelLUTconfig)
+                data = (dut.cuber_peri._pixelLUTconfig.f.pixelLUTconfig.w_data.shape().const({"bin": bin,"xpos": x,"ypos": y})).as_bits()
+                for i in range(r.end-r.start):
+                    cyc_dat = (data >> (16*i)) & 0xffff
+                    await _csr_access(self, ctx, dut.cuber_peri.bus, r.start + i, 0, 1, cyc_dat)
+            
+            async def write_wavelengthLUT(bin, edge0, edge1, edge2, edge3, edge4):
+                r = dut.cuber_peri.bus.memory_map.find_resource(dut.cuber_peri._wavelengthLUTconfig)
+                data = (dut.cuber_peri._wavelengthLUTconfig.f.wavelengthLUTconfig.w_data.shape().const({"bin": bin,"edge0": edge0,"edge1": edge1,"edge2": edge2,"edge3": edge3,"edge4": edge4})).as_bits()
+                for i in range(r.end-r.start):
+                    cyc_dat = (data >> (16*i)) & 0xffff
+                    await _csr_access(self, ctx, dut.cuber_peri.bus, r.start + i, 0, 1, cyc_dat)
+            
+            async def generate_sample_pixel_LUT():
+                addr = 0
+                for xx in range(14):
+                    for yy in range(146):
+                        await write_pixelLUT(addr, xx, yy)
+                        addr += 1
+            
+            async def generate_sample_wavelength_LUT():
+                addr = 0
+                for _ in range(2048):
+                    await write_wavelengthLUT(addr, 0b0000000100000000, 0b0000001100000000, 0b0000011100000000, 0b0001111100000000, 0b0111111100000000)
+                    addr += 1
+
             async def axi_burst(burst_len, burst_size, burst_type, start_addr, id):
                 ctx.set(dut.membus.ar.payload.len, burst_len)
                 ctx.set(dut.membus.ar.payload.size, burst_size)
@@ -125,45 +229,44 @@ class PeripheralTestCase(unittest.TestCase):
                 ctx.set(dut.membus.ar.valid, 1)
                 await ctx.tick()
                 ctx.set(dut.membus.ar.valid, 0)
-                await ctx.tick().repeat(4)
+                await ctx.tick()
                 ctx.set(dut.membus.r.ready, 1)
                 await ctx.tick()
                 ctx.set(dut.membus.r.ready, 0)
 
 
             await ctx.tick()
-            await write_cpf(2560)
+            self.assertEqual(ctx.get(dut.cuber_peri.cuber.generate_cubes), 0)
+            await write_cpf(2561)
             await ctx.tick().repeat(5)
-            ctx.set(dut.test_phase, 0)
-            await ctx.tick().repeat(5)
-            generate_photon_event(ctx, 580, 200)
-            await ctx.tick().repeat(2)
-            generate_photon_event(ctx, 1000, 202)
-            await ctx.tick().repeat(2)
-            generate_photon_event(ctx, 2049, 200)
-            await ctx.tick().repeat(2)
-            generate_photon_event(ctx, 2049, 200)
-            await ctx.tick().repeat(4)
+            self.assertEqual(ctx.get(dut.cuber_peri.cuber.cycles_per_frame), 2561)
+            await ctx.tick()
+            await generate_sample_pixel_LUT()
+            await generate_sample_wavelength_LUT()
+            await ctx.tick()
             await write_generate(1)
-            await ctx.tick().repeat(4)
-            #await write_pixelLUT(1, 1, 1)
-            #await write_pixelLUT(2, 0, 1)
-            await ctx.tick().repeat(2)
-            for j in range(8):
-                await axi_burst(0b11111111, 0b011, 1, 256*8*j, 0)
-                await ctx.tick().repeat(256)
-            #await write_wavelengthLUT(5, 0b0000000100000000, 0b0000001100000000, 0b0000111100000000, 0b0011111100000000, 0b0111111100000000)
-            await ctx.tick().repeat(500)
-            await axi_burst(20, 3, 1, 2440, 0)
-            await ctx.tick().repeat(200)
-            generate_photon_event(ctx, 8194, 4)
-            await ctx.tick().repeat(2955)
-            await axi_burst(16, 0b011, 1, 0, 3)
-            await ctx.tick().repeat(1000)
-            for j in range(16):
-                await _csr_access(self, ctx, dut.cuber_peri.bus, j, 1, 0, 0)
-                await ctx.tick()
+            await ctx.tick()
+            self.assertEqual(ctx.get(dut.cuber_peri.cuber.generate_cubes), 1)
+            await ctx.tick()
+            generate_photon_event(ctx, 570, 200)
             await ctx.tick().repeat(5)
+            generate_photon_event(ctx, 800, 202)
+            await ctx.tick().repeat(1035)
+            generate_photon_event(ctx, 4097, 200)
+            await ctx.tick().repeat(2000)
+            await axi_burst(16, 3, 1, 300*8, 0)
+
+            for _ in range(16):
+                current_addr = ctx.get(dut.cuber_peri.cuber.mem_read_addr)
+                current_data = ctx.get(dut.cuber_peri.membus.r.payload.data)
+
+                if (current_addr == 310):
+                    self.assertEqual(current_data, 0b00000000_00000001_00000000_00000001)
+                await ctx.tick()
+            
+                if (current_addr == 312):
+                    self.assertEqual(current_data, 0b00000000_00000000_00000001_00000000)
+                await ctx.tick()
 
 
 
@@ -172,5 +275,5 @@ class PeripheralTestCase(unittest.TestCase):
         sim.add_testbench(testbench)
         sim.add_process(process_counter)
 
-        with sim.write_vcd("test_cuber_peri.vcd"):
+        with sim.write_vcd("test_axi.vcd"):
             sim.run()
