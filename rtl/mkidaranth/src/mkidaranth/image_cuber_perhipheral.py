@@ -10,7 +10,7 @@ from .image_cuber import ImageCuber
 from . import axi
 
 class AddressGenerator(wiring.Component):
-    def __init__(self, len_bits=8, size_bits=3, type_bits=2, addr_bits=16, id_bits=2):
+    def __init__(self, len_bits=8, size_bits=3, type_bits=2, addr_bits=15, id_bits=2):
         self.len_bits = len_bits
         self.size_bits = size_bits
         self.type_bits = type_bits
@@ -22,9 +22,9 @@ class AddressGenerator(wiring.Component):
                 "len": In(len_bits),
                 "size": In(size_bits),
                 "type": In(type_bits),
-                "start_axi_addr": In(addr_bits),
+                "start_byte_addr": In(addr_bits),
                 "start_generate": In(1),
-                "axi_address": Out(addr_bits),
+                "byte_addr": Out(addr_bits),
                 "last": Out(1),
                 "lower_byte_lane": Out(4),
                 "upper_byte_lane": Out(4),
@@ -34,7 +34,7 @@ class AddressGenerator(wiring.Component):
     def elaborate(self, platform):
         m = Module()
 
-        start_addr = self.start_axi_addr
+        start_addr = self.start_byte_addr
         num_bytes = 1 << self.size
         burst_length = self.len + 1
         aligned_addr = (start_addr // num_bytes) * num_bytes
@@ -53,7 +53,7 @@ class AddressGenerator(wiring.Component):
         m.d.sync += self.last.eq(0)
 
         with m.If(self.start_generate):
-            m.d.sync += self.axi_address.eq(self.start_axi_addr)
+            m.d.sync += self.byte_addr.eq(self.start_byte_addr)
             with m.If(burst_length == 1):
                 m.d.sync += self.last.eq(1)
             with m.Else():
@@ -71,7 +71,7 @@ class AddressGenerator(wiring.Component):
 
             with m.Elif(self.type == 1):   #INCR
                 next_addr = aligned_addr + (n*num_bytes)
-                m.d.sync += self.axi_address.eq(next_addr)
+                m.d.sync += self.byte_addr.eq(next_addr)
                 m.d.sync += self.lower_byte_lane.eq(next_addr - ((next_addr // data_bus_bytes) * data_bus_bytes))
                 m.d.sync += self.upper_byte_lane.eq(next_addr - ((next_addr // data_bus_bytes) * data_bus_bytes) + num_bytes - 1)
                 m.d.sync += n.eq(n+1)
@@ -86,13 +86,13 @@ class AddressGenerator(wiring.Component):
                 
                 with m.If(~wrapped):
                     next_addr = aligned_addr + (n*num_bytes)
-                    m.d.sync += self.axi_address.eq(next_addr)
+                    m.d.sync += self.byte_addr.eq(next_addr)
                     with m.If(next_addr >= (wrap_bound + (num_bytes * burst_length))):
-                        m.d.sync += self.axi_address.eq(wrap_bound)
+                        m.d.sync += self.byte_addr.eq(wrap_bound)
                         m.d.sync += wrapped.eq(1)
                 with m.Else():
-                    next_addr = self.axi_address + num_bytes
-                    m.d.sync += self.axi_address.eq(next_addr)
+                    next_addr = self.byte_addr + num_bytes
+                    m.d.sync += self.byte_addr.eq(next_addr)
                 
                 with m.If(n == burst_length - 1):
                     m.d.sync += n.eq(0)
@@ -122,9 +122,9 @@ class CuberPeri(wiring.Component):
         )
     
 
-    def __init__(self, *, addr_width, data_width):
+    def __init__(self, *, csr_addr_width, csr_data_width):
         self.cuber = ImageCuber()
-        regs = csr.Builder(addr_width=addr_width, data_width=data_width)
+        regs = csr.Builder(addr_width=csr_addr_width, data_width=csr_data_width)
         self._cpf = regs.add("CPF", self.CPF())
         self._runcuber = regs.add("RunCuber", self.RunCuber())
         self._errorcounts = regs.add("ErrorCounts", self.ErrorCounts())
@@ -134,10 +134,11 @@ class CuberPeri(wiring.Component):
 
         super().__init__(
             {
-                "bus": In(csr.Signature(addr_width=addr_width, data_width=data_width)),
+                "bus": In(csr.Signature(addr_width=csr_addr_width, data_width=csr_data_width)),
                 "membus": In(axi.Signature(axi.Axi4Properties(QOS_Present=False, PROT_Present=False, CACHE_Present=False, Exclusive_Accesses=False, READ_WRITE_MODE=axi.ReadWriteMode.READ_ONLY, ADDR_WIDTH=16, REGION_Present=False, DATA_WIDTH=64, WSTRB_Present=False, WLAST_Present=False, ID_W_WIDTH=0, ID_R_WIDTH=2))),
                 "trigger_stream": In(stream.Signature(trigger_event)),
                 "int": Out(1),
+                "axi_status": Out(1),    #HIGH means that an axi burst is either queued (waiting for memory access) or currently in progress
             }
         )
 
@@ -146,6 +147,7 @@ class CuberPeri(wiring.Component):
     def elaborate(self, platform):
         m = Module()
 
+        #CSR code
         m.submodules.bridge = self._bridge
         wiring.connect(m, wiring.flipped(self.bus), self._bridge.bus)
 
@@ -172,9 +174,14 @@ class CuberPeri(wiring.Component):
         with m.If(cuber.count_overflow_flag == 1):
             m.d.sync += count_overflow.eq(count_overflow + 1)
 
-        m.d.sync += self.int.eq(0)
-        with m.If((lost_photon > 0) | (count_overflow > 0)):
-            m.d.sync += self.int.eq(1)
+        error_reg_start = self.bus.memory_map.find_resource(self._errorcounts).start
+
+        with m.If((self.bus.addr == error_reg_start) & (self.bus.r_stb == 1)):
+            m.d.sync += lost_photon.eq(0)
+        with m.If((self.bus.addr == error_reg_start+1) & (self.bus.r_stb == 1)):
+            m.d.sync += count_overflow.eq(0)
+
+        m.d.comb += self.int.eq((lost_photon > 0) | (count_overflow > 0))
         
         m.d.sync += cuber.pixel_LUT_write.addr.eq(self._pixelLUTconfig.f.pixelLUTconfig.w_data.bin)
         m.d.sync += cuber.pixel_LUT_write.data.eq((self._pixelLUTconfig.f.pixelLUTconfig.w_data.xpos<<8) | self._pixelLUTconfig.f.pixelLUTconfig.w_data.ypos)
@@ -195,13 +202,29 @@ class CuberPeri(wiring.Component):
         m.d.sync += cuber.wavelength_LUT_write.en.eq(self._wavelengthLUTconfig.f.wavelengthLUTconfig.w_stb)
 
 
+        #AXI code
         address_gen_queued = Signal(1)
+        m.d.comb += self.axi_status.eq(address_gen_queued)
 
-        with m.If(cuber.read_en & ~address_gen_queued):
+        with m.If(generate_cubes & ~address_gen_queued):
             m.d.sync += self.membus.ar.ready.eq(1)
 
+        """
+        AXI address scheme:
+
+        First 15 LSBs (bits 0-14) of the AXI address is the byte address
+        
+        The memory address is the byte address divided by 8 rounded down (since the memory data is 8 bytes)
+        
+        Bit 15 of the axi address is the mem_number, which indicated which memory module the CPU is trying to read from
+        (mem_number = 0 --> mem1  |  mem_number = 1 --> mem2)
+
+        Ready doesn't go HIGH until mem_number matches with the available memory module
+        """
+
         m.submodules.address_generator = address_generator = AddressGenerator()
-        mem_address = address_generator.axi_address >> 3
+        mem_address = address_generator.byte_addr >> 3
+        mem_number = self.membus.ar.payload.addr[15]
 
         m.d.comb += cuber.mem_read_addr.eq(mem_address)
         m.d.comb += self.membus.r.payload.data.eq(cuber.mem_read_data)
@@ -210,22 +233,34 @@ class CuberPeri(wiring.Component):
         m.d.comb += self.membus.r.payload.last.eq(address_generator.last)
         m.d.comb += address_generator.start_generate.eq(self.membus.r.valid & self.membus.r.ready)
 
+        waiting_to_generate = Signal(1)
+
         with m.If((self.membus.ar.valid == 1) & (self.membus.ar.ready == 1)):
             m.d.sync += address_generator.len.eq(self.membus.ar.payload.len)
             m.d.sync += address_generator.size.eq(self.membus.ar.payload.size)
             m.d.sync += address_generator.type.eq(self.membus.ar.payload.burst)
-            m.d.sync += address_generator.start_axi_addr.eq(self.membus.ar.payload.addr)
-
-            m.d.sync += self.membus.r.valid.eq(1)
+            m.d.sync += address_generator.start_byte_addr.eq(self.membus.ar.payload.addr[0:15])
             m.d.sync += address_gen_queued.eq(1)
             m.d.sync += self.membus.ar.ready.eq(0)
+
+            with m.If((mem_number == cuber.mem_read_number) & (self.membus.ar.payload.len < self.cuber.cycles_per_frame-self.cuber.current_cycle_number)):
+                m.d.sync += self.membus.r.valid.eq(1)
+            with m.Else():
+                m.d.sync += waiting_to_generate.eq(1)
         
+        with m.If(waiting_to_generate):
+            with m.If((mem_number == cuber.mem_read_number) & (self.membus.ar.payload.len < self.cuber.cycles_per_frame-self.cuber.current_cycle_number)):
+                m.d.sync += self.membus.r.valid.eq(1)
+                m.d.sync += waiting_to_generate.eq(0)
+
         with m.If((self.membus.r.valid == 1) & (self.membus.r.ready == 1)):
             m.d.sync += self.membus.r.valid.eq(0)
         
         with m.If(self.membus.r.payload.last):
             m.d.sync += address_gen_queued.eq(0)
             m.d.sync += self.membus.ar.ready.eq(1)
+
+
 
         return m
 

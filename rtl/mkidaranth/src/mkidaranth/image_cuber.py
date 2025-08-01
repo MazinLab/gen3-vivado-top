@@ -25,10 +25,10 @@ class ImageCuber(wiring.Component):
                 "wavelength_LUT_write": In(WritePort.Signature(addr_width=11, shape=unsigned(5*wavelength_cutoff_precision))),
                 "mem_read_addr": In(16),
                 "mem_read_data": Out(64),
-                "read_en": Out(1),
+                "mem_read_number": Out(1),
                 "lost_photon_flag": Out(1),
                 "count_overflow_flag": Out(1),
-
+                "current_cycle_number": Out(16),         #Will always be <= cycles_per_frame
             }
         )
 
@@ -56,6 +56,7 @@ class ImageCuber(wiring.Component):
         write_port22 = mem2.write_port(domain="sync")
 
         i = Signal(12)
+        m.d.comb += self.current_cycle_number.eq(i+1)
 
         uploading = Signal()
 
@@ -67,6 +68,7 @@ class ImageCuber(wiring.Component):
             for yy in range(146):
                 pixel_LUT_init.append((xx<<8) | yy)
         """
+
         m.submodules.pixel_LUT = pixel_LUT = Memory(shape = unsigned(12), depth = 2048, init = [])
         pixel_LUT_write = pixel_LUT.write_port(domain="sync")
         wiring.connect(m, self.pixel_LUT_write, pixel_LUT_write)
@@ -103,7 +105,6 @@ class ImageCuber(wiring.Component):
                     m.d.sync += self.lost_photon_flag.eq(1)   #Throws error pulse when photon event isn't read due to FIFO overflow
 
 
-
         def state_machine(write_port1, write_port2, read_port, machine_number):
             with m.FSM(init="Configuring"):
                 with m.State("Configuring"):
@@ -111,9 +112,8 @@ class ImageCuber(wiring.Component):
                     m.d.sync += write_port1.en.eq(0)
                     m.d.sync += write_port2.en.eq(0)
                     m.d.comb += read_port.addr.eq(0)
-                    m.d.comb += self.read_en.eq(0)
 
-                    with m.If(self.generate_cubes == 1):
+                    with m.If(self.generate_cubes):
                         with m.If(machine_number == 0):
                             m.next = "Clearing"
                         with m.Else():
@@ -134,6 +134,10 @@ class ImageCuber(wiring.Component):
                         m.d.sync += write_port1.en.eq(0)
                         m.d.sync += write_port2.en.eq(0)
                         m.next = "Counting"
+                    
+                    with m.If(~self.generate_cubes):
+                        m.d.sync += i.eq(0)
+                        m.next = "Configuring"
                     
                 with m.State("Counting"):
                     m.d.sync += buffered_stream.ready.eq(1)
@@ -232,22 +236,24 @@ class ImageCuber(wiring.Component):
                         m.d.sync += write_port1.en.eq(0)
                         m.next = "Stalling"
 
+                    with m.If(~self.generate_cubes):
+                        m.d.sync += i.eq(0)
+                        m.next = "Configuring"
 
                 with m.State("Stalling"):
-                    with m.If(self.generate_cubes == 1):
-                        m.d.sync += i.eq(i+1)
+                    m.d.sync += i.eq(i+1)
 
                     m.d.comb += read_port.addr.eq(self.mem_read_addr)
                     m.d.comb += self.mem_read_data.eq(read_port.data)
-                    m.d.comb += self.read_en.eq(1)
+                    m.d.comb += self.mem_read_number.eq(machine_number)
 
                     with m.If(i == self.cycles_per_frame - 1):
                         m.d.sync += i.eq(0)
-                        m.d.comb += self.read_en.eq(0)
-                        with m.If(self.generate_cubes == 1):
-                            m.next = "Clearing"
-                        with m.Else():
-                            m.next = "Configuring"
+                        m.next = "Clearing"
+                
+                    with m.If(~self.generate_cubes):
+                        m.d.sync += i.eq(0)
+                        m.next = "Configuring"
 
 
 
