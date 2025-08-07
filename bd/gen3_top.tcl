@@ -501,7 +501,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane0.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane0.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -549,7 +549,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane1.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane1.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -597,7 +597,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane2.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane2.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -645,7 +645,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane3.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane3.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -693,7 +693,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane4.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane4.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -741,7 +741,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane5.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane5.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -789,7 +789,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane6.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane6.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -837,7 +837,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane7.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane7.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -885,7 +885,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane8.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane8.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -933,7 +933,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane9.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane9.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -981,7 +981,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane10.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane10.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -1029,7 +1029,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane11.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane11.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -1077,7 +1077,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane12.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane12.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -1125,7 +1125,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane13.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane13.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -1173,7 +1173,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane14.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane14.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -1221,7 +1221,7 @@ proc create_hier_cell_firs { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Fanout {false} \
-   CONFIG.Coefficient_File {../../../../../../../data/4_tap_equiripple/lane15.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane15.coe} \
    CONFIG.Coefficient_Fractional_Bits {26} \
    CONFIG.Coefficient_Sets {256} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -1598,7 +1598,7 @@ proc create_hier_cell_reschan { parentCell nameHier } {
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
    CONFIG.Coefficient_Buffer_Type {Block} \
-   CONFIG.Coefficient_File {../../../../../../../data/8_tap_lowpass/lowpass_8tap.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/8_tap_lowpass/lowpass_8tap.coe} \
    CONFIG.Coefficient_Fractional_Bits {16} \
    CONFIG.Coefficient_Sets {1} \
    CONFIG.Coefficient_Sign {Signed} \
@@ -1870,7 +1870,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.BestPrecision {false} \
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
-   CONFIG.Coefficient_File {../../../../../../../data/30-tap-unity_512x.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/30-tap-unity_512x.coe} \
    CONFIG.Coefficient_Fractional_Bits {0} \
    CONFIG.Coefficient_Reload {true} \
    CONFIG.Coefficient_Sets {512} \
@@ -1905,7 +1905,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.BestPrecision {false} \
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
-   CONFIG.Coefficient_File {../../../../../../../data/30-tap-unity_512x.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/30-tap-unity_512x.coe} \
    CONFIG.Coefficient_Fractional_Bits {0} \
    CONFIG.Coefficient_Reload {true} \
    CONFIG.Coefficient_Sets {512} \
@@ -1940,7 +1940,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.BestPrecision {false} \
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
-   CONFIG.Coefficient_File {../../../../../../../data/30-tap-unity_512x.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/30-tap-unity_512x.coe} \
    CONFIG.Coefficient_Fractional_Bits {0} \
    CONFIG.Coefficient_Reload {true} \
    CONFIG.Coefficient_Sets {512} \
@@ -1975,7 +1975,7 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
    CONFIG.BestPrecision {false} \
    CONFIG.Clock_Frequency {300.0} \
    CONFIG.CoefficientSource {COE_File} \
-   CONFIG.Coefficient_File {../../../../../../../data/30-tap-unity_512x.coe} \
+   CONFIG.Coefficient_File {../../../../../../../../data/30-tap-unity_512x.coe} \
    CONFIG.Coefficient_Fractional_Bits {0} \
    CONFIG.Coefficient_Reload {true} \
    CONFIG.Coefficient_Sets {512} \
