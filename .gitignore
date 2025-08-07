@@ -1,6 +1,7 @@
 *.log
 *.jou
 *.str
+*.DS_Store
 
 # test system projects
 build/*_prj

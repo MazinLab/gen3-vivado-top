@@ -25,8 +25,8 @@ def axi_reciever(bus, storage, addr_wait=0, data_wait=0, resp_wait=0):
         address = 0
         incr = 0
         limit = 0
-        ctx.set(bus.awready, 1)
-        ctx.set(bus.bvalid, 1)
+        ctx.set(bus.aw.ready, 1)
+        ctx.set(bus.b.valid, 1)
         async for (
             edge,
             _,
@@ -39,28 +39,28 @@ def axi_reciever(bus, storage, addr_wait=0, data_wait=0, resp_wait=0):
             awsize,
             awlen,
         ) in ctx.tick().sample(
-            bus.wready,
-            bus.wvalid,
-            bus.wdata,
-            bus.awready,
-            bus.awvalid,
-            bus.awaddr,
-            bus.awsize,
-            bus.awlen,
+            bus.w.ready,
+            bus.w.valid,
+            bus.w.payload.data,
+            bus.aw.ready,
+            bus.aw.valid,
+            bus.aw.payload.addr,
+            bus.aw.payload.size,
+            bus.aw.payload.len,
         ):
             if edge:
                 if wready & wvalid:
                     storage[address] = wdata
                     address += incr
                     if address == limit:
-                        ctx.set(bus.wready, 0)
-                        ctx.set(bus.awready, 1)
+                        ctx.set(bus.w.ready, 0)
+                        ctx.set(bus.aw.ready, 1)
                 if awready & awvalid:
                     address = awaddr
                     incr = 1 << awsize
                     limit = address + (awlen + 1) * incr
-                    ctx.set(bus.awready, 0)
-                    ctx.set(bus.wready, 1)
+                    ctx.set(bus.aw.ready, 0)
+                    ctx.set(bus.w.ready, 1)
 
     return recv
 

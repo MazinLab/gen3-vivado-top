@@ -5,7 +5,7 @@ from amaranth.lib.wiring import In, Out
 from amaranth.utils import exact_log2
 from amaranth_soc import csr
 
-from amaranth_soc import axi
+from . import axi
 
 from .trigger import (
     PostageFIFO,
@@ -81,10 +81,20 @@ class AXIDMA(wiring.Component):
                 "ctlbus": In(csr.Signature(addr_width=8, data_width=ctl_data_width)),
                 "dmabus": Out(
                     axi.Signature(
-                        addr_width=addr_width,
-                        data_width=data_width,
-                        id_width=id_width,
-                        features=["burst", "last", "id"],
+                        axi.Axi4Properties(
+                            READ_WRITE_MODE=axi.ReadWriteMode.WRITE_ONLY,
+                            ADDR_WIDTH=addr_width,
+                            DATA_WIDTH=data_width,
+                            ID_W_WIDTH=id_width,
+                            ID_R_WIDTH=0,
+                            WSTRB_Present=True,
+                            WLAST_Present=True,
+                            QOS_Present=False,
+                            PROT_Present=False,
+                            CACHE_Present=False,
+                            Exclusive_Accesses=False,
+                            REGION_Present=False,
+                        )
                     )
                 ),
                 "stream": In(stream.Signature(data_width)),
@@ -117,16 +127,16 @@ class AXIDMA(wiring.Component):
         # Basic AXI transaction manaogement
         address_latch = Signal(self.addr_width)
         m.d.comb += [
-            self.dmabus.awburst.eq(axi.BurstType.INCR),
-            self.dmabus.awsize.eq(exact_log2(self._bpt)),
-            self.dmabus.awlen.eq(self.burst_length - 1),
-            self.dmabus.bready.eq(1),
-            self.dmabus.awaddr.eq(address_latch),
-            self.dmabus.awid.eq(0),
-            self.dmabus.wdata.eq(self.stream.payload),
-            self.dmabus.wstrb.eq(-1),
-            self.dmabus.wvalid.eq(0),
-            self.dmabus.wlast.eq(
+            self.dmabus.aw.payload.burst.eq(axi.BurstEncoding.INCR),
+            self.dmabus.aw.payload.size.eq(exact_log2(self._bpt)),
+            self.dmabus.aw.payload.len.eq(self.burst_length - 1),
+            self.dmabus.b.ready.eq(1),
+            self.dmabus.aw.payload.addr.eq(address_latch),
+            self.dmabus.aw.payload.id.eq(0),
+            self.dmabus.w.payload.data.eq(self.stream.payload),
+            self.dmabus.w.payload.strb.eq(-1),
+            self.dmabus.w.valid.eq(0),
+            self.dmabus.w.payload.last.eq(
                 ((address_latch + self._bpt) - address_fifo.r_data)
                 % (self._bpt * self.burst_length)
                 == 0
@@ -142,18 +152,18 @@ class AXIDMA(wiring.Component):
             with m.State("Address Wait"):
                 with m.If(address_fifo.r_rdy):
                     m.d.sync += address_latch.eq(address_fifo.r_data)
-                    m.d.sync += self.dmabus.awvalid.eq(1)
+                    m.d.sync += self.dmabus.aw.valid.eq(1)
                     m.next = "Address Channel"
             with m.State("Address Channel"):
-                with m.If(self.dmabus.awready):
-                    m.d.sync += self.dmabus.awvalid.eq(0)
+                with m.If(self.dmabus.aw.ready):
+                    m.d.sync += self.dmabus.aw.valid.eq(0)
                     m.next = "Writing"
             with m.State("Writing"):
                 m.d.comb += [
-                    self.dmabus.wvalid.eq(self.stream.valid),
-                    self.stream.ready.eq(self.dmabus.wready),
+                    self.dmabus.w.valid.eq(self.stream.valid),
+                    self.stream.ready.eq(self.dmabus.w.ready),
                 ]
-                with m.If(self.dmabus.wvalid & self.dmabus.wready):
+                with m.If(self.dmabus.w.valid & self.dmabus.w.ready):
                     m.d.sync += address_latch.eq(address_latch + self._bpt)
                     with m.If(
                         address_latch + self._bpt
@@ -169,11 +179,11 @@ class AXIDMA(wiring.Component):
                         % (self._bpt * self.burst_length)
                         == 0
                     ):
-                        m.d.sync += self.dmabus.awvalid.eq(1)
+                        m.d.sync += self.dmabus.aw.valid.eq(1)
                         m.next = "Address Channel"
 
-        with m.If(self.dmabus.bvalid & self.dmabus.bready):
-            with m.If(self.dmabus.bresp > 1):
+        with m.If(self.dmabus.b.valid & self.dmabus.b.ready):
+            with m.If(self.dmabus.b.payload.resp > 1):
                 m.d.sync += self.fault.eq(1)
 
         return m
