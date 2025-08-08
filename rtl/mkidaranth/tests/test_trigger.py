@@ -31,7 +31,9 @@ class MultiwidthFIFOTestCase(unittest.TestCase):
     def test_no_overrun(self):
         dut = MultiwidthFIFO(unsigned(16), 5, 8)
 
+        stop = False
         async def testbench(ctx):
+            nonlocal stop
             for _ in range(16 * 5 * 32):
                 await ctx.tick()
             for i in range(1, 16 * 5 * 32 + 1, 5):
@@ -39,10 +41,14 @@ class MultiwidthFIFOTestCase(unittest.TestCase):
                     dut.output.payload.shape().const([i + j for j in range(5)]),
                     await stream_get(ctx, dut.output),
                 )
+            stop = True
+            ctx.set(dut.output.ready, 1)
+            for _ in range(10):
+                await ctx.tick()
 
         async def writerprocess(ctx):
             i = 1
-            while True:
+            while not stop:
                 ctx.set(dut.input.valid, 1)
                 ctx.set(dut.input.payload, i)
                 await ctx.tick().until(dut.input.ready)
@@ -58,7 +64,9 @@ class MultiwidthFIFOTestCase(unittest.TestCase):
     def test_no_overrun2(self):
         dut = MultiwidthFIFO(unsigned(16), 5, 8)
 
+        stop = False
         async def testbench(ctx):
+            nonlocal stop
             for _ in range(10):
                 await ctx.tick()
             for i in range(1, 16 * 5 * 32 + 1, 5):
@@ -66,10 +74,14 @@ class MultiwidthFIFOTestCase(unittest.TestCase):
                     dut.output.payload.shape().const([i + j for j in range(5)]),
                     await stream_get(ctx, dut.output),
                 )
+            stop = True
+            ctx.set(dut.output.ready, 1)
+            for _ in range(10):
+                await ctx.tick()
 
         async def writerprocess(ctx):
             i = 1
-            while True:
+            while not stop:
                 ctx.set(dut.input.valid, 1)
                 ctx.set(dut.input.payload, i)
                 await ctx.tick().until(dut.input.ready)
@@ -85,7 +97,9 @@ class MultiwidthFIFOTestCase(unittest.TestCase):
     def test_no_middlerun(self):
         dut = MultiwidthFIFO(unsigned(16), 5, 8)
 
+        stop = False
         async def testbench(ctx):
+            nonlocal stop
             for _ in range(7):
                 await ctx.tick()
             for i in range(1, 16 * 5 * 32 + 1, 5):
@@ -93,10 +107,14 @@ class MultiwidthFIFOTestCase(unittest.TestCase):
                     dut.output.payload.shape().const([i + j for j in range(5)]),
                     await stream_get(ctx, dut.output),
                 )
+            stop = True
+            ctx.set(dut.output.ready, 1)
+            for _ in range(10):
+                await ctx.tick()
 
         async def writerprocess(ctx):
             i = 1
-            while True:
+            while not stop:
                 ctx.set(dut.input.valid, 1)
                 ctx.set(dut.input.payload, i)
                 await ctx.tick().until(dut.input.ready)
@@ -112,18 +130,24 @@ class MultiwidthFIFOTestCase(unittest.TestCase):
     def test_readfirst(self):
         dut = MultiwidthFIFO(unsigned(16), 5, 8)
 
+        stop = False
         async def testbench(ctx):
+            nonlocal stop
             for i in range(1, 16 * 5 * 32 + 1, 5):
                 self.assertEqual(
                     dut.output.payload.shape().const([i + j for j in range(5)]),
                     await stream_get(ctx, dut.output),
                 )
+            stop = True
+            ctx.set(dut.output.ready, 1)
+            for _ in range(10):
+                await ctx.tick()
 
         async def writerprocess(ctx):
             for _ in range(16):
                 await ctx.tick()
             i = 1
-            while True:
+            while not stop:
                 ctx.set(dut.input.valid, 1)
                 ctx.set(dut.input.payload, i)
                 await ctx.tick().until(dut.input.ready)
@@ -139,18 +163,24 @@ class MultiwidthFIFOTestCase(unittest.TestCase):
     def test_pow2sizing(self):
         dut = MultiwidthFIFO(unsigned(32), 4, 32)
 
+        stop = False
         async def testbench(ctx):
+            nonlocal stop
             for i in range(1, 513, 4):
                 self.assertEqual(
                     dut.output.payload.shape().const([i + j for j in range(4)]),
                     await stream_get(ctx, dut.output),
                 )
+            stop = True
+            ctx.set(dut.output.ready, 1)
+            for _ in range(10):
+                await ctx.tick()
 
         async def writerprocess(ctx):
             for _ in range(16):
                 await ctx.tick()
             i = 1
-            while True:
+            while not stop:
                 ctx.set(dut.input.valid, 1)
                 ctx.set(dut.input.payload, i)
                 await ctx.tick().until(dut.input.ready)
