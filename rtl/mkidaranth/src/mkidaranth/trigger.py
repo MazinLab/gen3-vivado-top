@@ -117,7 +117,7 @@ class StreamSplitter(wiring.Component):
 
         for i in range(self.count):
             m.d.comb += self.outputs[i].payload.eq(self.input.payload)
-            with m.If(~self.complatch):
+            with m.If(~complatch[i]):
                 m.d.comb += self.outputs[i].valid.eq(self.input.valid)
             with m.If(self.outputs[i].valid & self.outputs[i].ready):
                 m.d.sync += complatch[i].eq(1)
@@ -203,7 +203,7 @@ class StreamValve(wiring.Component):
                 with m.If(magic_packet_counter + 1 == self.magic_packet_len):
                     m.d.comb += self.output.payload.last.eq(1)
                 with m.Else():
-                    m.d.comb += self.output.payload.lase.eq(0)
+                    m.d.comb += self.output.payload.last.eq(0)
         return m
 
 
