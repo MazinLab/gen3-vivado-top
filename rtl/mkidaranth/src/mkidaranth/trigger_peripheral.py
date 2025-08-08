@@ -34,7 +34,7 @@ class AXICSRBridge(wiring.Component):
                         self.axi_properties
                     )
                 ),
-                "csr": In(self.csr_signature),
+                "csr": Out(self.csr_signature),
             }
         )
 
