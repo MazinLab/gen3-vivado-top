@@ -133,27 +133,27 @@ class AXIDMA(wiring.Component):
         self._dmactl = regs.add("DMAControl", self.DMAControl())
         self._bridge = csr.Bridge(regs.as_memory_map())
 
+        self.dma_bus_signature = axi.Signature(
+                                    axi.Axi4Properties(
+                                        READ_WRITE_MODE=axi.ReadWriteMode.WRITE_ONLY,
+                                        ADDR_WIDTH=addr_width,
+                                        DATA_WIDTH=data_width,
+                                        ID_W_WIDTH=id_width,
+                                        ID_R_WIDTH=0,
+                                        WSTRB_Present=True,
+                                        WLAST_Present=True,
+                                        QOS_Present=False,
+                                        PROT_Present=False,
+                                        CACHE_Present=False,
+                                        Exclusive_Accesses=False,
+                                        REGION_Present=False,
+                                    )
+                                )
+
         super().__init__(
             {
                 "ctlbus": In(csr.Signature(addr_width=8, data_width=ctl_data_width)),
-                "dmabus": Out(
-                    axi.Signature(
-                        axi.Axi4Properties(
-                            READ_WRITE_MODE=axi.ReadWriteMode.WRITE_ONLY,
-                            ADDR_WIDTH=addr_width,
-                            DATA_WIDTH=data_width,
-                            ID_W_WIDTH=id_width,
-                            ID_R_WIDTH=0,
-                            WSTRB_Present=True,
-                            WLAST_Present=True,
-                            QOS_Present=False,
-                            PROT_Present=False,
-                            CACHE_Present=False,
-                            Exclusive_Accesses=False,
-                            REGION_Present=False,
-                        )
-                    )
-                ),
+                "dmabus": Out(self.dma_bus_signature),
                 "stream": In(stream.Signature(data_width)),
                 "int": Out(1),
                 "fault": Out(1),
