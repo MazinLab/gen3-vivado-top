@@ -19,6 +19,63 @@ from .trigger import (
     timestamp_stream,
 )
 
+class AXICSRBridge(wiring.Component):
+    def __init__(self, *, addr_width, data_width=32):
+        self._dw = data_width
+        self._aw = addr_width
+        self._caw = addr_width - exact_log2(data_width // 8)
+        self.axi_propperties = axi.Axi4LiteProperties(DATA_WIDTH=data_width, ADDR_WIDTH=addr_width)
+        self.csr_signature = csr.Signature(addr_width=self._caw, data_width=data_width)
+
+        super().__init__(
+            {
+                "axi": In(
+                    axi.Signature(
+                        self.axi_properties
+                    )
+                ),
+                "csr": In(self.csr_signature),
+            }
+        )
+
+    def elaborate(self, platform):
+        m = Module()
+
+        m.d.comb += self.csr.w_data.eq(self.axi.w.payload.data)
+        m.d.comb += self.axi.r.payload.data.eq(self.csr.r_data)
+        m.d.comb += self.axi.b.valid.eq(1)
+
+        alatch = Signal(self._caw)
+
+        with m.FSM():
+            with m.State("WAITING"):
+                with m.If(self.axi.aw.valid):
+                    m.d.comb += self.axi.aw.ready.eq(1)
+                    m.d.sync += alatch.eq(self.axi.aw.payload.addr.shift_right(self._aw - self._caw))
+                    m.next = "WRITE"
+                with m.ElIf(self.axi.ar.valid):
+                    m.d.comb += self.axi.ar.ready.eq(1)
+                    m.d.comb += self.csr.r_stb.eq(1)
+                    m.d.comb += csr.addr.eq(self.axi.ar.payload.addr.shift_right(self._aw - self._caw))
+                    m.next = "READ-1"
+            with m.State("WRITE"):
+                m.d.comb += self.csr.addr.eq(alatch)
+                with m.If(self.axi.w.valid):
+                    m.d.comb += self.axi.w.ready.eq(1)
+                    m.d.comb += self.csr.w_stb.eq(1)
+                    m.next = "WAITING"
+            with m.State("READ-1"):
+                m.d.sync += [
+                    self.axi.r.payload.data.eq(self.csr.r_data),
+                    self.axi.r.valid.eq(1)
+                ]
+                m.next = "READ-2"
+            with m.State("READ-2"):
+                with m.If(self.axi.r.valid & self.axi.r.ready):
+                    m.d.sync += self.axi.r.valid.eq(0)
+                    m.next = "WAITING"
+
+        return m
 
 class AXIDMA(wiring.Component):
     class AddressFIFO(csr.Register, access="rw"):
