@@ -8,6 +8,12 @@ from src.mkidaranth.trigger import CYCLE_BITS
 from src.mkidaranth import axi
 from .test_cuber import Producer
 
+aw = 16
+dw = 32
+ones = 0
+for i in range(dw):
+    ones = ones + (2**i)
+
 class Harness(Component):
     test_phase: In(signed(16))
     test_bin: In(11)
@@ -18,7 +24,7 @@ class Harness(Component):
     cycle_counter: Out(CYCLE_BITS)
     
     def __init__(self):
-        self.cuber_peri = CuberPeri(csr_addr_width=8, csr_data_width=16)
+        self.cuber_peri = CuberPeri(csr_addr_width=aw, csr_data_width=dw)
         super().__init__()
 
     def elaborate(self, platform):
@@ -107,14 +113,14 @@ class PeripheralTestCase(unittest.TestCase):
                 r = dut.cuber_peri.bus.memory_map.find_resource(dut.cuber_peri._pixelLUTconfig)
                 data = (dut.cuber_peri._pixelLUTconfig.f.pixelLUTconfig.w_data.shape().const({"bin": bin,"xpos": x,"ypos": y})).as_bits()
                 for i in range(r.end-r.start):
-                    cyc_dat = (data >> (16*i)) & 0xffff
+                    cyc_dat = (data >> (dw*i)) & ones
                     await _csr_access(self, ctx, dut.cuber_peri.bus, r.start + i, 0, 1, cyc_dat)
             
             async def write_wavelengthLUT(bin, edge0, edge1, edge2, edge3, edge4):
                 r = dut.cuber_peri.bus.memory_map.find_resource(dut.cuber_peri._wavelengthLUTconfig)
                 data = (dut.cuber_peri._wavelengthLUTconfig.f.wavelengthLUTconfig.w_data.shape().const({"bin": bin,"edge0": edge0,"edge1": edge1,"edge2": edge2,"edge3": edge3,"edge4": edge4})).as_bits()
                 for i in range(r.end-r.start):
-                    cyc_dat = (data >> (16*i)) & 0xffff
+                    cyc_dat = (data >> (dw*i)) & ones
                     await _csr_access(self, ctx, dut.cuber_peri.bus, r.start + i, 0, 1, cyc_dat)
             
             async def generate_sample_pixel_LUT():
@@ -197,14 +203,14 @@ class PeripheralTestCase(unittest.TestCase):
                 r = dut.cuber_peri.bus.memory_map.find_resource(dut.cuber_peri._pixelLUTconfig)
                 data = (dut.cuber_peri._pixelLUTconfig.f.pixelLUTconfig.w_data.shape().const({"bin": bin,"xpos": x,"ypos": y})).as_bits()
                 for i in range(r.end-r.start):
-                    cyc_dat = (data >> (16*i)) & 0xffff
+                    cyc_dat = (data >> (dw*i)) & ones
                     await _csr_access(self, ctx, dut.cuber_peri.bus, r.start + i, 0, 1, cyc_dat)
             
             async def write_wavelengthLUT(bin, edge0, edge1, edge2, edge3, edge4):
                 r = dut.cuber_peri.bus.memory_map.find_resource(dut.cuber_peri._wavelengthLUTconfig)
                 data = (dut.cuber_peri._wavelengthLUTconfig.f.wavelengthLUTconfig.w_data.shape().const({"bin": bin,"edge0": edge0,"edge1": edge1,"edge2": edge2,"edge3": edge3,"edge4": edge4})).as_bits()
                 for i in range(r.end-r.start):
-                    cyc_dat = (data >> (16*i)) & 0xffff
+                    cyc_dat = (data >> (dw*i)) & ones
                     await _csr_access(self, ctx, dut.cuber_peri.bus, r.start + i, 0, 1, cyc_dat)
             
             async def generate_sample_pixel_LUT():
@@ -283,14 +289,14 @@ class PeripheralTestCase(unittest.TestCase):
                 r = dut.cuber_peri.bus.memory_map.find_resource(dut.cuber_peri._pixelLUTconfig)
                 data = (dut.cuber_peri._pixelLUTconfig.f.pixelLUTconfig.w_data.shape().const({"bin": bin,"xpos": x,"ypos": y})).as_bits()
                 for i in range(r.end-r.start):
-                    cyc_dat = (data >> (16*i)) & 0xffff
+                    cyc_dat = (data >> (dw*i)) & ones
                     await _csr_access(self, ctx, dut.cuber_peri.bus, r.start + i, 0, 1, cyc_dat)
             
             async def write_wavelengthLUT(bin, edge0, edge1, edge2, edge3, edge4):
                 r = dut.cuber_peri.bus.memory_map.find_resource(dut.cuber_peri._wavelengthLUTconfig)
                 data = (dut.cuber_peri._wavelengthLUTconfig.f.wavelengthLUTconfig.w_data.shape().const({"bin": bin,"edge0": edge0,"edge1": edge1,"edge2": edge2,"edge3": edge3,"edge4": edge4})).as_bits()
                 for i in range(r.end-r.start):
-                    cyc_dat = (data >> (16*i)) & 0xffff
+                    cyc_dat = (data >> (dw*i)) & ones
                     await _csr_access(self, ctx, dut.cuber_peri.bus, r.start + i, 0, 1, cyc_dat)
             
             async def generate_sample_pixel_LUT():

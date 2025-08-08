@@ -9,6 +9,8 @@ from .trigger import trigger_event, CYCLE_BITS
 from .image_cuber import ImageCuber
 from . import axi
 
+cuber_axi_signature = axi.Signature(axi.Axi4Properties(QOS_Present=False, PROT_Present=False, CACHE_Present=False, Exclusive_Accesses=False, READ_WRITE_MODE=axi.ReadWriteMode.READ_ONLY, ADDR_WIDTH=16, REGION_Present=False, DATA_WIDTH=64, WSTRB_Present=False, WLAST_Present=False, ID_W_WIDTH=0, ID_R_WIDTH=2))
+
 class AddressGenerator(wiring.Component):
     def __init__(self, len_bits=8, size_bits=3, type_bits=2, addr_bits=15, id_bits=2):
         self.len_bits = len_bits
@@ -135,7 +137,7 @@ class CuberPeri(wiring.Component):
         super().__init__(
             {
                 "bus": In(csr.Signature(addr_width=csr_addr_width, data_width=csr_data_width)),
-                "membus": In(axi.Signature(axi.Axi4Properties(QOS_Present=False, PROT_Present=False, CACHE_Present=False, Exclusive_Accesses=False, READ_WRITE_MODE=axi.ReadWriteMode.READ_ONLY, ADDR_WIDTH=16, REGION_Present=False, DATA_WIDTH=64, WSTRB_Present=False, WLAST_Present=False, ID_W_WIDTH=0, ID_R_WIDTH=2))),
+                "membus": In(cuber_axi_signature),
                 "trigger_stream": In(stream.Signature(trigger_event)),
                 "int": Out(1),
                 "axi_status": Out(1),    #HIGH means that an axi burst is either queued (waiting for memory access) or currently in progress
