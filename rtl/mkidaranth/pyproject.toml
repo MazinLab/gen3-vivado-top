@@ -6,7 +6,7 @@ authors = [
     {name = "Aled Cuda", email = "aled@ucsb.edu"},
 ]
 dependencies = [
-    "amaranth>=0.5.2",
+    "amaranth>=0.5.4",
     "amaranth-soc @ git+https://github.com/amaranth-lang/amaranth-soc",
 ]
 requires-python = ">=3.10"
