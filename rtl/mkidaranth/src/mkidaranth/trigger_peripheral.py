@@ -12,11 +12,18 @@ from .trigger import (
     TriggerState,
     PackageStreams,
     Trigger1x,
+    ValvePositions,
+    StreamSplitter,
+    StreamValve,
+    StreamArbiter,
     trigger_config,
+    trigger_event,
     timestamp,
+    iq,
     iq_stream,
     phase_stream,
     timestamp_stream,
+    event_stream,
 )
 
 class AXICSRBridge(wiring.Component):
@@ -295,11 +302,23 @@ class Trigger(wiring.Component):
         halfchunk: csr.Field(csr.action.RW, 1)
         fullchunk: csr.Field(csr.action.RW, 1)
 
+    class ValveControl(csr.Register, access="rw"):
+        trigger: csr.Field(csr.action.RW, ValvePositions)
+        cuber: csr.Field(csr.action.RW, ValvePositions)
+        stamper: csr.Field(csr.action.RW, ValvePositions)
+
+    class ValveStatus(csr.Register, access="r"):
+        trigger: csr.Field(csr.action.R, ValvePositions)
+        cuber: csr.Field(csr.action.R, ValvePositions)
+        stamper: csr.Field(csr.action.R, ValvePositions)
+
     def __init__(self, *, addr_width, data_width):
         regs = csr.Builder(addr_width=addr_width, data_width=data_width)
         self._chunksampler = regs.add("ChunkSampler", self.ChunkSampler())
         self._trigcontrol = regs.add("TriggerControl", self.TriggerControl())
         self._postcontrol = regs.add("PostageControl", self.PostageControl())
+        self._valvecontrol = regs.add("ValveControl", self.ValveControl())
+        self._valvestatus = regs.add("ValveStatus", self.ValveStatus())
         self._isr = regs.add("InterruptStatus", self.InterruptStatus())
         self._ier = regs.add("InterruptEnable", self.InterruptEnable())
         self._bridge = csr.Bridge(regs.as_memory_map())
@@ -311,6 +330,9 @@ class Trigger(wiring.Component):
                 "phase": In(phase_stream),
                 "timestamp": In(timestamp_stream),
                 "int": Out(1),
+                "trigger_events": Out(event_stream),
+                "cuber_events": Out(event_stream),
+                "postage_events": Out(stream.Signature(data.StructLayout({"iq": iq, "last": 1})))
             }
         )
 
@@ -412,14 +434,48 @@ class Trigger(wiring.Component):
             self._trigcontrol.f.config.w_data.config.as_value().replicate(4)
         )
 
+        m.submodules.arbiter = arb = StreamArbiter(trigger_event, 4, credits = 2)
+        m.submodules.splitter = split = StreamSplitter(trigger_event, 2)
+        m.submodules.dma_fifo = dma_fifo = fifo.SyncFIFOBuffered(width=trigger_event.size, depth=8)
+        m.submodules.cube_fifo = cube_fifo = fifo.SyncFIFOBuffered(width=trigger_event.size, depth=8)
+        m.submodules.dma_valve = dma_valve = StreamValve(trigger_event, 0xDEADBEEF)
+        m.submodules.cube_valve = cube_valve = StreamValve(trigger_event, 0xCAFEBEEF)
+
+        wiring.connect(m, arb.output, split.input)
+        wiring.connect(m, split.outputs[0], dma_valve.input)
+        wiring.connect(m, split.outputs[1], cube_valve.input)
+        wiring.connect(m, dma_valve.output, dma_fifo.w_stream)
+        wiring.connect(m, cube_valve.output, cube_fifo.w_stream)
+        wiring.connect(m, dma_fifo.r_stream, wiring.flipped(self.trigger_events))
+        wiring.connect(m, cube_fifo.r_stream, wiring.flipped(self.cuber_events))
+
+        m.submodules.postage_arbiter = postage_arb = StreamArbiter(data.StructLayout({"iq": iq, "last": 1}), 4*4, packet = True, credits=4)
+        m.submodules.postage_valve = postage_valve = StreamValve(data.StructLayout({"iq": iq, "last": 1}), 0xDEADCAFE, True, 128)
+        wiring.connect(m, postage_arb.output, postage_valve.input)
+        wiring.connect(m, postage_valve.output, wiring.flipped(self.postage_events))
+
+        m.d.comb += [
+            dma_valve.turn.eq(self._valvecontrol.f.trigger.data),
+            cube_valve.turn.eq(self._valvecontrol.f.cuber.data),
+            postage_valve.turn.eq(self._valvecontrol.f.stamper.data),
+            self._valvestatus.f.trigger.r_data.eq(dma_valve.turning),
+            self._valvestatus.f.cuber.r_data.eq(cube_valve.turning),
+            self._valvestatus.f.stamper.r_data.eq(postage_valve.turning)
+        ]
+
         # Trigger instantiation, 1 for each lane
         triggers = []
         for i in range(4):
             self._triggers[i] = m.submodules[f"trigger{i}"] = t = Trigger1x()
             self._postages[i] = m.submodules[f"postage{i}"] = p = PostageFIFO(8, 128, 4)
+            wiring.connect(m, t.postage_stream, p.postage_stream)
             triggers.append(t)
 
-            wiring.connect(m, t.postage_stream, p.postage_stream)
+            m.submodules[f"event_fifo{i}"] = ef = fifo.SyncFIFOBuffered(width=trigger_event.size, depth=8)
+            wiring.connect(m, t.event_stream, ef.w_stream)
+            wiring.connect(m, ef.r_stream, arb.inputs[i])
+            for j in range(4):
+                wiring.connect(m, p.output_streams[j], postage_arb.inputs[i * 4 + j])
 
             m.d.comb += [
                 t.input_state.eq(sr.data[i]),
