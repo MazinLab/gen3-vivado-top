@@ -31,7 +31,7 @@ class AXICSRBridge(wiring.Component):
         self._dw = data_width
         self._aw = addr_width
         self._caw = addr_width - exact_log2(data_width // 8)
-        self.axi_propperties = axi.Axi4LiteProperties(DATA_WIDTH=data_width, ADDR_WIDTH=addr_width)
+        self.axi_properties = axi.Axi4LiteProperties(DATA_WIDTH=data_width, ADDR_WIDTH=addr_width)
         self.csr_signature = csr.Signature(addr_width=self._caw, data_width=data_width)
 
         super().__init__(

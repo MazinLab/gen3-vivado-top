@@ -18,6 +18,7 @@ class TriggerSubsystem(wiring.Component):
 
         super.__init__(
             {
+                "s_axi_ctrl": In(axi.Signature(self.converter.axi_properties)),
                 "s_axi_cube": In(cuber_axi_signature),
                 "iq": In(iq_stream),
                 "phase": In(phase_stream),
@@ -42,6 +43,10 @@ class TriggerSubsystem(wiring.Component):
         m.submodules.trig_dma = trig_dma = self.trig_dma
         m.submodules.postage_dma = postage_dma = self.postage_dma
         m.submodules.decoder = decoder = self.decoder
+        m.submodules.converter = converter = self.converter
+
+        m.d.comb += wiring.connect(m, wiring.flipped(self.s_axi_ctrl), converter.axi)
+        m.d.comb += wiring.connect(m, converter.csr, decoder.bus)
 
         decoder.add(cuber_peri.bus)
         decoder.add(trig_peri.bus)
@@ -61,18 +66,18 @@ class TriggerSubsystem(wiring.Component):
         m.d.comb += trig_peri.timestamp.eq(self.timestamp)
 
         m.d.comb += wiring.connect(m, wiring.flipped(self.s_axi_cube), cuber_peri.membus)
-        m.d.comb += wiring.connect(m, trig_peri.trigger_stream, cuber_peri.trigger_stream)
+        m.d.comb += wiring.connect(m, trig_peri.cuber_events, cuber_peri.trigger_stream)
 
         m.d.comb += wiring.connect(m, trig_dma.dmabus, self.m_axi_trig)
         m.d.comb += wiring.connect(m, postage_dma.dmabus, self.m_axi_postage)
 
-        m.submodules.trig_fifo = trig_fifo = fifo.SyncFIFOBuffered(width = len(trig_peri.trigger_stream.payload), depth = 16)
-        m.submodules.postage_fifo = postage_fifo = fifo.SyncFIFOBuffered(width = len(trig_peri.postage_stream.payload), depth = 16)
+        m.submodules.trig_fifo = trig_fifo = fifo.SyncFIFOBuffered(width = len(trig_peri.trigger_events.payload), depth = 16)
+        m.submodules.postage_fifo = postage_fifo = fifo.SyncFIFOBuffered(width = len(trig_peri.postage_events.payload), depth = 16)
 
-        wiring.connect(m, trig_peri.trigger_stream, trig_fifo.w_stream)
+        wiring.connect(m, trig_peri.trigger_events, trig_fifo.w_stream)
         wiring.connect(m, trig_fifo.r_stream, trig_dma.stream)
 
-        wiring.connect(m, trig_peri.postage_stream, postage_fifo.w_stream)
+        wiring.connect(m, trig_peri.postage_events, postage_fifo.w_stream)
         wiring.connect(m, postage_fifo.r_stream, postage_dma.stream)
 
 
