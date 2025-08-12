@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:bc141ce7c96ef1c843e85015d03783457392b9d805b1cb7b0ccf6bbfeb17b6da"
+content_hash = "sha256:cc099a74b7810d93bcb73ff67c50cf98c9660cb5ab2374b46b1891b964a71c31"
 
 [[metadata.targets]]
 requires_python = ">=3.10"
@@ -37,6 +37,20 @@ summary = "System on Chip toolkit for Amaranth HDL"
 groups = ["default"]
 dependencies = [
     "amaranth<0.6,>=0.5",
+]
+
+[[package]]
+name = "amaranth-yosys"
+version = "0.50.0.0.post114"
+requires_python = "~=3.8"
+summary = "Specialized WebAssembly build of Yosys used by Amaranth HDL"
+groups = ["dev"]
+dependencies = [
+    "importlib-resources>=1.4; python_version < \"3.9\"",
+    "wasmtime<36,>=1",
+]
+files = [
+    {file = "amaranth_yosys-0.50.0.0.post114-py3-none-any.whl", hash = "sha256:824473dc36d76ac90294a0304ae7636cef8b9dcad1945980cc5e5efa3ab2f070"},
 ]
 
 [[package]]
@@ -163,6 +177,20 @@ groups = ["dev"]
 files = [
     {file = "executing-2.2.0-py2.py3-none-any.whl", hash = "sha256:11387150cad388d62750327a53d3339fad4888b39a6fe233c3afbb54ecffd3aa"},
     {file = "executing-2.2.0.tar.gz", hash = "sha256:5d108c028108fe2551d1a7b2e8b713341e2cb4fc0aa7dcf966fa4327a5226755"},
+]
+
+[[package]]
+name = "importlib-resources"
+version = "6.5.2"
+requires_python = ">=3.9"
+summary = "Read resources from Python packages"
+groups = ["dev"]
+dependencies = [
+    "zipp>=3.1.0; python_version < \"3.10\"",
+]
+files = [
+    {file = "importlib_resources-6.5.2-py3-none-any.whl", hash = "sha256:789cfdc3ed28c78b67a06acb8126751ced69a3d5f79c095a98298cd8a760ccec"},
+    {file = "importlib_resources-6.5.2.tar.gz", hash = "sha256:185f87adef5bcc288449d98fb4fba07cea78bc036455dd44c5fc4a2fe78fed2c"},
 ]
 
 [[package]]
@@ -434,6 +462,29 @@ marker = "python_version < \"3.12\""
 files = [
     {file = "typing_extensions-4.14.1-py3-none-any.whl", hash = "sha256:d1e1e3b58374dc93031d6eda2420a48ea44a36c2b4766a4fdeb3710755731d76"},
     {file = "typing_extensions-4.14.1.tar.gz", hash = "sha256:38b39f4aeeab64884ce9f74c94263ef78f3c22467c8724005483154c26648d36"},
+]
+
+[[package]]
+name = "wasmtime"
+version = "35.0.0"
+requires_python = ">=3.9"
+summary = "A WebAssembly runtime powered by Wasmtime"
+groups = ["dev"]
+dependencies = [
+    "importlib-resources>=5.10",
+]
+files = [
+    {file = "wasmtime-35.0.0-py3-none-android_26_arm64_v8a.whl", hash = "sha256:af1fd4e9aa3a686bfe4e05e22ca57cd0c1e9649dfb5aa7f3cdd6c3275cea1ba3"},
+    {file = "wasmtime-35.0.0-py3-none-android_26_x86_64.whl", hash = "sha256:3defb250cd134c61af2b42bb6f8ce4eeae6af2942db3ce56ea542ddc533cfd41"},
+    {file = "wasmtime-35.0.0-py3-none-any.whl", hash = "sha256:d3a909584f97d51e3950d4922963a5303df89b4041ffa1b4588c4b1c6dd2e315"},
+    {file = "wasmtime-35.0.0-py3-none-macosx_10_13_x86_64.whl", hash = "sha256:0b956c20264213938cd9e1b9f36a458d45b0fb741c577281d43f2149f4a0beaa"},
+    {file = "wasmtime-35.0.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:008ea47bc5120e451dec8b188c51d55d56946afea10287a84d0d4bec160a18fe"},
+    {file = "wasmtime-35.0.0-py3-none-manylinux1_x86_64.whl", hash = "sha256:f10a08df5479588a352ee9fe6903c95f18c0bd3d7558f4bc2c4e772591217f64"},
+    {file = "wasmtime-35.0.0-py3-none-manylinux2014_aarch64.whl", hash = "sha256:9369e05ef98dd4a9d0d58818ada26e16ea89dc22d865e3547815e885ac5b4198"},
+    {file = "wasmtime-35.0.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:c2732d903e6618b435fe7d04996ddcc8171e48234d6534c00f7e2d7eaf476349"},
+    {file = "wasmtime-35.0.0-py3-none-win_amd64.whl", hash = "sha256:23cfaae112bb5eabdd003ea769315d028386f7d70d5c2a1b072b522e4c8001bc"},
+    {file = "wasmtime-35.0.0-py3-none-win_arm64.whl", hash = "sha256:74b3d43e6d12d03b2cd04b0353036e304ec4159ea2d7fd2bcb550d16035786b1"},
+    {file = "wasmtime-35.0.0.tar.gz", hash = "sha256:6398491ce7a8fb89054b078893b05112c4e903a897ad98b5fb658dbf81cc34d4"},
 ]
 
 [[package]]
