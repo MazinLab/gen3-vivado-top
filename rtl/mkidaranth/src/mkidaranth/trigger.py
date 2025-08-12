@@ -168,7 +168,7 @@ class StreamValve(wiring.Component):
             m.d.comb += [
                 self.output.valid.eq(self.input.valid),
                 self.input.ready.eq(self.output.ready),
-                self.output.payload.eq(self.output.payload),
+                self.output.payload.eq(self.input.payload),
             ]
         with m.Elif(self.turning == ValvePositions.CLOSED):
             m.d.comb += [
