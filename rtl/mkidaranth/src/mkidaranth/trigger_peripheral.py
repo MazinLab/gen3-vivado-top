@@ -49,7 +49,6 @@ class AXICSRBridge(wiring.Component):
         m = Module()
 
         m.d.comb += self.csr.w_data.eq(self.axi.w.payload.data)
-        m.d.comb += self.axi.r.payload.data.eq(self.csr.r_data)
         m.d.comb += self.axi.b.valid.eq(1)
 
         alatch = Signal(self._caw)
@@ -60,10 +59,10 @@ class AXICSRBridge(wiring.Component):
                     m.d.comb += self.axi.aw.ready.eq(1)
                     m.d.sync += alatch.eq(self.axi.aw.payload.addr.shift_right(self._aw - self._caw))
                     m.next = "WRITE"
-                with m.ElIf(self.axi.ar.valid):
+                with m.Elif(self.axi.ar.valid):
                     m.d.comb += self.axi.ar.ready.eq(1)
                     m.d.comb += self.csr.r_stb.eq(1)
-                    m.d.comb += csr.addr.eq(self.axi.ar.payload.addr.shift_right(self._aw - self._caw))
+                    m.d.comb += self.csr.addr.eq(self.axi.ar.payload.addr.shift_right(self._aw - self._caw))
                     m.next = "READ-1"
             with m.State("WRITE"):
                 m.d.comb += self.csr.addr.eq(alatch)
