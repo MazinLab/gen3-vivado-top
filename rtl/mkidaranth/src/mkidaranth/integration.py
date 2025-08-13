@@ -132,4 +132,4 @@ if __name__ == "__main__":
 
     integrated_trigger = TriggerSubsystem()
     with open(sys.argv[1], "w") as f:
-        f.write(verilog.convert(integrated_trigger))
+        f.write(verilog.convert(integrated_trigger, name="trigger_subsystem"))
