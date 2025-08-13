@@ -58,13 +58,13 @@ class TriggerSubsystem(wiring.Component):
 
         super().__init__(
             {
-                "s_axi_ctrl": In(axi.Signature(self.converter.axi_properties)),
-                "s_axi_cube": In(cuber_axi_signature),
-                "iq": In(iq_stream),
-                "phase": In(phase_stream),
+                "s_axi_ctrl": In(axi.StandardizedAxiSignature(self.converter.axi_properties)),
+                "s_axi_cube": In(axi.StandardizedAxiSignature(cuber_axi_signature.props)),
+                "s_axis_iq": In(axi.StandardizedSignature(iq_stream, data_field="payload", renames={"beat": "user"})),
+                "s_axis_phase": In(axi.StandardizedSignature(phase_stream, data_field="payload", renames={"beat": "user"})),
                 "timestamp": In(timestamp),
-                "m_axi_trig": Out(self.trig_dma.dma_bus_signature),
-                "m_axi_postage": Out(self.postage_dma.dma_bus_signature),
+                "m_axi_trig": Out(axi.StandardizedAxiSignature(self.trig_dma.dma_bus_signature.props)),
+                "m_axi_postage": Out(axi.StandardizedAxiSignature(self.postage_dma.dma_bus_signature.props)),
                 "int_trig_peri": Out(1),
                 "int_cuber_peri": Out(1),
                 "int_dma_trig": Out(1),
@@ -85,7 +85,7 @@ class TriggerSubsystem(wiring.Component):
         m.submodules.decoder = decoder = self.decoder
         m.submodules.converter = converter = self.converter
 
-        wiring.connect(m, wiring.flipped(self.s_axi_ctrl), converter.axi)
+        axi.connect_axi(m, wiring.flipped(self.s_axi_ctrl), converter.axi)
         wiring.connect(m, converter.csr, decoder.bus)
 
         decoder.add(cuber_peri.bus)
@@ -101,15 +101,15 @@ class TriggerSubsystem(wiring.Component):
         m.d.comb += self.int_fault_dma_postage.eq(postage_dma.fault)
         m.d.comb += self.axi_status.eq(cuber_peri.axi_status)
 
-        wiring.connect(m, wiring.flipped(self.iq), trig_peri.iq)
-        wiring.connect(m, wiring.flipped(self.phase), trig_peri.phase)
+        axi.connect(m, wiring.flipped(self.s_axis_iq), trig_peri.iq)
+        axi.connect(m, wiring.flipped(self.s_axis_phase), trig_peri.phase)
         m.d.comb += trig_peri.timestamp.payload.eq(self.timestamp)
 
-        wiring.connect(m, wiring.flipped(self.s_axi_cube), cuber_peri.membus)
+        axi.connect_axi(m, wiring.flipped(self.s_axi_cube), cuber_peri.membus)
         wiring.connect(m, trig_peri.cuber_events, cuber_peri.trigger_stream)
 
-        wiring.connect(m, trig_dma.dmabus, wiring.flipped(self.m_axi_trig))
-        wiring.connect(m, postage_dma.dmabus, wiring.flipped(self.m_axi_postage))
+        axi.connect_axi(m, trig_dma.dmabus, wiring.flipped(self.m_axi_trig))
+        axi.connect_axi(m, postage_dma.dmabus, wiring.flipped(self.m_axi_postage))
 
         m.submodules.pad = pad = StreamPad(trigger_event.size, 64)
         m.submodules.strip = strip = StreamStripper(data.StructLayout({"iq": iq, "last": 1}), iq, lambda x: x.iq)

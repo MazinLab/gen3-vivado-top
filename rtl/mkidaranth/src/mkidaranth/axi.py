@@ -317,23 +317,149 @@ class Signature(wiring.Signature):
             name: flow(stream.Signature(shape, payload_init=shape.INIT)) for name, (flow, shape) in channels.items()
         })
 
+class StandardizedSignature(wiring.Signature):
+    def __init__(self, base_signature, data_field = None, prefix = "t", renames = {}):
+        self._base_signature = base_signature
+        self._data_field = data_field
+        self._prefix = prefix
+        self._renames = renames
 
-if __name__ == "__main__":
-    from amaranth.back import verilog
-    from amaranth import Module
+        config_dict = {}
+        config_dict[f"{prefix}valid"] = wiring.Out(1)
+        config_dict[f"{prefix}ready"] = wiring.In(1)
 
-    props = Axi4LiteProperties(
-        DATA_WIDTH=32
-    )
-    print(props)
+        if data_field is None:
+            shape = base_signature.members['payload'].shape
+            if shape is int:
+                size = shape
+            else:
+                size = shape.size
+            config_dict[f"{prefix}data"] = wiring.Out(size)
+        else:
+            shape = base_signature.members['payload'].shape
+            for k, v in shape:
+                size = v.width
+                if k == data_field:
+                    k = "data"
+                if k in renames.keys():
+                    k = renames[k]
+                config_dict[f"{prefix}{k}"] = wiring.Out(size)
 
-    class Test(wiring.Component):
-        input: wiring.Out(Signature(props))
-        #output: wiring.Out(Signature(Axi5LiteProperties()))
+        super().__init__(config_dict)
 
-        def elaborate(self, platform):
-            m = Module()
-            return m
+class StandardizedAxiSignature(wiring.Signature):
+    def __init__(self, axi_props):
+        self.props = axi_props
 
-    from amaranth.back import verilog
-    print(verilog.convert(Test()))
+        channels = dict()
+
+        if axi_props.READ_WRITE_MODE & ReadWriteMode.READ_ONLY:
+            channels["ar"] = (False, ReadRequestChannel(axi_props))
+            channels["r"] = (True, ReadDataChannel(axi_props))
+
+        if axi_props.READ_WRITE_MODE & ReadWriteMode.WRITE_ONLY:
+            channels["aw"] = (False, WriteRequestChannel(axi_props))
+            channels["w"] = (False, WriteDataChannel(axi_props))
+            channels["b"] = (True, WriteResponseChannel(axi_props))
+
+        sig = {}
+        self._stream_signatures = {}
+        for name, (flip, shape) in channels.items():
+            self._stream_signatures[name] = stream_sig = StandardizedSignature(stream.Signature(shape, payload_init=shape.INIT), prefix=name, data_field=False)
+            for signame, innershape in stream_sig.members.items():
+                if flip:
+                    sig[signame] = innershape.flip()
+                else:
+                    sig[signame] = innershape
+
+        super().__init__(sig)
+
+def connect(m, a, b, signature_override=None, required_signature=StandardizedSignature, double_flip=False):
+    flipped = False
+    standard = a
+    amaranth = b
+    if type(a.signature) is wiring.FlippedSignature:
+        if type(wiring.flipped(a).signature) is required_signature:
+            flipped = True
+    elif type(a.signature) is required_signature:
+        signature = a.signature
+    else:
+        standard = b
+        amaranth = a
+        if type(b.signature) is wiring.FlippedSignature:
+            if type(wiring.flipped(b).signature) is required_signature:
+                flipped = True
+        elif type(b.signature) is required_signature:
+            pass
+        else:
+            assert False
+    if double_flip:
+        flipped = not flipped
+    signature = standard.signature
+    if signature_override is not None:
+        signature = signature_override
+    base_signature = signature._base_signature
+    data_field = signature._data_field
+    prefix = signature._prefix
+    renames = signature._renames
+    if not flipped:
+        m.d.comb += amaranth.valid.eq(getattr(standard, f'{prefix}valid'))
+        m.d.comb += getattr(standard, f'{prefix}ready').eq(amaranth.ready)
+
+        if data_field is None:
+            m.d.comb += amaranth.payload.eq(getattr(standard, f'{prefix}data'))
+        else:
+            shape = base_signature.members['payload'].shape
+            for k, _ in shape:
+                if k == data_field:
+                    kp = "data"
+                elif k in renames.keys():
+                    kp = renames[k]
+                else:
+                    kp = k
+                m.d.comb += getattr(amaranth.payload, k).eq(getattr(standard, f'{prefix}{kp}'))
+    else:
+        m.d.comb += getattr(standard, f'{prefix}valid').eq(amaranth.valid)
+        m.d.comb += amaranth.ready.eq(getattr(standard, f'{prefix}ready'))
+
+        if data_field is None:
+            m.d.comb += getattr(standard, f'{prefix}data').eq(amaranth.payload)
+        else:
+            shape = base_signature.members['payload'].shape
+            for k, _ in shape:
+                if k == data_field:
+                    kp = "data"
+                elif k in renames.keys():
+                    kp = renames[k]
+                else:
+                    kp = k
+                m.d.comb += getattr(standard, f'{prefix}{kp}').eq(getattr(amaranth.payload, k))
+
+def connect_axi(m, a, b):
+    if type(a.signature) is StandardizedAxiSignature:
+        sig = a.signature
+        standard = a
+        amaranth = b
+    elif type(wiring.flipped(a).signature) is StandardizedAxiSignature:
+        sig = wiring.flipped(a).signature
+        standard = a
+        amaranth = b
+    elif type(b.signature) is StandardizedAxiSignature:
+        sig = b.signature
+        standard = b
+        amaranth = a
+    elif type(wiring.flipped(b).signature) is StandardizedAxiSignature:
+        sig = wiring.flipped(b).signature
+        standard = b
+        amaranth = a
+    else:
+        assert False
+    for name, stream_sig in sig._stream_signatures.items():
+        connect(
+            m,
+            standard,
+            getattr(amaranth, name),
+            signature_override=stream_sig,
+            required_signature=StandardizedAxiSignature,
+            double_flip = name in ["r", "b"]
+        )
