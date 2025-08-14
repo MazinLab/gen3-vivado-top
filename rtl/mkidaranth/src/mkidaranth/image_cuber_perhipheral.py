@@ -9,7 +9,13 @@ from .trigger import trigger_event, CYCLE_BITS
 from .image_cuber import ImageCuber
 from . import axi
 
-cuber_axi_signature = axi.Signature(axi.Axi4Properties(QOS_Present=False, PROT_Present=False, CACHE_Present=False, Exclusive_Accesses=False, READ_WRITE_MODE=axi.ReadWriteMode.READ_ONLY, ADDR_WIDTH=16, REGION_Present=False, DATA_WIDTH=64, WSTRB_Present=False, WLAST_Present=False, ID_W_WIDTH=0, ID_R_WIDTH=2))
+cuber_axi_signature = axi.Signature(
+    axi.Axi4Properties(
+        QOS_Present=False, PROT_Present=False, CACHE_Present=False, Exclusive_Accesses=False,
+        READ_WRITE_MODE=axi.ReadWriteMode.READ_ONLY, ADDR_WIDTH=16, REGION_Present=False,
+        DATA_WIDTH=64, WSTRB_Present=False, WLAST_Present=False, ID_W_WIDTH=16, ID_R_WIDTH=16
+    )
+)
 
 class AddressGenerator(wiring.Component):
     def __init__(self, len_bits=8, size_bits=3, type_bits=2, addr_bits=15, id_bits=2):
