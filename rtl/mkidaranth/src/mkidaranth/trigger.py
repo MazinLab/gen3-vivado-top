@@ -121,9 +121,10 @@ class StreamSplitter(wiring.Component):
                 m.d.comb += self.outputs[i].valid.eq(self.input.valid)
             with m.If(self.outputs[i].valid & self.outputs[i].ready):
                 m.d.sync += complatch[i].eq(1)
-                m.d.comb += compcurr.eq(1)
+                m.d.comb += compcurr[i].eq(1)
         with m.If((complatch | compcurr).all()):
             m.d.sync += complatch.eq(0)
+            m.d.comb += self.input.ready.eq(1)
 
         return m
 
