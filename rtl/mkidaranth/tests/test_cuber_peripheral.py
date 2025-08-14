@@ -20,7 +20,7 @@ class Harness(Component):
     test_cycle: In(CYCLE_BITS)
     photon_event: In(1)
     valid: In(1)
-    membus: In(axi.Signature(axi.Axi4Properties(QOS_Present=False, PROT_Present=False, CACHE_Present=False, Exclusive_Accesses=False, READ_WRITE_MODE=axi.ReadWriteMode.READ_ONLY, ADDR_WIDTH=16, REGION_Present=False, DATA_WIDTH=64, WSTRB_Present=False, WLAST_Present=False, ID_W_WIDTH=0, ID_R_WIDTH=2)))
+    membus: In(axi.Signature(axi.Axi4Properties(QOS_Present=False, PROT_Present=False, CACHE_Present=False, Exclusive_Accesses=False, READ_WRITE_MODE=axi.ReadWriteMode.READ_ONLY, ADDR_WIDTH=16, REGION_Present=False, DATA_WIDTH=64, WSTRB_Present=False, WLAST_Present=False, ID_W_WIDTH=0, ID_R_WIDTH=16)))
     cycle_counter: Out(CYCLE_BITS)
     
     def __init__(self):
@@ -347,18 +347,19 @@ class PeripheralTestCase(unittest.TestCase):
             await axi_burst(16, 3, 1, 0b0000100101100000, 0)
 
             for j in range(16):
-                current_addr = ctx.get(dut.cuber_peri.cuber.mem_read_addr)
+                prev_addr = ctx.get(dut.cuber_peri.cuber.mem_read_addr)
+
+                await ctx.tick()
+
                 current_data = ctx.get(dut.cuber_peri.membus.r.payload.data)
 
-                self.assertEqual(current_addr, 300+j)
+                self.assertEqual(prev_addr, 300+j)
 
-                if (current_addr == 310):
+                if (prev_addr == 310):
                     self.assertEqual(current_data, 0b00000000_00000001_00000000_00000001)
             
-                if (current_addr == 312):
+                if (prev_addr == 312):
                     self.assertEqual(current_data, 0b00000000_00000000_00000001_00000000)
-                
-                await ctx.tick()
             
             generate_photon_event(ctx, 570, 200)
             await ctx.tick().repeat(5)
@@ -369,18 +370,19 @@ class PeripheralTestCase(unittest.TestCase):
             await axi_burst(16, 3, 1, 0b1000100101100000, 0)
 
             for j in range(16):
-                current_addr = ctx.get(dut.cuber_peri.cuber.mem_read_addr)
+                prev_addr = ctx.get(dut.cuber_peri.cuber.mem_read_addr)
+
+                await ctx.tick()
+
                 current_data = ctx.get(dut.cuber_peri.membus.r.payload.data)
 
-                self.assertEqual(current_addr, 300+j)
+                self.assertEqual(prev_addr, 300+j)
 
-                if (current_addr == 310):
+                if (prev_addr == 310):
                     self.assertEqual(current_data, 0b00000000_00000001_00000000_00000001)
             
-                if (current_addr == 312):
+                if (prev_addr == 312):
                     self.assertEqual(current_data, 0b00000000_00000000_00000001_00000000)
-                
-                await ctx.tick()
             
             await ctx.tick().repeat(5)
             cycle_num = ctx.get(dut.test_cycle)

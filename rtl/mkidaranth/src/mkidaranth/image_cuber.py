@@ -47,18 +47,16 @@ class ImageCuber(wiring.Component):
         m.submodules.dmem1 = mem1 = self.mem1
         m.submodules.dmem2 = mem2 = self.mem2
 
-        read_port1 = mem1.read_port(domain="comb")
+        read_port1 = mem1.read_port(domain="sync")
         write_port11 = mem1.write_port(domain="sync")
         write_port12 = mem1.write_port(domain="sync")
 
-        read_port2 = mem2.read_port(domain="comb")
+        read_port2 = mem2.read_port(domain="sync")
         write_port21 = mem2.write_port(domain="sync")
         write_port22 = mem2.write_port(domain="sync")
 
         i = Signal(12)
         m.d.comb += self.current_cycle_number.eq(i+1)
-
-        uploading = Signal()
 
         """
         For testing purposes, can use the following:
@@ -72,7 +70,7 @@ class ImageCuber(wiring.Component):
         m.submodules.pixel_LUT = pixel_LUT = Memory(shape = unsigned(12), depth = 2048, init = [])
         pixel_LUT_write = pixel_LUT.write_port(domain="sync")
         wiring.connect(m, self.pixel_LUT_write, pixel_LUT_write)
-        pixel_LUT_read = pixel_LUT.read_port(domain="comb")
+        pixel_LUT_read = pixel_LUT.read_port(domain="sync")
 
         """
         For testing purposes, can use the following:
@@ -85,7 +83,7 @@ class ImageCuber(wiring.Component):
         m.submodules.wavelength_LUT = wavelength_LUT = Memory(shape = unsigned(5*self.wavelength_cutoff_precision), depth = 2048, init = [])
         wavelength_LUT_write = wavelength_LUT.write_port(domain="sync")
         wiring.connect(m, self.wavelength_LUT_write, wavelength_LUT_write)
-        wavelength_LUT_read = wavelength_LUT.read_port(domain="comb")
+        wavelength_LUT_read = wavelength_LUT.read_port(domain="sync")
 
         #Error detection
         m.d.sync += self.lost_photon_flag.eq(0)
@@ -104,6 +102,10 @@ class ImageCuber(wiring.Component):
                 with m.If(prev_payload != temp_payload):
                     m.d.sync += self.lost_photon_flag.eq(1)   #Throws error pulse when photon event isn't read due to FIFO overflow
 
+        new_photon = Signal()
+        LUTS_read = Signal()
+        uploading = Signal()
+        reading = Signal()
 
         def state_machine(write_port1, write_port2, read_port, machine_number):
             with m.FSM(init="Configuring"):
@@ -144,6 +146,7 @@ class ImageCuber(wiring.Component):
                     m.d.sync += write_port1.en.eq(0)
                     m.d.sync += write_port2.en.eq(0)
                     m.d.sync += i.eq(i+1)
+                    m.d.sync += new_photon.eq(0)
 
                     with m.If(buffered_stream.valid & buffered_stream.ready):
                         inc_bin = buffered_payload.bin
@@ -154,28 +157,46 @@ class ImageCuber(wiring.Component):
                         wavelength_cutoffs = Signal(5*self.wavelength_cutoff_precision)
                         wavelength_bin = Signal(2)
                         not_within_bin = Signal()
+                        muxer = Signal()
+                        divided_phase = Signal(16)
 
-                        m.d.comb += pixel_LUT_read.addr.eq(inc_bin)
-                        m.d.comb += pixel.eq(pixel_LUT_read.data)
-                    
-                        m.d.comb += wavelength_LUT_read.addr.eq(inc_bin)
-                        m.d.comb += wavelength_cutoffs.eq(wavelength_LUT_read.data)
+                        m.d.sync += pixel_LUT_read.addr.eq(inc_bin)
+                        m.d.sync += wavelength_LUT_read.addr.eq(inc_bin)
                         
-                        divided_phase = inc_phase>>(16-self.wavelength_cutoff_precision)
+                        m.d.sync += divided_phase.eq(inc_phase>>(16-self.wavelength_cutoff_precision))
+
+                        m.d.sync += buffered_stream.ready.eq(0)
+                        m.d.sync += new_photon.eq(1)
+                    
+                    with m.If(new_photon):
+                        m.d.sync += LUTS_read.eq(1)
+                        m.d.sync += new_photon.eq(0)
+                        m.d.sync += buffered_stream.ready.eq(0)
+
+                    with m.If(LUTS_read):
+                        m.d.comb += pixel.eq(pixel_LUT_read.data)
+                        m.d.sync += muxer.eq(pixel[11])
+                        m.d.comb += wavelength_cutoffs.eq(wavelength_LUT_read.data)
+
+                        m.d.sync += buffered_stream.ready.eq(0)
 
                         def wavelength_cutoff(n):
                             return wavelength_cutoffs[n*self.wavelength_cutoff_precision:(n+1)*self.wavelength_cutoff_precision]
 
                         with m.If((divided_phase >= wavelength_cutoff(0)) & (divided_phase < wavelength_cutoff(1))):
-                            m.d.comb += wavelength_bin.eq(0)
+                            m.d.sync += wavelength_bin.eq(0)
+                            m.d.sync += not_within_bin.eq(0)
                         with m.Elif((divided_phase >= wavelength_cutoff(1)) & (divided_phase < wavelength_cutoff(2))):
-                            m.d.comb += wavelength_bin.eq(1)
+                            m.d.sync += wavelength_bin.eq(1)
+                            m.d.sync += not_within_bin.eq(0)
                         with m.Elif((divided_phase >= wavelength_cutoff(2)) & (divided_phase < wavelength_cutoff(3))):
-                            m.d.comb += wavelength_bin.eq(2)
+                            m.d.sync += wavelength_bin.eq(2)
+                            m.d.sync += not_within_bin.eq(0)
                         with m.Elif((divided_phase >= wavelength_cutoff(3)) & (divided_phase < wavelength_cutoff(4))):
-                            m.d.comb += wavelength_bin.eq(3)
+                            m.d.sync += wavelength_bin.eq(3)
+                            m.d.sync += not_within_bin.eq(0)
                         with m.Else():
-                            m.d.comb += not_within_bin.eq(1)
+                            m.d.sync += not_within_bin.eq(1)
 
                         """
                         ADDRESS SCHEME: pixel = 4 x-bits + 8 y-bits (LSB is y, MSB is x)
@@ -187,35 +208,38 @@ class ImageCuber(wiring.Component):
 
                         m.d.sync += write_port1.addr.eq(pixel[0:11])
                         m.d.comb += read_port.addr.eq(pixel[0:11])
-                        muxer = Signal()
-                        m.d.comb += muxer.eq(pixel[11])
+                        m.d.sync += reading.eq(1)
+                        m.d.sync += pixel_to_upload.eq(pixel)
+                        m.d.sync += LUTS_read.eq(0)
 
-                        with m.If(~uploading):
-                            byte_array = Array([Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8)])
-                            for j in range(8):
-                                m.d.comb += byte_array[j].eq(read_port.data[8*j:8*(j+1)])
+                    with m.If((reading) & (~uploading)):
+                        m.d.sync += write_port1.addr.eq(pixel_to_upload[0:11])
+                        m.d.comb += read_port.addr.eq(pixel_to_upload[0:11])
 
-                            index = wavelength_bin | (muxer<<2)                      
+                        byte_array = Array([Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8)])
+                        for j in range(8):
+                            m.d.comb += byte_array[j].eq(read_port.data[8*j:8*(j+1)])
 
-                            byte_array_new = Array([Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8)])
+                        index = wavelength_bin | (muxer<<2)                      
 
-                            m.d.sync += self.count_overflow_flag.eq(0)
-                            for j in range(8):
-                                with m.If((j == index) & (byte_array[j] != 0b11111111) & (not_within_bin == 0)):
-                                    m.d.comb += byte_array_new[j].eq((byte_array[j] + 1)[:8])
-                                with m.Elif((j == index) & (byte_array[j] == 0b11111111) & (not_within_bin == 0)):
-                                    m.d.comb += byte_array_new[j].eq(byte_array[j])
-                                    m.d.sync += self.count_overflow_flag.eq(1)
-                                with m.Else():
-                                    m.d.comb += byte_array_new[j].eq(byte_array[j])
+                        byte_array_new = Array([Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8)])
 
-                            new_data = Cat(byte_array_new[j] for j in range(8))
+                        m.d.sync += self.count_overflow_flag.eq(0)
+                        for j in range(8):
+                            with m.If((j == index) & (byte_array[j] != 0b11111111) & (not_within_bin == 0)):
+                                m.d.comb += byte_array_new[j].eq((byte_array[j] + 1)[:8])
+                            with m.Elif((j == index) & (byte_array[j] == 0b11111111) & (not_within_bin == 0)):
+                                m.d.comb += byte_array_new[j].eq(byte_array[j])
+                                m.d.sync += self.count_overflow_flag.eq(1)
+                            with m.Else():
+                                m.d.comb += byte_array_new[j].eq(byte_array[j])
 
-                            m.d.sync += write_port1.data.eq(new_data)
+                        new_data = Cat(byte_array_new[j] for j in range(8))
 
-                            m.d.sync += uploading.eq(1)
-                            m.d.sync += pixel_to_upload.eq(pixel)
-                            m.d.sync += buffered_stream.ready.eq(0)
+                        m.d.sync += write_port1.data.eq(new_data)
+
+                        m.d.sync += uploading.eq(1)
+                        m.d.sync += buffered_stream.ready.eq(0)
                     
 
                     with m.If(uploading):
@@ -228,6 +252,7 @@ class ImageCuber(wiring.Component):
                         with m.If(write_port1.en == 1):
                             m.d.sync += write_port1.en.eq(0)
                             m.d.sync += uploading.eq(0)
+                            m.d.sync += reading.eq(0)
                             m.d.sync += buffered_stream.ready.eq(1)
 
 
