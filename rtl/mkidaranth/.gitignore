@@ -1,4 +1,5 @@
 *.vcd
+integration.v
 *.ipynb
 # Byte-compiled / optimized / DLL files
 __pycache__/
