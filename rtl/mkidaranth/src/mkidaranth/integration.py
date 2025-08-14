@@ -47,7 +47,8 @@ class StreamStripper(wiring.Component):
         return m
 
 class TriggerSubsystem(wiring.Component):
-    def __init__(self):
+    def __init__(self, enable_cuber = True):
+        self.enable_cuber = enable_cuber
         self.cuber_peri = image_cuber_perhipheral.CuberPeri(csr_addr_width=8, csr_data_width=32)
         self.trig_peri = trigger_peripheral.Trigger(addr_width=12, data_width=32)
         self.trig_dma = trigger_peripheral.AXIDMA(addr_width=48, data_width=64, burst_length=128, ctl_data_width=32)
@@ -86,7 +87,8 @@ class TriggerSubsystem(wiring.Component):
             cd_sync.rst.eq(~self.aresetn)
         ]
 
-        m.submodules.cuber_peri = cuber_peri = self.cuber_peri
+        if self.enable_cuber:
+            m.submodules.cuber_peri = cuber_peri = self.cuber_peri
         m.submodules.trig_peri = trig_peri = self.trig_peri
         m.submodules.trig_dma = trig_dma = self.trig_dma
         m.submodules.postage_dma = postage_dma = self.postage_dma
@@ -96,25 +98,30 @@ class TriggerSubsystem(wiring.Component):
         axi.connect_axi(m, wiring.flipped(self.s_axi_ctrl), converter.axi)
         wiring.connect(m, converter.csr, decoder.bus)
 
-        decoder.add(cuber_peri.bus)
+        if self.enable_cuber:
+            decoder.add(cuber_peri.bus)
         decoder.add(trig_peri.bus)
         decoder.add(trig_dma.ctlbus, name="Trigger")
         decoder.add(postage_dma.ctlbus, name="Postage")
 
         m.d.comb += self.int_trig_peri.eq(trig_peri.int)
-        m.d.comb += self.int_cuber_peri.eq(cuber_peri.int)
         m.d.comb += self.int_dma_trig.eq(trig_dma.int)
         m.d.comb += self.int_fault_dma_trig.eq(trig_dma.fault)
         m.d.comb += self.int_dma_postage.eq(postage_dma.int)
         m.d.comb += self.int_fault_dma_postage.eq(postage_dma.fault)
-        m.d.comb += self.axi_status.eq(cuber_peri.axi_status)
+        if self.enable_cuber:
+            m.d.comb += self.int_cuber_peri.eq(cuber_peri.int)
+            m.d.comb += self.axi_status.eq(cuber_peri.axi_status)
 
         axi.connect(m, wiring.flipped(self.s_axis_iq), trig_peri.iq)
         axi.connect(m, wiring.flipped(self.s_axis_phase), trig_peri.phase)
         m.d.comb += trig_peri.timestamp.payload.eq(self.timestamp)
 
-        axi.connect_axi(m, wiring.flipped(self.s_axi_cube), cuber_peri.membus)
-        wiring.connect(m, trig_peri.cuber_events, cuber_peri.trigger_stream)
+        if self.enable_cuber:
+            axi.connect_axi(m, wiring.flipped(self.s_axi_cube), cuber_peri.membus)
+            wiring.connect(m, trig_peri.cuber_events, cuber_peri.trigger_stream)
+        else:
+            m.d.comb += trig_peri.cuber_events.ready.eq(1)
 
         axi.connect_axi(m, trig_dma.dmabus, wiring.flipped(self.m_axi_trig))
         axi.connect_axi(m, postage_dma.dmabus, wiring.flipped(self.m_axi_postage))
@@ -137,7 +144,9 @@ class TriggerSubsystem(wiring.Component):
 if __name__ == "__main__":
     from amaranth.back import verilog
     import sys
-
-    integrated_trigger = TriggerSubsystem()
+    enable_cuber = True
+    if len(sys.argv) > 2:
+        enable_cuber = sys.argv[2] == "True"
+    integrated_trigger = TriggerSubsystem(enable_cuber)
     with open(sys.argv[1], "w") as f:
         f.write(verilog.convert(integrated_trigger, name="trigger_subsystem"))
