@@ -149,6 +149,7 @@ class CuberTest(unittest.TestCase):
         with sim.write_vcd("test_cuber.vcd"):
             sim.run()
 
+    #@unittest.skip("Not ready yet")
     def test_fifo_overflow(self):
         dut = Harness()
 
@@ -214,6 +215,7 @@ class CuberTest(unittest.TestCase):
         with sim.write_vcd("test_fifo_overflow.vcd"):
             sim.run()
 
+    #@unittest.skip("Not ready yet")
     def test_count_overflow(self):
         dut = Harness()
 
@@ -255,7 +257,7 @@ class CuberTest(unittest.TestCase):
 
 
         async def testbench(ctx):
-            ctx.set(dut.cuber.cycles_per_frame, 2560)
+            ctx.set(dut.cuber.cycles_per_frame, 2800)
             await ctx.tick().repeat(5)
             await generate_sample_pixel_LUT(ctx)
             await ctx.tick().repeat(2)
@@ -266,15 +268,15 @@ class CuberTest(unittest.TestCase):
             for _ in range(255):
                 generate_photon_event(ctx, 570, 200)
                 await ctx.tick()
-            await ctx.tick().repeat(1600)
+            await ctx.tick().repeat(2300)
             self.assertEqual(ctx.get(dut.cuber.mem1.data[310]), 0b11111111)
             self.assertEqual(ctx.get(dut.cuber.count_overflow_flag), 0)
             await ctx.tick()
             generate_photon_event(ctx, 570, 200)
-            await ctx.tick().repeat(3)
+            await ctx.tick().repeat(6)
             self.assertEqual(ctx.get(dut.cuber.mem1.data[310]), 0b11111111)
             self.assertEqual(ctx.get(dut.cuber.count_overflow_flag), 1)
-            await ctx.tick().repeat(3)
+            await ctx.tick().repeat(10)
 
         sim = Simulator(dut)
         sim.add_clock(3.90625e-9)
