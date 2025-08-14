@@ -420,8 +420,8 @@ class Trigger(wiring.Component):
         cw = config_memory.write_port(granularity=1)
 
         # Address generation logic...
-        m.d.comb += sr.addr.eq((cycle + 1)[:9])
-        m.d.comb += cr.addr.eq((cycle + 1)[:9])
+        m.d.comb += sr.addr.eq((cycle + 2)[:9])
+        m.d.comb += cr.addr.eq((cycle + 2)[:9])
         m.d.sync += sw.addr.eq(cycle[:9])
         m.d.sync += cw.addr.eq(self._trigcontrol.f.config.w_data.bin[2:])
         m.d.sync += sw.en.eq(started)
@@ -476,11 +476,14 @@ class Trigger(wiring.Component):
             for j in range(4):
                 wiring.connect(m, p.output_streams[j], postage_arb.inputs[i * 4 + j])
 
-            m.d.comb += [
+            m.d.sync += [
                 t.input_state.eq(sr.data[i]),
+                t.config.eq(cr.data[i]),
+            ]
+
+            m.d.comb += [
                 sw.data[i].eq(t.output_state),
                 t.cycle.eq(cycle_chunk_scaled),
-                t.config.eq(cr.data[i]),
                 t.read.eq(read),
             ]
 
