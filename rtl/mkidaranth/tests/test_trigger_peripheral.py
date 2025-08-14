@@ -4,6 +4,25 @@ from amaranth.sim import Simulator
 
 from mkidaranth.trigger_peripheral import Trigger, AXIDMA
 
+async def stream_get(ctx, stream):
+    ctx.set(stream.ready, 1)
+    (payload,) = await ctx.tick().sample(stream.payload).until(stream.valid)
+    ctx.set(stream.ready, 0)
+    return payload
+
+
+async def stream_put(ctx, stream, payload):
+    ctx.set(stream.valid, 1)
+    ctx.set(stream.payload, payload)
+    await ctx.tick().until(stream.ready)
+    ctx.set(stream.valid, 0)
+
+
+async def stream_put_hold(ctx, stream, payload):
+    ctx.set(stream.valid, 1)
+    ctx.set(stream.payload, payload)
+    await ctx.tick().until(stream.ready)
+
 
 async def _csr_access(self, ctx, bus, addr, r_stb=0, w_stb=0, w_data=0):
     ctx.set(bus.addr, addr)
@@ -113,7 +132,7 @@ class AXIDMATestCase(unittest.TestCase):
 
 
 class PeripheralTestCase(unittest.TestCase):
-    @unittest.skip("currently broken")
+    # @unittest.skip("currently broken")
     def test_config(self):
         dut = Trigger(addr_width=8, data_width=64)
 
@@ -149,7 +168,7 @@ class PeripheralTestCase(unittest.TestCase):
                 dut.bus.memory_map.find_resource(dut._valvecontrol).start,
                 0,
                 1,
-                0b010101,
+                0b000000,
             )
 
             for _ in range(16):
@@ -175,68 +194,63 @@ class PeripheralTestCase(unittest.TestCase):
             cs = dut._chunksampler.f.chunk_header.r_data.shape().from_bits(cs)
             chunkcycle = cs.timestamp.secs
 
-            for _ in range(16):
-                await ctx.tick()
-            for _ in range(512 * 32):
-                await ctx.tick()
-            self.assertEqual(ctx.get(dut._postages[0].output_streams[0].valid), 0)
-            self.assertEqual(ctx.get(dut._postages[1].output_streams[0].valid), 1)
-            self.assertEqual(ctx.get(dut._postages[2].output_streams[0].valid), 0)
-            self.assertEqual(ctx.get(dut._postages[3].output_streams[0].valid), 0)
+            event = await stream_get(ctx, dut.trigger_events)
+            self.assertEqual(event.bin, 0x100)
+            self.assertEqual(event.phase, -5)
+            self.assertEqual(event.read, 1)
             self.assertEqual(
-                ctx.get(dut._postages[1].output_streams[0].payload.iq.imag), 9
-            )
-            self.assertEqual(ctx.get(dut._postages[1].output_metadata[0].read), 1)
-            self.assertEqual(
-                ctx.get(dut._postages[1].output_metadata[0].cycle)
-                + chunkcycle
-                - 0x101 // 4,
-                17.0 * 512,
-            )
-
-            self.assertEqual(ctx.get(dut._triggers[0].event_stream.payload.bin), 0x100)
-            self.assertEqual(ctx.get(dut._triggers[0].event_stream.payload.phase), -5)
-            self.assertEqual(ctx.get(dut._triggers[0].event_stream.payload.read), 1)
-            self.assertEqual(
-                ctx.get(dut._triggers[0].event_stream.payload.cycle)
+                event.cycle
                 + chunkcycle
                 - 0x100 // 4,
                 4.0 * 512,
             )
-            self.assertEqual(ctx.get(dut._triggers[0].event_stream.valid), 1)
 
-            self.assertEqual(ctx.get(dut._triggers[1].event_stream.payload.bin), 0x101)
-            self.assertEqual(ctx.get(dut._triggers[1].event_stream.payload.phase), 0)
-            self.assertEqual(ctx.get(dut._triggers[1].event_stream.payload.read), 1)
+            event = await stream_get(ctx, dut.trigger_events)
+            self.assertEqual(event.bin, 0x102)
+            self.assertEqual(event.phase, -1000)
+            self.assertEqual(event.read, 1)
             self.assertEqual(
-                ctx.get(dut._triggers[1].event_stream.payload.cycle)
-                + chunkcycle
-                - 0x101 // 4,
-                17.0 * 512,
-            )
-            self.assertEqual(ctx.get(dut._triggers[1].event_stream.valid), 1)
-
-            self.assertEqual(ctx.get(dut._triggers[2].event_stream.payload.bin), 0x102)
-            self.assertEqual(
-                ctx.get(dut._triggers[2].event_stream.payload.phase), -1000
-            )
-            self.assertEqual(ctx.get(dut._triggers[2].event_stream.payload.read), 1)
-            self.assertEqual(
-                ctx.get(dut._triggers[2].event_stream.payload.cycle)
+                event.cycle
                 + chunkcycle
                 - 0x102 // 4,
                 6.0 * 512,
             )
-            self.assertEqual(ctx.get(dut._triggers[2].event_stream.valid), 1)
 
-            self.assertEqual(ctx.get(dut._triggers[3].event_stream.valid), 0)
+            event = await stream_get(ctx, dut.trigger_events)
+            self.assertEqual(event.bin, 0x101)
+            self.assertEqual(event.phase, 0)
+            self.assertEqual(event.read, 1)
+            self.assertEqual(
+                event.cycle
+                + chunkcycle
+                - 0x101 // 4,
+                17.0 * 512,
+            )
 
-            for t in dut._triggers:
-                if ctx.get(t.event_stream.valid):
-                    ctx.set(t.event_stream.ready, 1)
-                    await ctx.tick()
-                    ctx.set(t.event_stream.ready, 0)
-            await ctx.tick()
+
+            for _ in range(16):
+                await ctx.tick()
+
+            # for _ in range(512 * 32):
+            #     await ctx.tick()
+
+            # self.assertEqual(ctx.get(dut._postages[0].output_streams[0].valid), 0)
+            # self.assertEqual(ctx.get(dut._postages[1].output_streams[0].valid), 1)
+            # self.assertEqual(ctx.get(dut._postages[2].output_streams[0].valid), 0)
+            # self.assertEqual(ctx.get(dut._postages[3].output_streams[0].valid), 0)
+            # self.assertEqual(
+            #     ctx.get(dut._postages[1].output_streams[0].payload.iq.imag), 9
+            # )
+            # self.assertEqual(ctx.get(dut._postages[1].output_metadata[0].read), 1)
+            # self.assertEqual(
+            #     ctx.get(dut._postages[1].output_metadata[0].cycle)
+            #     + chunkcycle
+            #     - 0x101 // 4,
+            #     17.0 * 512,
+            # )
+
+            for i in range(9, 16):
+                self.assertEqual((await stream_get(ctx, dut.postage_events)).iq.imag, i)
 
             cs = 0
             for j, i in enumerate(range(r.start, r.end)):
