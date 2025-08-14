@@ -58,6 +58,8 @@ class TriggerSubsystem(wiring.Component):
 
         super().__init__(
             {
+                "aclk": In(1),
+                "aresetn": In(1),
                 "s_axi_ctrl": In(axi.StandardizedAxiSignature(self.converter.axi_properties)),
                 "s_axi_cube": In(axi.StandardizedAxiSignature(cuber_axi_signature.props)),
                 "s_axis_iq": In(axi.StandardizedSignature(iq_stream, data_field="payload", renames={"beat": "user"})),
@@ -77,6 +79,12 @@ class TriggerSubsystem(wiring.Component):
     
     def elaborate(self, platform):
         m = Module()
+
+        m.domains.sync = cd_sync = ClockDomain()
+        m.d.comb += [
+            cd_sync.clk.eq(self.aclk),
+            cd_sync.rst.eq(~self.aresetn)
+        ]
 
         m.submodules.cuber_peri = cuber_peri = self.cuber_peri
         m.submodules.trig_peri = trig_peri = self.trig_peri
