@@ -1,8 +1,12 @@
 import unittest
 
+from amaranth import *
+from amaranth.lib import wiring
 from amaranth.sim import Simulator
+from amaranth_soc import csr
 
-from mkidaranth.trigger_peripheral import Trigger, AXIDMA
+from mkidaranth.trigger_peripheral import Trigger, AXIDMA, AXICSRBridge
+from mkidaranth import axi
 
 async def stream_get(ctx, stream):
     ctx.set(stream.ready, 1)
@@ -23,6 +27,18 @@ async def stream_put_hold(ctx, stream, payload):
     ctx.set(stream.payload, payload)
     await ctx.tick().until(stream.ready)
 
+async def axil_address(ctx, awr, addr):
+    await stream_put(ctx, awr, {"addr": addr})
+
+async def axil_rdata(ctx, axi):
+    response = (await stream_get(ctx, axi.r))
+    return response.data, response.resp
+
+async def axil_wdata(ctx, axi, data):
+    await stream_put(ctx, axi.w, {"data": data, "strb": -1})
+
+async def axil_bresp(ctx, axi):
+    return (await stream_get(ctx, axi.b)).resp
 
 async def _csr_access(self, ctx, bus, addr, r_stb=0, w_stb=0, w_data=0):
     ctx.set(bus.addr, addr)
@@ -130,6 +146,97 @@ class AXIDMATestCase(unittest.TestCase):
         with sim.write_vcd("test_peripheral_dma.vcd"):
             sim.run()
 
+class AXICSRBridgeTestCase(unittest.TestCase):
+    class Harness(wiring.Component):
+
+        class RWAReg(csr.Register, access="rw"):
+            rwa: csr.Field(csr.action.RW, 32)
+
+        class RWBReg(csr.Register, access="rw"):
+            rwb: csr.Field(csr.action.RW, 213)
+            rwc: csr.Field(csr.action.RW, 16)
+
+        def __init__(self):
+            regs = csr.Builder(addr_width=8, data_width=32)
+            self._rwar = regs.add("RWAReg", self.RWAReg())
+            self._rwbr = regs.add("RWBReg", self.RWBReg())
+
+            self._bridge = csr.Bridge(regs.as_memory_map())
+
+            self.memory_map = self._bridge.bus.memory_map
+
+            super().__init__({
+                "axi": wiring.In(axi.Signature(axi.Axi4LiteProperties(DATA_WIDTH=32, ADDR_WIDTH=10))),
+                "rwa": wiring.Out(32),
+                "rwb": wiring.Out(213),
+                "rwc": wiring.Out(16),
+            })
+
+        def elaborate(self, platform):
+            m = Module()
+
+            m.submodules.axibridge = axibridge = AXICSRBridge(addr_width = 10, data_width = 32)
+            wiring.connect(m, wiring.flipped(self.axi), axibridge.axi)
+
+            m.submodules.csrbridge = self._bridge
+            wiring.connect(m, axibridge.csr, self._bridge.bus)
+
+            m.d.comb += [
+                self.rwa.eq(self._rwar.f.rwa.data),
+                self.rwb.eq(self._rwbr.f.rwb.data),
+                self.rwc.eq(self._rwbr.f.rwc.data)
+            ]
+
+            return m
+
+    def test_readwrite(self):
+        dut = self.Harness()
+        async def testbench(ctx):
+            import random
+            g = random.Random(4)
+            rwar = dut.memory_map.find_resource(dut._rwar)
+            rwbr = dut.memory_map.find_resource(dut._rwbr)
+
+            for _ in range(32):
+                r = g.randint(0, (1 << 32) - 1)
+                await axil_address(ctx, dut.axi.aw, rwar.start << 2)
+                await axil_wdata(ctx, dut.axi, r)
+                await axil_bresp(ctx, dut.axi)
+
+                await axil_address(ctx, dut.axi.ar, rwar.start << 2)
+                self.assertEqual((await axil_rdata(ctx, dut.axi))[0], r)
+
+                self.assertEqual(ctx.get(dut.rwa), r)
+
+
+            for _ in range(32):
+                r = rc = g.randint(0, (1 << (213 + 16)) - 1)
+
+                for i in range(rwbr.start, rwbr.end):
+                    await axil_address(ctx, dut.axi.aw, i << 2)
+                    await axil_wdata(ctx, dut.axi, rc & 0xFFFFFFFF)
+                    await axil_bresp(ctx, dut.axi)
+                    rc = rc >> 32
+
+                rc = r
+                await ctx.tick()
+                self.assertEqual(ctx.get(dut.rwb), r & ((1 << 213) - 1))
+                self.assertEqual(ctx.get(dut.rwc), r >> 213)
+
+                for i in range(rwbr.start, rwbr.end):
+                    await axil_address(ctx, dut.axi.ar, i << 2)
+                    data = (await axil_rdata(ctx, dut.axi))[0]
+                    self.assertEqual(data, rc & 0xFFFFFFFF)
+                    rc = rc >> 32
+
+            for _ in range(16):
+                await ctx.tick()
+
+        sim = Simulator(dut)
+        sim.add_clock(1e-6)
+        sim.add_testbench(testbench)
+        with sim.write_vcd("test_axicsrbridge_readwrite.vcd"):
+            sim.run()
 
 class PeripheralTestCase(unittest.TestCase):
     # @unittest.skip("currently broken")
@@ -137,6 +244,7 @@ class PeripheralTestCase(unittest.TestCase):
         dut = Trigger(addr_width=8, data_width=64)
 
         async def testbench(ctx):
+            ctx.set(dut.cuber_events.ready, 1)
             async def write_config(bin, threshold, holdoff, postage):
                 r = dut.bus.memory_map.find_resource(dut._trigcontrol)
                 await _csr_access(

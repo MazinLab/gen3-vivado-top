@@ -13,6 +13,7 @@ from .trigger import (
     PackageStreams,
     Trigger1x,
     ValvePositions,
+    StreamPipelineStage,
     StreamSplitter,
     StreamValve,
     StreamArbiter,
@@ -26,6 +27,7 @@ from .trigger import (
     event_stream,
 )
 
+# Heavily pipelined to let vivado retime a bit
 class AXICSRBridge(wiring.Component):
     def __init__(self, *, addr_width, data_width=32):
         self._dw = data_width
@@ -48,38 +50,51 @@ class AXICSRBridge(wiring.Component):
     def elaborate(self, platform):
         m = Module()
 
-        m.d.comb += self.csr.w_data.eq(self.axi.w.payload.data)
+        m.d.sync += self.csr.w_data.eq(self.axi.w.payload.data)
         m.d.comb += self.axi.b.valid.eq(1)
 
         alatch = Signal(self._caw)
 
         with m.FSM():
-            with m.State("WAITING"):
+            with m.State("WAITING_ADDRESS"):
                 with m.If(self.axi.aw.valid):
                     m.d.comb += self.axi.aw.ready.eq(1)
                     m.d.sync += alatch.eq(self.axi.aw.payload.addr.shift_right(self._aw - self._caw))
                     m.next = "WRITE"
                 with m.Elif(self.axi.ar.valid):
                     m.d.comb += self.axi.ar.ready.eq(1)
-                    m.d.comb += self.csr.r_stb.eq(1)
-                    m.d.comb += self.csr.addr.eq(self.axi.ar.payload.addr.shift_right(self._aw - self._caw))
+                    m.d.sync += alatch.eq(self.axi.ar.payload.addr.shift_right(self._aw - self._caw))
                     m.next = "READ-1"
+
             with m.State("WRITE"):
-                m.d.comb += self.csr.addr.eq(alatch)
+                m.d.sync += self.csr.addr.eq(alatch)
                 with m.If(self.axi.w.valid):
                     m.d.comb += self.axi.w.ready.eq(1)
-                    m.d.comb += self.csr.w_stb.eq(1)
-                    m.next = "WAITING"
+                    m.d.sync += self.csr.w_stb.eq(1)
+                    m.next = "WAITING_ADDRESS"
+
             with m.State("READ-1"):
                 m.d.sync += [
-                    self.axi.r.payload.data.eq(self.csr.r_data),
-                    self.axi.r.valid.eq(1)
+                    self.csr.addr.eq(alatch),
+                    self.csr.r_stb.eq(1)
                 ]
                 m.next = "READ-2"
+
             with m.State("READ-2"):
+                m.d.sync += [
+                    self.csr.r_stb.eq(0),
+                ]
+                m.next = "READ-3"
+            with m.State("READ-3"):
+                m.d.sync += [
+                    self.axi.r.payload.data.eq(self.csr.r_data),
+                    self.axi.r.valid.eq(1),
+                ]
+                m.next = "READ-4"
+            with m.State("READ-4"):
                 with m.If(self.axi.r.valid & self.axi.r.ready):
                     m.d.sync += self.axi.r.valid.eq(0)
-                    m.next = "WAITING"
+                    m.next = "WAITING_ADDRESS"
 
         return m
 
@@ -440,9 +455,16 @@ class Trigger(wiring.Component):
         m.submodules.dma_valve = dma_valve = StreamValve(trigger_event, 0xDEADBEEF)
         m.submodules.cube_valve = cube_valve = StreamValve(trigger_event, 0xCAFEBEEF)
 
-        wiring.connect(m, arb.output, split.input)
-        wiring.connect(m, split.outputs[0], dma_valve.input)
-        wiring.connect(m, split.outputs[1], cube_valve.input)
+        m.submodules.arbiter_pipeline = arb_pipe = StreamPipelineStage(trigger_event)
+        m.submodules.dma_pipeline = dma_pipe = StreamPipelineStage(trigger_event)
+        m.submodules.cube_pipeline = cube_pipe = StreamPipelineStage(trigger_event)
+
+        wiring.connect(m, arb.output, arb_pipe.input)
+        wiring.connect(m, arb_pipe.output, split.input)
+        wiring.connect(m, split.outputs[0], dma_pipe.input)
+        wiring.connect(m, split.outputs[1], cube_pipe.input)
+        wiring.connect(m, dma_pipe.output, dma_valve.input)
+        wiring.connect(m, cube_pipe.output, cube_valve.input)
         wiring.connect(m, dma_valve.output, dma_fifo.w_stream)
         wiring.connect(m, cube_valve.output, cube_fifo.w_stream)
         wiring.connect(m, dma_fifo.r_stream, wiring.flipped(self.trigger_events))

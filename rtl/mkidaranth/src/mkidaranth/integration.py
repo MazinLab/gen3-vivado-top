@@ -123,8 +123,12 @@ class TriggerSubsystem(wiring.Component):
         else:
             m.d.comb += trig_peri.cuber_events.ready.eq(1)
 
-        axi.connect_axi(m, trig_dma.dmabus, wiring.flipped(self.m_axi_trig))
-        axi.connect_axi(m, postage_dma.dmabus, wiring.flipped(self.m_axi_postage))
+        m.submodules.trig_dma_pipe = trig_dma_pipe = axi.AxiPipelineStage(self.trig_dma.dma_bus_signature.props)
+        wiring.connect(m, trig_dma.dmabus, trig_dma_pipe.input)
+        axi.connect_axi(m, trig_dma_pipe.output, wiring.flipped(self.m_axi_trig))
+        m.submodules.postage_dma_pipe = postage_dma_pipe = axi.AxiPipelineStage(self.postage_dma.dma_bus_signature.props)
+        wiring.connect(m, postage_dma.dmabus, postage_dma_pipe.input)
+        axi.connect_axi(m, postage_dma_pipe.output, wiring.flipped(self.m_axi_postage))
 
         m.submodules.pad = pad = StreamPad(trigger_event.size, 64)
         m.submodules.strip = strip = StreamStripper(data.StructLayout({"iq": iq, "last": 1}), iq, lambda x: x.iq)
