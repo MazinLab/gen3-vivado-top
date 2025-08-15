@@ -1,6 +1,7 @@
 ORIGIN_DIR := .
 BUILD_DIR := ${ORIGIN_DIR}/build
 SCRIPT_DIR := ${ORIGIN_DIR}/scripts
+MKIDARANTH_DIR := ${ORIGIN_DIR}/rtl/mkidaranth
 
 DESIGN ?= gen3_top
 PROJECT_NAME ?= ${DESIGN}_prj
@@ -29,7 +30,19 @@ ${BUILD_DIR}/${PROJECT_NAME}.hwh: ${PROJECT_DIR}/${PROJECT_NAME}.xpr
 		-tclargs ${PROJECT_DIR}/${PROJECT_NAME}.srcs/sources_1/bd/${DESIGN}/${DESIGN}.bd
 	cp  ${PROJECT_DIR}/${PROJECT_NAME}.gen/sources_1/bd/${DESIGN}/hw_handoff/${DESIGN}.hwh ${BUILD_DIR}/${PROJECT_NAME}.hwh
 
-${PROJECT_DIR}/${PROJECT_NAME}.xpr: ${SCRIPT_DIR}/tcl/create_top_level_prj.tcl ${ORIGIN_DIR}/bd/${DESIGN}.tcl
+${MKIDARANTH_DIR}/.venv/: ${MKIDARANTH_DIR}/pyproject.toml ${MKIDARANTH_DIR}/pdm.lock
+	cd ${MKIDARANTH_DIR}; \
+	pdm install --dev
+
+${MKIDARANTH_DIR}/integration.v: ${MKIDARANTH_DIR}/.venv/ ${MKIDARANTH_DIR}/src/*
+	cd ${MKIDARANTH_DIR}; \
+	pdm run python -m mkidaranth.integration integration.v; \
+	sed -i 's/m_axi_postage__/m_axi_postage_/g' integration.v; \
+	sed -i 's/m_axi_trig__/m_axi_trig_/g' integration.v; \
+	sed -i 's/s_axi_ctrl__/s_axi_ctrl_/g' integration.v; \
+	sed -i 's/s_axi_cube__/s_axi_cube_/g' integration.v
+
+${PROJECT_DIR}/${PROJECT_NAME}.xpr: ${SCRIPT_DIR}/tcl/create_top_level_prj.tcl ${ORIGIN_DIR}/bd/${DESIGN}.tcl ${MKIDARANTH_DIR}/integration.v
 	cd ${ORIGIN_DIR}; \
 	${VIVADO} -mode batch ${VIVADO_ARGS} \
 		-source ${SCRIPT_DIR}/tcl/create_top_level_prj.tcl \
