@@ -128,6 +128,51 @@ class StreamSplitter(wiring.Component):
 
         return m
 
+class StreamPipelineStage(wiring.Component):
+    def __init__(self, shape, payload_init=None):
+        self.shape = shape
+        self.payload_init = payload_init
+        return super().__init__(
+            {
+                "input": In(stream.Signature(shape, payload_init=payload_init)),
+                "output": Out(stream.Signature(shape, payload_init=payload_init))
+            }
+        )
+
+    def elaborate(self, platform):
+        m = Module()
+        pipe_valid = Signal()
+        pipe_payload = Signal(self.shape, init=self.payload_init)
+
+        skid_valid = Signal()
+        skid_payload = Signal(self.shape, init=self.payload_init)
+
+        with m.If(self.input.ready):
+            m.d.sync += [
+                pipe_valid.eq(self.input.valid),
+                pipe_payload.eq(self.input.payload),
+            ]
+            with m.If(~self.output.ready):
+                m.d.sync += [
+                    skid_valid.eq(pipe_valid),
+                    skid_payload.eq(pipe_payload),
+                ]
+        with m.If(self.output.ready):
+            m.d.sync += skid_valid.eq(0)
+
+        m.d.comb += [
+            self.input.ready.eq(~skid_valid),
+            self.output.valid.eq(pipe_valid | skid_valid),
+        ]
+
+        with m.If(skid_valid):
+            m.d.comb += self.output.payload.eq(skid_payload)
+        with m.Else():
+            m.d.comb += self.output.payload.eq(pipe_payload)
+
+        return m
+
+
 class StreamValve(wiring.Component):
     def __init__(self, shape, magic=None, packet=False, magic_packet_len=256):
         self.magic = magic

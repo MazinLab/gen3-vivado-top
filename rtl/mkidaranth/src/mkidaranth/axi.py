@@ -1,8 +1,11 @@
 from dataclasses import dataclass
 from typing import Any, ClassVar
+from amaranth import Module
 from amaranth.lib import stream, wiring, data
 from amaranth.lib.enum import IntEnum, Flag
 from amaranth.utils import exact_log2
+
+from .trigger import StreamPipelineStage
 
 # Inspired by https://stackoverflow.com/a/54489602
 class AxiProperty:
@@ -316,6 +319,40 @@ class Signature(wiring.Signature):
         super().__init__({
             name: flow(stream.Signature(shape, payload_init=shape.INIT)) for name, (flow, shape) in channels.items()
         })
+
+class AxiPipelineStage(wiring.Component):
+    def __init__(self, axi_props: AxiProperties):
+        self.props = axi_props
+        super().__init__({
+            "input": wiring.In(Signature(self.props)),
+            "output": wiring.Out(Signature(self.props)),
+        })
+
+    def elaborate(self, platform):
+        m = Module()
+        if self.props.READ_WRITE_MODE & ReadWriteMode.READ_ONLY:
+            m.submodules.arpipe = arpipe = StreamPipelineStage(ReadRequestChannel(self.props), payload_init=ReadRequestChannel(self.props).INIT)
+            wiring.connect(m, wiring.flipped(self.input.ar), arpipe.input) 
+            wiring.connect(m, arpipe.output, wiring.flipped(self.output.ar))
+
+            m.submodules.rpipe = rpipe = StreamPipelineStage(ReadDataChannel(self.props), payload_init=ReadDataChannel(self.props).INIT)
+            wiring.connect(m, wiring.flipped(self.input.r), rpipe.output) 
+            wiring.connect(m, rpipe.input, wiring.flipped(self.output.r))
+
+        if self.props.READ_WRITE_MODE & ReadWriteMode.WRITE_ONLY:
+            m.submodules.awpipe = awpipe = StreamPipelineStage(WriteRequestChannel(self.props), payload_init=WriteRequestChannel(self.props).INIT)
+            wiring.connect(m, wiring.flipped(self.input.aw), awpipe.input) 
+            wiring.connect(m, awpipe.output, wiring.flipped(self.output.aw))
+
+            m.submodules.wpipe = wpipe = StreamPipelineStage(WriteDataChannel(self.props), payload_init=WriteDataChannel(self.props).INIT)
+            wiring.connect(m, wiring.flipped(self.input.w), wpipe.input) 
+            wiring.connect(m, wpipe.output, wiring.flipped(self.output.w))
+
+            m.submodules.rpipe = bpipe = StreamPipelineStage(WriteResponseChannel(self.props), payload_init=WriteResponseChannel(self.props).INIT)
+            wiring.connect(m, wiring.flipped(self.input.b), bpipe.output) 
+            wiring.connect(m, bpipe.input, wiring.flipped(self.output.b))
+
+        return m
 
 class StandardizedSignature(wiring.Signature):
     def __init__(self, base_signature, data_field = None, prefix = "t", renames = {}):
