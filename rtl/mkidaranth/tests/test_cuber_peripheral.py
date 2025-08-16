@@ -81,6 +81,7 @@ async def _csr_access(self, ctx, bus, addr, r_stb=0, w_stb=0, w_data=0):
 
 
 class PeripheralTestCase(unittest.TestCase):
+    #@unittest.skip("Not ready yet")
     def test_config(self):
         dut = Harness()
 
@@ -170,7 +171,7 @@ class PeripheralTestCase(unittest.TestCase):
         with sim.write_vcd("test_config.vcd"):
             sim.run()
 
-
+    #@unittest.skip("Not ready yet")
     def test_interrupt(self):
         dut = Harness()
 
@@ -321,6 +322,7 @@ class PeripheralTestCase(unittest.TestCase):
                 ctx.set(dut.membus.ar.valid, 1)
                 await ctx.negedge(dut.membus.ar.ready)
                 ctx.set(dut.membus.ar.valid, 0)
+                await ctx.tick().repeat(3)
                 ctx.set(dut.membus.r.ready, 1)
                 await ctx.negedge(dut.membus.r.valid)
                 ctx.set(dut.membus.r.ready, 0)
@@ -401,8 +403,10 @@ class PeripheralTestCase(unittest.TestCase):
                                                                             #since it had to wait for the entire mem1 clear/count cycle before
                                                                             #being able to access mem1 again
             
-            await ctx.tick().repeat(500)
-
+            await ctx.tick().repeat(260)
+            await axi_burst(0, 3, 1, 0b0000100101100000, 0)
+            self.assertEqual(ctx.get(dut.cuber_peri.membus.r.payload.last), 1)
+            await ctx.tick().repeat(10)
 
 
         sim = Simulator(dut)
