@@ -146,11 +146,27 @@ class TriggerSubsystem(wiring.Component):
         return m
     
 if __name__ == "__main__":
-    from amaranth.back import verilog
     import sys
+    import json
+    from amaranth.back import verilog
     enable_cuber = True
     if len(sys.argv) > 2:
         enable_cuber = sys.argv[2] == "True"
     integrated_trigger = TriggerSubsystem(enable_cuber)
     with open(sys.argv[1], "w") as f:
         f.write(verilog.convert(integrated_trigger, name="trigger_subsystem"))
+        
+    registers = []
+    for resource in integrated_trigger.decoder.bus.memory_map.all_resources():
+        fields = []
+        for k in resource.resource.field:
+            fields.append((k, getattr(resource.resource.field, k).port.shape.width))
+        registers.append({
+                  "path": resource.path,
+                  "start": resource.start,
+                  "end": resource.end,
+                  "width": resource.width,
+                  "fields" : fields
+              })
+    with open(sys.argv[1] + ".json", "w") as fj:
+        fj.write(json.dumps(registers))

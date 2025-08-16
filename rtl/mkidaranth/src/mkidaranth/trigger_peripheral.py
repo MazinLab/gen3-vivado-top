@@ -113,12 +113,19 @@ class AXIDMA(wiring.Component):
     class DMAControl(csr.Register, access="rw"):
         buffer_size: csr.Field(csr.action.RW, 24)
         flush: csr.Field(csr.action.RW, 1)
+        fault: csr.Field(csr.action.R, 1)
 
     class DebugReg(csr.Register, access="r"):
         def __init__(self, addr_width):
             super().__init__(
                 {
                     "address_latch": csr.Field(csr.action.R, addr_width),
+                    "fault": csr.Field(csr.action.R, 1),
+                    "data_wait": csr.Field(csr.action.R, 1),
+                    "address_wait": csr.Field(csr.action.R, 1),
+                    "address_channel": csr.Field(csr.action.R, 1),
+                    "writing": csr.Field(csr.action.R, 1),
+                    "last_resp": csr.Field(csr.action.R, axi.ExtendedWriteResponseEncoding),
                 }
             )
 
@@ -131,7 +138,7 @@ class AXIDMA(wiring.Component):
         id_width=6,
         address_depth=8,
         ctl_data_width=64,
-        debug_reg=False
+        debug_reg=True
     ):
         assert address_depth < 256
         assert burst_length >= 1
@@ -152,6 +159,9 @@ class AXIDMA(wiring.Component):
             "AddressFIFO", self.AddressFIFO(addr_width)
         )
         self._dmactl = regs.add("DMAControl", self.DMAControl())
+        if self.debug_reg:
+            self._debug_reg = regs.add("Debug", self.DebugReg(self.addr_width))
+
         self._bridge = csr.Bridge(regs.as_memory_map())
 
         self.dma_bus_signature = axi.Signature(
@@ -196,7 +206,6 @@ class AXIDMA(wiring.Component):
         m.d.comb += [
             address_fifo.w_data.eq(self._afifo.f.address.w_data),
             address_fifo.w_en.eq(self._afifo.f.address.w_stb),
-            address_fifo.r_en.eq(0),
             self._afifo.f.depth.r_data.eq(self.address_depth),
             self._afifo.f.count.r_data.eq(address_fifo.level),
             self.int.eq(address_fifo.level < self._afifo.f.lowmark.data),
@@ -204,6 +213,8 @@ class AXIDMA(wiring.Component):
 
         # Basic AXI transaction manaogement
         address_latch = Signal(self.addr_width)
+        last_addr = Signal(self.addr_width)
+        stop_addr = Signal(self.addr_width)
         m.d.comb += [
             self.dmabus.aw.payload.burst.eq(axi.BurstEncoding.INCR),
             self.dmabus.aw.payload.size.eq(exact_log2(self._bpt)),
@@ -214,26 +225,26 @@ class AXIDMA(wiring.Component):
             self.dmabus.w.payload.data.eq(self.stream.payload),
             self.dmabus.w.payload.strb.eq(-1),
             self.dmabus.w.valid.eq(0),
-            self.dmabus.w.payload.last.eq(
-                ((address_latch + self._bpt) - address_fifo.r_data)
-                % (self._bpt * self.burst_length)
-                == 0
-            ),
+            self.dmabus.w.payload.last.eq(address_latch + self._bpt == last_addr),
             self.stream.ready.eq(0),
         ]
 
         # Actual DMA Logic
-        with m.FSM():
+        with m.FSM() as fsm:
             with m.State("Data Wait"):
                 with m.If(self.stream.valid):
+                    m.d.sync += address_fifo.r_stream.ready.eq(1)
                     m.next = "Address Wait"
             with m.State("Address Wait"):
-                with m.If(address_fifo.r_rdy):
-                    m.d.sync += address_latch.eq(address_fifo.r_data)
+                with m.If(address_fifo.r_stream.ready & address_fifo.r_stream.valid):
+                    m.d.sync += address_fifo.r_stream.ready.eq(0)
+                    m.d.sync += address_latch.eq(address_fifo.r_stream.payload)
+                    m.d.sync += stop_addr.eq(address_fifo.r_stream.payload + self._dmactl.f.buffer_size.data)
+                    m.d.sync += last_addr.eq(address_fifo.r_stream.payload + self._bpt * self.burst_length)
                     m.d.sync += self.dmabus.aw.valid.eq(1)
                     m.next = "Address Channel"
             with m.State("Address Channel"):
-                with m.If(self.dmabus.aw.ready):
+                with m.If(self.dmabus.aw.ready & self.dmabus.aw.valid):
                     m.d.sync += self.dmabus.aw.valid.eq(0)
                     m.next = "Writing"
             with m.State("Writing"):
@@ -243,26 +254,32 @@ class AXIDMA(wiring.Component):
                 ]
                 with m.If(self.dmabus.w.valid & self.dmabus.w.ready):
                     m.d.sync += address_latch.eq(address_latch + self._bpt)
-                    with m.If(
-                        address_latch + self._bpt
-                        == address_fifo.r_data + self._dmactl.f.buffer_size.data
-                    ):
-                        m.d.comb += address_fifo.r_en.eq(1)
+                    with m.If(address_latch + self._bpt == stop_addr):
                         with m.If(self.stream.valid):
+                            m.d.sync += address_fifo.r_stream.ready.eq(1)
                             m.next = "Address Wait"
                         with m.Else():
                             m.next = "Data Wait"
-                    with m.Elif(
-                        ((address_latch + self._bpt) - address_fifo.r_data)
-                        % (self._bpt * self.burst_length)
-                        == 0
-                    ):
+                    with m.Elif(address_latch + self._bpt == last_addr):
                         m.d.sync += self.dmabus.aw.valid.eq(1)
+                        m.d.sync += last_addr.eq(last_addr + self._bpt * self.burst_length)
                         m.next = "Address Channel"
 
         with m.If(self.dmabus.b.valid & self.dmabus.b.ready):
             with m.If(self.dmabus.b.payload.resp > 1):
                 m.d.sync += self.fault.eq(1)
+
+        if self.debug_reg:
+            m.d.sync += [
+                self._debug_reg.f.address_latch.r_data.eq(address_latch),
+                self._debug_reg.f.fault.r_data.eq(self.fault),
+                self._debug_reg.f.data_wait.r_data.eq(fsm.ongoing("Data Wait")),
+                self._debug_reg.f.address_wait.r_data.eq(fsm.ongoing("Address Wait")),
+                self._debug_reg.f.address_channel.r_data.eq(fsm.ongoing("Address Channel")),
+                self._debug_reg.f.writing.r_data.eq(fsm.ongoing("Writing")),
+            ]
+            with m.If(self.dmabus.b.valid & self.dmabus.b.ready):
+                m.d.sync += self._debug_reg.f.last_resp.r_data.eq(self.dmabus.b.payload.resp)
 
         return m
 
