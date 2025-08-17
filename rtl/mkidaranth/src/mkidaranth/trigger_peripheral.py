@@ -126,6 +126,8 @@ class AXIDMA(wiring.Component):
                     "address_channel": csr.Field(csr.action.R, 1),
                     "writing": csr.Field(csr.action.R, 1),
                     "last_resp": csr.Field(csr.action.R, axi.ExtendedWriteResponseEncoding),
+                    "burst_count": csr.Field(csr.action.R, 16),
+                    "xfer_count": csr.Field(csr.action.R, 16),
                 }
             )
 
@@ -239,8 +241,8 @@ class AXIDMA(wiring.Component):
                 with m.If(address_fifo.r_stream.ready & address_fifo.r_stream.valid):
                     m.d.sync += address_fifo.r_stream.ready.eq(0)
                     m.d.sync += address_latch.eq(address_fifo.r_stream.payload)
-                    m.d.sync += stop_addr.eq(address_fifo.r_stream.payload + self._dmactl.f.buffer_size.data)
-                    m.d.sync += last_addr.eq(address_fifo.r_stream.payload + self._bpt * self.burst_length)
+                    m.d.sync += stop_addr.eq(address_fifo.r_stream.payload + self._dmactl.f.buffer_size.data - self._bpt)
+                    m.d.sync += last_addr.eq(address_fifo.r_stream.payload + self._bpt * self.burst_length - self._bpt)
                     m.d.sync += self.dmabus.aw.valid.eq(1)
                     m.next = "Address Channel"
             with m.State("Address Channel"):
@@ -254,15 +256,20 @@ class AXIDMA(wiring.Component):
                 ]
                 with m.If(self.dmabus.w.valid & self.dmabus.w.ready):
                     m.d.sync += address_latch.eq(address_latch + self._bpt)
-                    with m.If(address_latch + self._bpt == stop_addr):
+                    with m.If(address_latch == stop_addr):
+                        if self.debug_reg:
+                            m.d.sync += self._debug_reg.f.burst_count.r_data.eq(self._debug_reg.f.burst_count.r_data + 1)
+                            m.d.sync += self._debug_reg.f.xfer_count.r_data.eq(self._debug_reg.f.xfer_count.r_data + 1)
                         with m.If(self.stream.valid):
                             m.d.sync += address_fifo.r_stream.ready.eq(1)
                             m.next = "Address Wait"
                         with m.Else():
                             m.next = "Data Wait"
-                    with m.Elif(address_latch + self._bpt == last_addr):
+                    with m.Elif(address_latch == last_addr):
                         m.d.sync += self.dmabus.aw.valid.eq(1)
                         m.d.sync += last_addr.eq(last_addr + self._bpt * self.burst_length)
+                        if self.debug_reg:
+                            m.d.sync += self._debug_reg.f.burst_count.r_data.eq(self._debug_reg.f.burst_count.r_data + 1)
                         m.next = "Address Channel"
 
         with m.If(self.dmabus.b.valid & self.dmabus.b.ready):
