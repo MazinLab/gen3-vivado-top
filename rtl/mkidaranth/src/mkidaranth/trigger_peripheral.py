@@ -494,7 +494,7 @@ class Trigger(wiring.Component):
         wiring.connect(m, dma_fifo.r_stream, wiring.flipped(self.trigger_events))
         wiring.connect(m, cube_fifo.r_stream, wiring.flipped(self.cuber_events))
 
-        m.submodules.postage_arbiter = postage_arb = StreamArbiter(data.StructLayout({"iq": iq, "last": 1}), 4*4, packet = True, credits=4)
+        m.submodules.postage_arbiter = postage_arb = StreamArbiter(data.StructLayout({"iq": iq, "last": 1}), 4, packet=True, credits=2)
         m.submodules.postage_valve = postage_valve = StreamValve(data.StructLayout({"iq": iq, "last": 1}), 0xDEADCAFE, True, 128)
         wiring.connect(m, postage_arb.output, postage_valve.input)
         wiring.connect(m, postage_valve.output, wiring.flipped(self.postage_events))
@@ -519,8 +519,13 @@ class Trigger(wiring.Component):
             m.submodules[f"event_fifo{i}"] = ef = fifo.SyncFIFOBuffered(width=trigger_event.size, depth=8)
             wiring.connect(m, t.event_stream, ef.w_stream)
             wiring.connect(m, ef.r_stream, arb.inputs[i])
+
+            m.submodules[f"postage_arb{i}"] = a = StreamArbiter(data.StructLayout({"iq": iq, "last": 1}), 4, packet=True, credits=2)
+            m.submodules[f"postage_arbpipe{i}"] = apipe = StreamPipelineStage(data.StructLayout({"iq": iq, "last": 1}))
             for j in range(4):
-                wiring.connect(m, p.output_streams[j], postage_arb.inputs[i * 4 + j])
+                wiring.connect(m, p.output_streams[j], a.inputs[j])
+            wiring.connect(m, a.output, apipe.input)
+            wiring.connect(m, apipe.output, postage_arb.inputs[i])
 
             m.d.sync += [
                 t.input_state.eq(sr.data[i]),
