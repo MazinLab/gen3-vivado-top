@@ -74,7 +74,6 @@ class TriggerSubsystem(wiring.Component):
                 "int_fault_dma_trig": Out(1),
                 "int_dma_postage": Out(1),
                 "int_fault_dma_postage": Out(1),
-                "axi_status": Out(1),
             }
         )
     
@@ -111,7 +110,6 @@ class TriggerSubsystem(wiring.Component):
         m.d.comb += self.int_fault_dma_postage.eq(postage_dma.fault)
         if self.enable_cuber:
             m.d.comb += self.int_cuber_peri.eq(cuber_peri.int)
-            m.d.comb += self.axi_status.eq(cuber_peri.axi_status)
 
         axi.connect(m, wiring.flipped(self.s_axis_iq), trig_peri.iq)
         axi.connect(m, wiring.flipped(self.s_axis_phase), trig_peri.phase)
