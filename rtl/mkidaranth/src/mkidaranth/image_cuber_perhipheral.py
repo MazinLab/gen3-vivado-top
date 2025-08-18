@@ -36,7 +36,6 @@ class AddressGenerator(wiring.Component):
         super().__init__(
             {
                 "ar": In(stream.Signature(axi.ReadRequestChannel(cuber_axi_signature.props), payload_init=axi.ReadRequestChannel(cuber_axi_signature.props).INIT)),
-                "start_generate": In(1),
                 "addresses": Out(stream.Signature(data.StructLayout({"byte_addr": address_generator_props.ADDR_WIDTH-1, "last": 1}))),
             }
         )
@@ -45,63 +44,62 @@ class AddressGenerator(wiring.Component):
         m = Module()
 
         start_addr = self.ar.payload.addr
-        num_bytes = 1 << self.ar.payload.size
+        num_bytes = 1 << self.ar.payload.size   #Equivalent to 2**size
         burst_length = self.ar.payload.len + 1
-        aligned_addr = (start_addr // num_bytes) * num_bytes
+        aligned_addr = (start_addr >> self.ar.payload.size) << self.ar.payload.size  #Setting lowest n bits to 0 where n = size
+        log2_burst_length = Signal(4)
 
-        wrap_bound = (start_addr // (num_bytes * burst_length)) * (num_bytes * burst_length)
+        with m.Switch(burst_length):
+            with m.Case(2): m.d.comb += log2_burst_length.eq(1)
+            with m.Case(4): m.d.comb += log2_burst_length.eq(2)
+            with m.Case(8): m.d.comb += log2_burst_length.eq(3)
+            with m.Case(16): m.d.comb += log2_burst_length.eq(4)
+
+        wrap_bound = (start_addr >> (self.ar.payload.size + log2_burst_length)) << (self.ar.payload.size + log2_burst_length)
 
         gen_queued = Signal()
-        start_generate = Signal()
         generating = Signal()
         n = Signal(8)
 
-        with m.If(self.ar.valid & self.ar.ready):
-            m.d.sync += gen_queued.eq(1)
-
-        m.d.sync += self.addresses.payload.last.eq(0)
         m.d.sync += self.ar.ready.eq(1)
-
         with m.If(gen_queued):
             m.d.sync += self.ar.ready.eq(0)
 
-        with m.If(self.start_generate):
+        with m.If(self.ar.valid & self.ar.ready):
             m.d.sync += self.addresses.payload.byte_addr.eq(self.ar.payload.addr)
-            m.d.sync += gen_queued.eq(0)
+            m.d.sync += self.addresses.valid.eq(1)
             m.d.sync += self.ar.ready.eq(0)
-            with m.If(burst_length == 1):
-                m.d.sync += self.addresses.payload.last.eq(1)
-            with m.Else():
-                m.d.sync += generating.eq(1)
-                m.d.sync += n.eq(n+1)
+            m.d.sync += gen_queued.eq(1)
 
+        m.d.sync += self.addresses.payload.last.eq(0)
+
+        m.d.comb += generating.eq(self.addresses.valid & self.addresses.ready)
 
         with m.If(generating):
-            m.d.sync += self.ar.ready.eq(0)
+            m.d.sync += n.eq(n+1)
             with m.If(self.ar.payload.burst == BurstEncoding.FIXED):
-                m.d.sync += n.eq(n+1)
                 with m.If(n == burst_length - 1):
                     m.d.sync += n.eq(0)
                     m.d.sync += self.addresses.payload.last.eq(1)
-                    m.d.sync += generating.eq(0)
+                    m.d.sync += self.addresses.valid.eq(0)
+                    m.d.sync += gen_queued.eq(0)
 
             with m.Elif(self.ar.payload.burst == BurstEncoding.INCR):
                 next_addr = aligned_addr + (n << self.ar.payload.size)
                 m.d.sync += self.addresses.payload.byte_addr.eq(next_addr)
-                m.d.sync += n.eq(n+1)
                 with m.If(n == burst_length - 1):
                     m.d.sync += n.eq(0)
                     m.d.sync += self.addresses.payload.last.eq(1)
-                    m.d.sync += generating.eq(0)
+                    m.d.sync += self.addresses.valid.eq(0)
+                    m.d.sync += gen_queued.eq(0)
 
             with m.Elif(self.ar.payload.burst == BurstEncoding.WRAP):
-                m.d.sync += n.eq(n+1)
                 wrapped = Signal(1)
                 
                 with m.If(~wrapped):
                     next_addr = aligned_addr + (n << self.ar.payload.size)
                     m.d.sync += self.addresses.payload.byte_addr.eq(next_addr)
-                    with m.If(next_addr >= (wrap_bound + (num_bytes * burst_length))):
+                    with m.If(next_addr >= (wrap_bound + (1 >> self.ar.payload.size + log2_burst_length))):
                         m.d.sync += self.addresses.payload.byte_addr.eq(wrap_bound)
                         m.d.sync += wrapped.eq(1)
                 with m.Else():
@@ -111,7 +109,8 @@ class AddressGenerator(wiring.Component):
                 with m.If(n == burst_length - 1):
                     m.d.sync += n.eq(0)
                     m.d.sync += self.addresses.payload.last.eq(1)
-                    m.d.sync += generating.eq(0)
+                    m.d.sync += self.addresses.valid.eq(0)
+                    m.d.sync += gen_queued.eq(0)
 
         return m
 
@@ -152,7 +151,6 @@ class CuberPeri(wiring.Component):
                 "membus": In(cuber_axi_signature),
                 "trigger_stream": In(stream.Signature(trigger_event)),
                 "int": Out(1),
-                "axi_status": Out(1),    #HIGH means that an axi burst is either queued (waiting for memory access) or currently in progress
             }
         )
 
@@ -217,17 +215,16 @@ class CuberPeri(wiring.Component):
 
 
         #AXI code
-        address_gen_queued = Signal(1)
-        m.d.comb += self.axi_status.eq(address_gen_queued)
-
         """
         AXI address scheme:
+
         First 15 LSBs (bits 0-14) of the AXI address is the byte address
         
         The memory address is the byte address divided by 8 rounded down (since the memory data is 8 bytes)
         
         Bit 15 of the axi address is the mem_number, which indicated which memory module the CPU is trying to read from
         (mem_number = 0 --> mem1  |  mem_number = 1 --> mem2)
+
         Ready doesn't go HIGH until mem_number matches with the available memory module
         """
 
@@ -238,32 +235,20 @@ class CuberPeri(wiring.Component):
         m.d.comb += cuber.mem_read_addr.eq(mem_address)
         m.d.comb += self.membus.r.payload.data.eq(cuber.mem_read_data)
         m.d.comb += self.membus.r.payload.id.eq(self.membus.ar.payload.id)
-        
         m.d.comb += self.membus.r.payload.last.eq(address_generator.addresses.payload.last)
-        m.d.comb += address_generator.start_generate.eq(self.membus.r.valid & self.membus.r.ready)
+
         wiring.connect(m, wiring.flipped(self.membus.ar), address_generator.ar)
 
-        waiting_to_generate = Signal(1)
-
-        with m.If((self.membus.ar.valid == 1) & (self.membus.ar.ready == 1)):
-            m.d.sync += address_gen_queued.eq(1)
-
-            with m.If((mem_number == cuber.mem_read_number) & (self.membus.ar.payload.len < self.cuber.cycles_per_frame-self.cuber.current_cycle_number)):
-                m.d.sync += self.membus.r.valid.eq(1)
-            with m.Else():
-                m.d.sync += waiting_to_generate.eq(1)
-        
-        with m.If(waiting_to_generate):
-            with m.If((mem_number == cuber.mem_read_number) & (self.membus.ar.payload.len < self.cuber.cycles_per_frame-self.cuber.current_cycle_number)):
-                m.d.sync += self.membus.r.valid.eq(1)
-                m.d.sync += waiting_to_generate.eq(0)
-
-        with m.If((self.membus.r.valid == 1) & (self.membus.r.ready == 1)):
+        with m.If((mem_number != cuber.mem_read_number) | (self.cuber.cycles_per_frame <= self.cuber.current_cycle_number + 1)):
             m.d.sync += self.membus.r.valid.eq(0)
+        with m.Else():
+            m.d.sync += self.membus.r.valid.eq(address_generator.addresses.valid)
         
-        with m.If(self.membus.r.payload.last):
-            m.d.sync += address_gen_queued.eq(0)
-
+        with m.If((mem_number != cuber.mem_read_number) | (self.membus.ar.payload.len >= self.cuber.cycles_per_frame-self.cuber.current_cycle_number)):
+            m.d.comb += address_generator.addresses.ready.eq(0)
+        with m.Else():
+            m.d.comb += address_generator.addresses.ready.eq(self.membus.r.ready)
 
 
         return m
+

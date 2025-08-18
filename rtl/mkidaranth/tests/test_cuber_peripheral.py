@@ -324,8 +324,7 @@ class PeripheralTestCase(unittest.TestCase):
                 ctx.set(dut.membus.ar.valid, 0)
                 await ctx.tick().repeat(3)
                 ctx.set(dut.membus.r.ready, 1)
-                await ctx.negedge(dut.membus.r.valid)
-                ctx.set(dut.membus.r.ready, 0)
+                await ctx.tick()
 
             await ctx.tick()
             self.assertEqual(ctx.get(dut.cuber_peri.cuber.generate_cubes), 0)
@@ -363,6 +362,8 @@ class PeripheralTestCase(unittest.TestCase):
                 if (prev_addr == 312):
                     self.assertEqual(current_data, 0b00000000_00000000_00000001_00000000)
             
+            await ctx.negedge(dut.membus.r.payload.last)
+            ctx.set(dut.membus.r.ready, 0)
             generate_photon_event(ctx, 570, 200)
             await ctx.tick().repeat(5)
             generate_photon_event(ctx, 800, 202)
@@ -386,10 +387,13 @@ class PeripheralTestCase(unittest.TestCase):
                 if (prev_addr == 312):
                     self.assertEqual(current_data, 0b00000000_00000000_00000001_00000000)
             
+            await ctx.negedge(dut.membus.r.payload.last)
+            ctx.set(dut.membus.r.ready, 0)
             await ctx.tick().repeat(5)
             cycle_num = ctx.get(dut.test_cycle)
             await axi_burst(16, 3, 1, 0b0000100101100000, 0)   #This burst is called on mem1 while mem1 does not have read access
-        
+            await ctx.negedge(dut.membus.r.payload.last)
+            ctx.set(dut.membus.r.ready, 0)
             self.assertGreater(ctx.get(dut.test_cycle) - cycle_num, 100)    #Check here that it took a lot of time before the burst happened
                                                                             #since it had to wait for the cuber to allow mem1 read access
 
@@ -398,7 +402,8 @@ class PeripheralTestCase(unittest.TestCase):
             await axi_burst(250, 3, 1, 0b0000100101100000, 0)   #This burst is called on mem1 while mem1 has read access
                                                                 #BUT it is called too close to the end of the mem1 read access stage
                                                                 #In other words, the burst would still be in progress when mem1 access stops
-            
+            await ctx.negedge(dut.membus.r.payload.last)
+            ctx.set(dut.membus.r.ready, 0)
             self.assertGreater(ctx.get(dut.test_cycle) - cycle_num, 2560)   #Check here that it took > a full cycle before the burst happened
                                                                             #since it had to wait for the entire mem1 clear/count cycle before
                                                                             #being able to access mem1 again
@@ -406,7 +411,19 @@ class PeripheralTestCase(unittest.TestCase):
             await ctx.tick().repeat(260)
             await axi_burst(0, 3, 1, 0b0000100101100000, 0)
             self.assertEqual(ctx.get(dut.cuber_peri.membus.r.payload.last), 1)
+            await ctx.negedge(dut.membus.r.payload.last)
+            ctx.set(dut.membus.r.ready, 0)
             await ctx.tick().repeat(10)
+
+            await axi_burst(100, 3, 1, 0b0000100101100000, 0)
+            await ctx.tick().repeat(15)
+            ctx.set(dut.membus.r.ready, 0)
+            await ctx.tick().repeat(15)
+            self.assertEqual(ctx.get(dut.cuber_peri.cuber.mem_read_addr), 315)
+            await ctx.tick().repeat(15)
+            ctx.set(dut.membus.r.ready, 1)
+            await ctx.negedge(dut.membus.r.payload.last)
+            ctx.set(dut.membus.r.ready, 0)
 
 
         sim = Simulator(dut)
