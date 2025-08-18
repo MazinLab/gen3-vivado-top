@@ -5,7 +5,7 @@ from amaranth.lib.wiring import In, Out, Component
 from amaranth.utils import exact_log2
 from amaranth_soc import csr
 
-from .trigger import trigger_event, CYCLE_BITS
+from .trigger import trigger_event, CYCLE_BITS, StreamPipelineStage
 from .image_cuber import ImageCuber
 from . import axi
 from .axi import BurstEncoding
@@ -229,25 +229,29 @@ class CuberPeri(wiring.Component):
         """
 
         m.submodules.address_generator = address_generator = AddressGenerator()
-        mem_address = address_generator.addresses.payload.byte_addr >> 3
+        m.submodules.address_pipeline = address_pipeline = StreamPipelineStage(address_generator.addresses.payload.shape())
+
+        wiring.connect(m, address_generator.addresses, address_pipeline.input)
+
+        mem_address = address_pipeline.output.payload.byte_addr >> 3
         mem_number = self.membus.ar.payload.addr[15]
 
         m.d.comb += cuber.mem_read_addr.eq(mem_address)
         m.d.comb += self.membus.r.payload.data.eq(cuber.mem_read_data)
         m.d.comb += self.membus.r.payload.id.eq(self.membus.ar.payload.id)
-        m.d.comb += self.membus.r.payload.last.eq(address_generator.addresses.payload.last)
+        m.d.comb += self.membus.r.payload.last.eq(address_pipeline.output.payload.last)
 
         wiring.connect(m, wiring.flipped(self.membus.ar), address_generator.ar)
 
         with m.If((mem_number != cuber.mem_read_number) | (self.cuber.cycles_per_frame <= self.cuber.current_cycle_number + 1)):
             m.d.comb += self.membus.r.valid.eq(0)
         with m.Else():
-            m.d.comb += self.membus.r.valid.eq(address_generator.addresses.valid)
+            m.d.comb += self.membus.r.valid.eq(address_pipeline.output.valid)
         
         with m.If((mem_number != cuber.mem_read_number) | (self.membus.ar.payload.len >= self.cuber.cycles_per_frame-self.cuber.current_cycle_number)):
-            m.d.comb += address_generator.addresses.ready.eq(0)
+            m.d.comb += address_pipeline.output.ready.eq(0)
         with m.Else():
-            m.d.comb += address_generator.addresses.ready.eq(self.membus.r.ready)
+            m.d.comb += address_pipeline.output.ready.eq(self.membus.r.ready)
 
 
         return m
