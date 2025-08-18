@@ -99,7 +99,7 @@ class AddressGenerator(wiring.Component):
                 with m.If(~wrapped):
                     next_addr = aligned_addr + (n << self.ar.payload.size)
                     m.d.sync += self.addresses.payload.byte_addr.eq(next_addr)
-                    with m.If(next_addr >= (wrap_bound + (1 << self.ar.payload.size + log2_burst_length))):
+                    with m.If(next_addr >= (wrap_bound + (1 << (self.ar.payload.size + log2_burst_length)))):
                         m.d.sync += self.addresses.payload.byte_addr.eq(wrap_bound)
                         m.d.sync += wrapped.eq(1)
                 with m.Else():
