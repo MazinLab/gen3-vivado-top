@@ -99,7 +99,7 @@ class AddressGenerator(wiring.Component):
                 with m.If(~wrapped):
                     next_addr = aligned_addr + (n << self.ar.payload.size)
                     m.d.sync += self.addresses.payload.byte_addr.eq(next_addr)
-                    with m.If(next_addr >= (wrap_bound + (1 >> self.ar.payload.size + log2_burst_length))):
+                    with m.If(next_addr >= (wrap_bound + (1 << self.ar.payload.size + log2_burst_length))):
                         m.d.sync += self.addresses.payload.byte_addr.eq(wrap_bound)
                         m.d.sync += wrapped.eq(1)
                 with m.Else():
@@ -240,9 +240,9 @@ class CuberPeri(wiring.Component):
         wiring.connect(m, wiring.flipped(self.membus.ar), address_generator.ar)
 
         with m.If((mem_number != cuber.mem_read_number) | (self.cuber.cycles_per_frame <= self.cuber.current_cycle_number + 1)):
-            m.d.sync += self.membus.r.valid.eq(0)
+            m.d.comb += self.membus.r.valid.eq(0)
         with m.Else():
-            m.d.sync += self.membus.r.valid.eq(address_generator.addresses.valid)
+            m.d.comb += self.membus.r.valid.eq(address_generator.addresses.valid)
         
         with m.If((mem_number != cuber.mem_read_number) | (self.membus.ar.payload.len >= self.cuber.cycles_per_frame-self.cuber.current_cycle_number)):
             m.d.comb += address_generator.addresses.ready.eq(0)

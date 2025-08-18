@@ -425,6 +425,10 @@ class PeripheralTestCase(unittest.TestCase):
             await ctx.negedge(dut.membus.r.payload.last)
             ctx.set(dut.membus.r.ready, 0)
 
+            await ctx.tick().repeat(20)
+            await axi_burst(15, 3, 2, 0b0000100101100100, 0)
+            await ctx.tick().repeat(50)
+
 
         sim = Simulator(dut)
         sim.add_clock(3.90625e-9)
