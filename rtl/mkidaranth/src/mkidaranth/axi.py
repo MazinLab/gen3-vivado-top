@@ -491,6 +491,10 @@ def connect_axi(m, a, b):
         amaranth = a
     else:
         assert False
+
+    if type(wiring.flipped(amaranth).signature) is Signature:
+        amaranth = wiring.flipped(amaranth)
+
     for name, stream_sig in sig._stream_signatures.items():
         connect(
             m,

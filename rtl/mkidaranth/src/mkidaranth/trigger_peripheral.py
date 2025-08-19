@@ -57,6 +57,7 @@ class AXICSRBridge(wiring.Component):
 
         with m.FSM():
             with m.State("WAITING_ADDRESS"):
+                m.d.sync += self.csr.w_stb.eq(0)
                 with m.If(self.axi.aw.valid):
                     m.d.comb += self.axi.aw.ready.eq(1)
                     m.d.sync += alatch.eq(self.axi.aw.payload.addr.shift_right(self._aw - self._caw))

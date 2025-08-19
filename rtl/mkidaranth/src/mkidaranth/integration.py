@@ -47,15 +47,22 @@ class StreamStripper(wiring.Component):
         return m
 
 class TriggerSubsystem(wiring.Component):
-    def __init__(self, enable_cuber = True):
+    def __init__(self, enable_cuber = True, sim_clocks = False):
         self.enable_cuber = enable_cuber
-        self.cuber_peri = image_cuber_perhipheral.CuberPeri(csr_addr_width=8, csr_data_width=32)
+        self.sim_clocks = sim_clocks
+        if self.enable_cuber:
+            self.cuber_peri = image_cuber_perhipheral.CuberPeri(csr_addr_width=8, csr_data_width=32)
         self.trig_peri = trigger_peripheral.Trigger(addr_width=12, data_width=32)
         self.trig_dma = trigger_peripheral.AXIDMA(addr_width=48, data_width=64, burst_length=128, ctl_data_width=32)
         self.postage_dma = trigger_peripheral.AXIDMA(addr_width=48, data_width=32, burst_length=128, ctl_data_width=32)
         self.decoder = Decoder(addr_width=16, data_width=32)
         self.converter = trigger_peripheral.AXICSRBridge(addr_width=18, data_width=32)
 
+        self.decoder.add(self.trig_peri.bus, name="Trigger")
+        self.decoder.add(self.trig_dma.ctlbus, name="TriggerDMA")
+        self.decoder.add(self.postage_dma.ctlbus, name="PostageDMA")
+        if self.enable_cuber:
+            self.decoder.add(self.cuber_peri.bus, name="CuberDMA")
 
         super().__init__(
             {
@@ -80,11 +87,12 @@ class TriggerSubsystem(wiring.Component):
     def elaborate(self, platform):
         m = Module()
 
-        m.domains.sync = cd_sync = ClockDomain()
-        m.d.comb += [
-            cd_sync.clk.eq(self.aclk),
-            cd_sync.rst.eq(~self.aresetn)
-        ]
+        if not self.sim_clocks:
+            m.domains.sync = cd_sync = ClockDomain()
+            m.d.comb += [
+                cd_sync.clk.eq(self.aclk),
+                cd_sync.rst.eq(~self.aresetn)
+            ]
 
         if self.enable_cuber:
             m.submodules.cuber_peri = cuber_peri = self.cuber_peri
@@ -96,12 +104,6 @@ class TriggerSubsystem(wiring.Component):
 
         axi.connect_axi(m, wiring.flipped(self.s_axi_ctrl), converter.axi)
         wiring.connect(m, converter.csr, decoder.bus)
-
-        if self.enable_cuber:
-            decoder.add(cuber_peri.bus)
-        decoder.add(trig_peri.bus)
-        decoder.add(trig_dma.ctlbus, name="Trigger")
-        decoder.add(postage_dma.ctlbus, name="Postage")
 
         m.d.comb += self.int_trig_peri.eq(trig_peri.int)
         m.d.comb += self.int_dma_trig.eq(trig_dma.int)
@@ -142,7 +144,23 @@ class TriggerSubsystem(wiring.Component):
         wiring.connect(m, strip.output, postage_dma.stream)
 
         return m
-    
+
+def map_to_json(memory_map):
+    import json
+    registers = []
+    for resource in memory_map.all_resources():
+        fields = []
+        for k in resource.resource.field:
+            fields.append((k, getattr(resource.resource.field, k).port.shape.width))
+        registers.append({
+            "path": resource.path,
+            "start": resource.start,
+            "end": resource.end,
+            "width": resource.width,
+            "fields" : fields
+        })
+    return json.dumps(registers)
+
 if __name__ == "__main__":
     import sys
     import json
@@ -153,18 +171,5 @@ if __name__ == "__main__":
     integrated_trigger = TriggerSubsystem(enable_cuber)
     with open(sys.argv[1], "w") as f:
         f.write(verilog.convert(integrated_trigger, name="trigger_subsystem"))
-        
-    registers = []
-    for resource in integrated_trigger.decoder.bus.memory_map.all_resources():
-        fields = []
-        for k in resource.resource.field:
-            fields.append((k, getattr(resource.resource.field, k).port.shape.width))
-        registers.append({
-                  "path": resource.path,
-                  "start": resource.start,
-                  "end": resource.end,
-                  "width": resource.width,
-                  "fields" : fields
-              })
     with open(sys.argv[1] + ".json", "w") as fj:
-        fj.write(json.dumps(registers))
+        fj.write(map_to_json(integrated_trigger.decoder.bus.memory_map))
