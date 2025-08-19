@@ -228,7 +228,7 @@ class AXIDMA(wiring.Component):
             self.dmabus.w.payload.data.eq(self.stream.payload),
             self.dmabus.w.payload.strb.eq(-1),
             self.dmabus.w.valid.eq(0),
-            self.dmabus.w.payload.last.eq(address_latch + self._bpt == last_addr),
+            self.dmabus.w.payload.last.eq(address_latch == last_addr),
             self.stream.ready.eq(0),
         ]
 
