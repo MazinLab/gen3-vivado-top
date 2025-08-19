@@ -5,6 +5,7 @@ from amaranth.lib.memory import Memory, WritePort, ReadPort
 from amaranth.lib.wiring import Component, In, Out
 from amaranth.lib import stream, wiring, data, enum, fifo, memory
 from .trigger import trigger_event, CYCLE_BITS
+from .uram import UltraRAM
 
 
 class ImageCuber(wiring.Component):
@@ -12,8 +13,8 @@ class ImageCuber(wiring.Component):
         self.fifo_depth = fifo_depth
         self.wavelength_cutoff_precision = wavelength_cutoff_precision
 
-        self.mem1 = Memory(shape=unsigned(64), depth=2048, init=[])
-        self.mem2 = Memory(shape=unsigned(64), depth=2048, init=[])
+        self.mem1 = UltraRAM(input_pipeline=False, output_pipeline=False)
+        self.mem2 = UltraRAM(input_pipeline=False, output_pipeline=False)
 
         self.event_payload_bits = 16 + 11 + 2 + CYCLE_BITS
         super().__init__(
@@ -47,43 +48,40 @@ class ImageCuber(wiring.Component):
         m.submodules.dmem1 = mem1 = self.mem1
         m.submodules.dmem2 = mem2 = self.mem2
 
-        read_port1 = mem1.read_port(domain="sync")
-        write_port11 = mem1.write_port(domain="sync")
-        write_port12 = mem1.write_port(domain="sync")
-
-        read_port2 = mem2.read_port(domain="sync")
-        write_port21 = mem2.write_port(domain="sync")
-        write_port22 = mem2.write_port(domain="sync")
+        m.d.comb += [
+            mem1.a.en.eq(1),
+            mem1.a.we.eq(0b111111111),
+            mem1.b.en.eq(1),
+            mem1.b.we.eq(0b111111111),
+            mem2.a.en.eq(1),
+            mem2.a.we.eq(0b111111111),
+            mem2.b.en.eq(1),
+            mem2.b.we.eq(0b111111111),
+        ]
 
         i = Signal(12)
         m.d.comb += self.current_cycle_number.eq(i+1)
 
-        """
-        For testing purposes, can use the following:
+        m.submodules.pixel_LUT = pixel_LUT = UltraRAM(input_pipeline=False, output_pipeline=False)
+        m.submodules.wavelength_LUT = wavelength_LUT = UltraRAM(input_pipeline=False, output_pipeline=False)
 
-        pixel_LUT_init = []
-        for xx in range(14):
-            for yy in range(146):
-                pixel_LUT_init.append((xx<<8) | yy)
-        """
-
-        m.submodules.pixel_LUT = pixel_LUT = Memory(shape = unsigned(12), depth = 2048, init = [])
-        pixel_LUT_write = pixel_LUT.write_port(domain="sync")
-        wiring.connect(m, self.pixel_LUT_write, pixel_LUT_write)
-        pixel_LUT_read = pixel_LUT.read_port(domain="sync")
-
-        """
-        For testing purposes, can use the following:
-
-        wavelength_LUT_init = []
-        for _ in range(2048):
-            wavelength_LUT_init.append(0b0111111100011111000001110000001100000001)
-        """
-
-        m.submodules.wavelength_LUT = wavelength_LUT = Memory(shape = unsigned(5*self.wavelength_cutoff_precision), depth = 2048, init = [])
-        wavelength_LUT_write = wavelength_LUT.write_port(domain="sync")
-        wiring.connect(m, self.wavelength_LUT_write, wavelength_LUT_write)
-        wavelength_LUT_read = wavelength_LUT.read_port(domain="sync")
+        m.d.comb += [
+            pixel_LUT.a.addr.eq(self.pixel_LUT_write.addr),
+            pixel_LUT.a.dwrite.eq(self.pixel_LUT_write.data),
+            pixel_LUT.a.write.eq(self.pixel_LUT_write.en),
+            wavelength_LUT.a.addr.eq(self.wavelength_LUT_write.addr),
+            wavelength_LUT.a.dwrite.eq(self.wavelength_LUT_write.data),
+            wavelength_LUT.a.write.eq(self.wavelength_LUT_write.en),
+            
+            pixel_LUT.a.en.eq(1),
+            pixel_LUT.a.we.eq(0b111111111),
+            pixel_LUT.b.en.eq(1),
+            pixel_LUT.b.we.eq(0b111111111),
+            wavelength_LUT.a.en.eq(1),
+            wavelength_LUT.a.we.eq(0b111111111),
+            wavelength_LUT.b.en.eq(1),
+            wavelength_LUT.b.we.eq(0b111111111),
+        ]
 
         #Error detection
         m.d.sync += self.lost_photon_flag.eq(0)
@@ -107,13 +105,12 @@ class ImageCuber(wiring.Component):
         uploading = Signal()
         reading = Signal()
 
-        def state_machine(write_port1, write_port2, read_port, machine_number):
+        def state_machine(a, b, machine_number):
             with m.FSM(init="Configuring"):
                 with m.State("Configuring"):
                     m.d.sync += buffered_stream.ready.eq(0)
-                    m.d.sync += write_port1.en.eq(0)
-                    m.d.sync += write_port2.en.eq(0)
-                    m.d.comb += read_port.addr.eq(0)
+                    m.d.sync += a.write.eq(0)
+                    m.d.sync += b.write.eq(0)
 
                     with m.If(self.generate_cubes):
                         with m.If(machine_number == 0):
@@ -123,18 +120,17 @@ class ImageCuber(wiring.Component):
 
                 with m.State("Clearing"):
                     m.d.sync += buffered_stream.ready.eq(0)
-                    m.d.sync += write_port1.en.eq(1)
-                    m.d.sync += write_port1.addr.eq(i)
-                    m.d.sync += write_port1.data.eq(0)
-                    m.d.sync += write_port2.en.eq(1)
-                    m.d.sync += write_port2.addr.eq(2047-i)
-                    m.d.sync += write_port2.data.eq(0)
-                    m.d.comb += read_port.addr.eq(0)
+                    m.d.sync += a.write.eq(1)
+                    m.d.sync += a.addr.eq(i)
+                    m.d.sync += a.dwrite.eq(0)
+                    m.d.sync += b.write.eq(1)
+                    m.d.comb += b.addr.eq(2048-i)
+                    m.d.sync += b.dwrite.eq(0)
                     m.d.sync += i.eq(i+1)
 
                     with m.If(i == 1024):
-                        m.d.sync += write_port1.en.eq(0)
-                        m.d.sync += write_port2.en.eq(0)
+                        m.d.sync += a.write.eq(0)
+                        m.d.sync += b.write.eq(0)
                         m.next = "Counting"
                     
                     with m.If(~self.generate_cubes):
@@ -143,8 +139,8 @@ class ImageCuber(wiring.Component):
                     
                 with m.State("Counting"):
                     m.d.sync += buffered_stream.ready.eq(1)
-                    m.d.sync += write_port1.en.eq(0)
-                    m.d.sync += write_port2.en.eq(0)
+                    m.d.sync += a.write.eq(0)
+                    m.d.sync += b.write.eq(0)
                     m.d.sync += i.eq(i+1)
                     m.d.sync += new_photon.eq(0)
 
@@ -160,8 +156,8 @@ class ImageCuber(wiring.Component):
                         muxer = Signal()
                         divided_phase = Signal(16)
 
-                        m.d.sync += pixel_LUT_read.addr.eq(inc_bin)
-                        m.d.sync += wavelength_LUT_read.addr.eq(inc_bin)
+                        m.d.sync += pixel_LUT.b.addr.eq(inc_bin)
+                        m.d.sync += wavelength_LUT.b.addr.eq(inc_bin)
                         
                         m.d.sync += divided_phase.eq(inc_phase>>(16-self.wavelength_cutoff_precision))
 
@@ -174,9 +170,9 @@ class ImageCuber(wiring.Component):
                         m.d.sync += buffered_stream.ready.eq(0)
 
                     with m.If(LUTS_read):
-                        m.d.comb += pixel.eq(pixel_LUT_read.data)
+                        m.d.comb += pixel.eq(pixel_LUT.b.dread)
                         m.d.sync += muxer.eq(pixel[11])
-                        m.d.comb += wavelength_cutoffs.eq(wavelength_LUT_read.data)
+                        m.d.comb += wavelength_cutoffs.eq(wavelength_LUT.b.dread)
 
                         m.d.sync += buffered_stream.ready.eq(0)
 
@@ -206,19 +202,19 @@ class ImageCuber(wiring.Component):
                                         If 1, then data = 32 most significant of the 64 data bits at the address
                         """
 
-                        m.d.sync += write_port1.addr.eq(pixel[0:11])
-                        m.d.comb += read_port.addr.eq(pixel[0:11])
+                        m.d.sync += a.addr.eq(pixel[0:11])
+                        m.d.comb += b.addr.eq(pixel[0:11])
                         m.d.sync += reading.eq(1)
                         m.d.sync += pixel_to_upload.eq(pixel)
                         m.d.sync += LUTS_read.eq(0)
 
                     with m.If((reading) & (~uploading)):
-                        m.d.sync += write_port1.addr.eq(pixel_to_upload[0:11])
-                        m.d.comb += read_port.addr.eq(pixel_to_upload[0:11])
+                        m.d.sync += a.addr.eq(pixel_to_upload[0:11])
+                        m.d.comb += b.addr.eq(pixel_to_upload[0:11])
 
                         byte_array = Array([Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8)])
                         for j in range(8):
-                            m.d.comb += byte_array[j].eq(read_port.data[8*j:8*(j+1)])
+                            m.d.comb += byte_array[j].eq(b.dread[8*j:8*(j+1)])
 
                         index = wavelength_bin | (muxer<<2)                      
 
@@ -236,21 +232,21 @@ class ImageCuber(wiring.Component):
 
                         new_data = Cat(byte_array_new[j] for j in range(8))
 
-                        m.d.sync += write_port1.data.eq(new_data)
+                        m.d.sync += a.dwrite.eq(new_data)
 
                         m.d.sync += uploading.eq(1)
                         m.d.sync += buffered_stream.ready.eq(0)
                     
 
                     with m.If(uploading):
-                        m.d.sync += write_port1.addr.eq(pixel_to_upload[0:11])
-                        m.d.comb += read_port.addr.eq(pixel_to_upload[0:11])
+                        m.d.sync += a.addr.eq(pixel_to_upload[0:11])
+                        m.d.comb += b.addr.eq(pixel_to_upload[0:11])
                         m.d.sync += buffered_stream.ready.eq(0)
 
-                        m.d.sync += write_port1.en.eq(1)
+                        m.d.sync += a.write.eq(1)
 
-                        with m.If(write_port1.en == 1):
-                            m.d.sync += write_port1.en.eq(0)
+                        with m.If(a.write == 1):
+                            m.d.sync += a.write.eq(0)
                             m.d.sync += uploading.eq(0)
                             m.d.sync += reading.eq(0)
                             m.d.sync += buffered_stream.ready.eq(1)
@@ -258,7 +254,7 @@ class ImageCuber(wiring.Component):
 
                     with m.If(i >= self.cycles_per_frame-1):
                         m.d.sync += i.eq(0)
-                        m.d.sync += write_port1.en.eq(0)
+                        m.d.sync += a.write.eq(0)
                         m.next = "Stalling"
 
                     with m.If(~self.generate_cubes):
@@ -268,8 +264,8 @@ class ImageCuber(wiring.Component):
                 with m.State("Stalling"):
                     m.d.sync += i.eq(i+1)
 
-                    m.d.comb += read_port.addr.eq(self.mem_read_addr)
-                    m.d.comb += self.mem_read_data.eq(read_port.data)
+                    m.d.comb += b.addr.eq(self.mem_read_addr)
+                    m.d.comb += self.mem_read_data.eq(b.dread)
                     m.d.comb += self.mem_read_number.eq(machine_number)
 
                     with m.If(i == self.cycles_per_frame - 1):
@@ -283,10 +279,10 @@ class ImageCuber(wiring.Component):
 
 
         #State machine memory 1
-        state_machine(write_port11, write_port12, read_port1, 0)
+        state_machine(mem1.a, mem1.b, 0)
         
         #State machine memory 2
-        state_machine(write_port21, write_port22, read_port2, 1)
+        state_machine(mem2.a, mem2.b, 1)
         
         
         return m

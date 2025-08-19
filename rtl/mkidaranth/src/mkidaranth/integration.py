@@ -118,7 +118,10 @@ class TriggerSubsystem(wiring.Component):
         m.d.comb += trig_peri.timestamp.payload.eq(self.timestamp)
 
         if self.enable_cuber:
-            axi.connect_axi(m, wiring.flipped(self.s_axi_cube), cuber_peri.membus)
+            m.submodules.cuber_axi_pipe = cuber_axi_pipe = axi.AxiPipelineStage(cuber_axi_signature.props)
+            axi.connect_axi(m, wiring.flipped(self.s_axi_cube), cuber_axi_pipe.input)
+            wiring.connect(m, cuber_axi_pipe.output, cuber_peri.membus)
+
             wiring.connect(m, trig_peri.cuber_events, cuber_peri.trigger_stream)
         else:
             m.d.comb += trig_peri.cuber_events.ready.eq(1)

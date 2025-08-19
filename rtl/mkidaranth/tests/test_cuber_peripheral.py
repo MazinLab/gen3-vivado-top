@@ -157,8 +157,13 @@ class PeripheralTestCase(unittest.TestCase):
             await ctx.tick().repeat(1035)
             generate_photon_event(ctx, 4097, 200)
             await ctx.tick().repeat(1102)
-            self.assertEqual(ctx.get(dut.cuber_peri.cuber.mem1.data[0b00100110110]), 0b00000000_00000001_00000000_00000001)
-            self.assertEqual(ctx.get(dut.cuber_peri.cuber.mem1.data[0b00100111000]), 0b00000000_00000000_00000001_00000000)
+            ctx.set(dut.cuber_peri.cuber.mem1.a.addr, 0b00100110110)
+            await ctx.tick()
+            self.assertEqual(ctx.get(dut.cuber_peri.cuber.mem1.a.dread), 0b00000000_00000001_00000000_00000001)
+            await ctx.tick()
+            ctx.set(dut.cuber_peri.cuber.mem1.a.addr, 0b00100111000)
+            await ctx.tick()
+            self.assertEqual(ctx.get(dut.cuber_peri.cuber.mem1.a.dread), 0b00000000_00000000_00000001_00000000)
             await ctx.tick()
 
 
