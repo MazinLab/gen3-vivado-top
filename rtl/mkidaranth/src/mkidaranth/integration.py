@@ -163,13 +163,21 @@ def map_to_json(memory_map):
 
 if __name__ == "__main__":
     import sys
-    import json
     from amaranth.back import verilog
+    from amaranth.vendor import XilinxPlatform
+
+    class RFSoCGen3Platform(XilinxPlatform):
+        device = "xczu48dr"
+        package = "ffvg1517"
+        speed = "2"
+        resources = []
+        connectors = []
+
     enable_cuber = True
     if len(sys.argv) > 2:
         enable_cuber = sys.argv[2] == "True"
     integrated_trigger = TriggerSubsystem(enable_cuber)
     with open(sys.argv[1], "w") as f:
-        f.write(verilog.convert(integrated_trigger, name="trigger_subsystem"))
+        f.write(verilog.convert(integrated_trigger, name="trigger_subsystem", platform=RFSoCGen3Platform()))
     with open(sys.argv[1] + ".json", "w") as fj:
         fj.write(map_to_json(integrated_trigger.decoder.bus.memory_map))
