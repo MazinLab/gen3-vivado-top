@@ -319,7 +319,7 @@ class PeripheralTestCase(unittest.TestCase):
                     addr += 1
 
             async def axi_burst(burst_len, burst_size, burst_type, start_addr, id):
-                ctx.set(dut.membus.ar.payload.len, burst_len)
+                ctx.set(dut.membus.ar.payload.len, burst_len-1)
                 ctx.set(dut.membus.ar.payload.size, burst_size)
                 ctx.set(dut.membus.ar.payload.burst, burst_type)
                 ctx.set(dut.membus.ar.payload.addr, start_addr)
@@ -329,7 +329,6 @@ class PeripheralTestCase(unittest.TestCase):
                 ctx.set(dut.membus.ar.valid, 0)
                 await ctx.posedge(dut.membus.r.valid)
                 ctx.set(dut.membus.r.ready, 1)
-                await ctx.tick()
 
             await ctx.tick()
             self.assertEqual(ctx.get(dut.cuber_peri.cuber.generate_cubes), 0)
@@ -352,7 +351,7 @@ class PeripheralTestCase(unittest.TestCase):
             await ctx.tick().repeat(2000)
             await axi_burst(16, 3, 1, 0b0000100101100000, 0)
 
-            for j in range(16):
+            for j in range(15):
                 prev_addr = ctx.get(dut.cuber_peri.cuber.mem_read_addr)
 
                 await ctx.tick()
@@ -377,7 +376,7 @@ class PeripheralTestCase(unittest.TestCase):
             await ctx.tick().repeat(2000)
             await axi_burst(16, 3, 1, 0b1000100101100000, 0)
 
-            for j in range(16):
+            for j in range(15):
                 prev_addr = ctx.get(dut.cuber_peri.cuber.mem_read_addr)
 
                 await ctx.tick()
@@ -414,7 +413,7 @@ class PeripheralTestCase(unittest.TestCase):
                                                                             #being able to access mem1 again
             
             await ctx.tick().repeat(260)
-            await axi_burst(0, 3, 1, 0b0000100101100000, 0)
+            await axi_burst(1, 3, 1, 0b0000100101100000, 0)
             self.assertEqual(ctx.get(dut.cuber_peri.membus.r.payload.last), 1)
             await ctx.negedge(dut.membus.r.payload.last)
             ctx.set(dut.membus.r.ready, 0)
