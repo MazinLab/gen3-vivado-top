@@ -43,74 +43,79 @@ class AddressGenerator(wiring.Component):
     def elaborate(self, platform):
         m = Module()
 
-        start_addr = self.ar.payload.addr
-        num_bytes = 1 << self.ar.payload.size   #Equivalent to 2**size
-        burst_length = self.ar.payload.len + 1
-        aligned_addr = (start_addr >> self.ar.payload.size) << self.ar.payload.size  #Setting lowest n bits to 0 where n = size
+        ar_saved = Signal(axi.ReadRequestChannel(cuber_axi_signature.props))
         log2_burst_length = Signal(4)
+        wrap_address = Signal(cuber_axi_signature.props.ADDR_WIDTH)
+        aligned_address = Signal(cuber_axi_signature.props.ADDR_WIDTH)
+        increment_amount = Signal(cuber_axi_signature.props.ADDR_WIDTH)
 
-        with m.Switch(burst_length):
-            with m.Case(2): m.d.comb += log2_burst_length.eq(1)
-            with m.Case(4): m.d.comb += log2_burst_length.eq(2)
-            with m.Case(8): m.d.comb += log2_burst_length.eq(3)
-            with m.Case(16): m.d.comb += log2_burst_length.eq(4)
-
-        wrap_bound = (start_addr >> (self.ar.payload.size + log2_burst_length)) << (self.ar.payload.size + log2_burst_length)
-
-        gen_queued = Signal()
+        running = Signal()
         generating = Signal()
+        compute_addresses = Signal()
         n = Signal(8)
 
         m.d.sync += self.ar.ready.eq(1)
-        with m.If(gen_queued):
+        with m.If(running):
             m.d.sync += self.ar.ready.eq(0)
 
         with m.If(self.ar.valid & self.ar.ready):
-            m.d.sync += self.addresses.payload.byte_addr.eq(self.ar.payload.addr)
-            m.d.sync += self.addresses.valid.eq(1)
             m.d.sync += self.ar.ready.eq(0)
-            m.d.sync += gen_queued.eq(1)
+            m.d.sync += ar_saved.eq(self.ar.payload)
+            m.d.sync += compute_addresses.eq(1)
+            m.d.sync += running.eq(1)
+
+        with m.If(compute_addresses):
+            with m.FSM():
+                with m.State("Start"):
+                    # Setting lowest n bits to 0 where n = size
+                    m.d.sync += [
+                        aligned_address.eq((ar_saved.addr >> ar_saved.size) << ar_saved.size),
+                        self.addresses.payload.byte_addr.eq(ar_saved.addr),
+                        increment_amount.eq(1 << self.ar.payload.size)
+                    ]
+                    burst_length = ar_saved.len + 1
+                    with m.Switch(burst_length):
+                        with m.Case(2):
+                            m.d.sync += log2_burst_length.eq(1)
+                        with m.Case(4):
+                            m.d.sync += log2_burst_length.eq(2)
+                        with m.Case(8):
+                            m.d.sync += log2_burst_length.eq(3)
+                        with m.Case(16):
+                            m.d.sync += log2_burst_length.eq(4)
+                    m.next = "Compute Wrap"
+                with m.State("Compute Wrap"):
+                    m.d.sync += wrap_address.eq((ar_saved.addr >> (ar_saved.size + log2_burst_length)) << (ar_saved.size + log2_burst_length))
+                    with m.If(ar_saved.burst == BurstEncoding.WRAP):
+                        m.d.sync += self.addresses.payload.byte_addr.eq(aligned_address)
+                    with m.If(ar_saved.len == 0):
+                        m.d.sync += self.addresses.payload.last.eq(1)
+
+                    m.d.sync += compute_addresses.eq(0)
+                    m.d.sync += self.addresses.valid.eq(1)
+                    m.next = "Start"
 
         m.d.sync += self.addresses.payload.last.eq(0)
-
         m.d.comb += generating.eq(self.addresses.valid & self.addresses.ready)
 
         with m.If(generating):
-            m.d.sync += n.eq(n+1)
+            m.d.sync += n.eq(n + 1)
             with m.If(self.ar.payload.burst == BurstEncoding.FIXED):
-                with m.If(n == burst_length - 1):
-                    m.d.sync += n.eq(0)
-                    m.d.sync += self.addresses.payload.last.eq(1)
-                    m.d.sync += self.addresses.valid.eq(0)
-                    m.d.sync += gen_queued.eq(0)
-
+                pass
             with m.Elif(self.ar.payload.burst == BurstEncoding.INCR):
-                next_addr = aligned_addr + (n << self.ar.payload.size)
-                m.d.sync += self.addresses.payload.byte_addr.eq(next_addr)
-                with m.If(n == burst_length - 1):
-                    m.d.sync += n.eq(0)
-                    m.d.sync += self.addresses.payload.last.eq(1)
-                    m.d.sync += self.addresses.valid.eq(0)
-                    m.d.sync += gen_queued.eq(0)
-
+                m.d.sync += self.addresses.payload.byte_addr.eq(self.addresses.payload.byte_addr + increment_amount)
             with m.Elif(self.ar.payload.burst == BurstEncoding.WRAP):
-                wrapped = Signal(1)
-                
-                with m.If(~wrapped):
-                    next_addr = aligned_addr + (n << self.ar.payload.size)
-                    m.d.sync += self.addresses.payload.byte_addr.eq(next_addr)
-                    with m.If(next_addr >= (wrap_bound + (1 << (self.ar.payload.size + log2_burst_length)))):
-                        m.d.sync += self.addresses.payload.byte_addr.eq(wrap_bound)
-                        m.d.sync += wrapped.eq(1)
+                with m.If(self.addresses.payload.byte_addr + increment_amount == wrap_address):
+                    m.d.sync += self.addresses.payload.byte_addr.eq(aligned_address)
                 with m.Else():
-                    next_addr = self.addresses.payload.byte_addr + num_bytes
-                    m.d.sync += self.addresses.payload.byte_addr.eq(next_addr)
-                
-                with m.If(n == burst_length - 1):
-                    m.d.sync += n.eq(0)
-                    m.d.sync += self.addresses.payload.last.eq(1)
-                    m.d.sync += self.addresses.valid.eq(0)
-                    m.d.sync += gen_queued.eq(0)
+                    m.d.sync += self.addresses.payload.byte_addr.eq(self.addresses.payload.byte_addr + increment_amount)
+            with m.If(n == ar_saved.len - 1):
+                m.d.sync += self.addresses.payload.last.eq(1)
+
+        with m.If((self.addresses.payload.last == 1) & self.addresses.valid & self.addresses.ready):
+            m.d.sync += n.eq(0)
+            m.d.sync += running.eq(0)
+            m.d.sync += self.addresses.valid.eq(0)
 
         return m
 

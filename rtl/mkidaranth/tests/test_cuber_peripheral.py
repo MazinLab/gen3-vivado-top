@@ -327,7 +327,7 @@ class PeripheralTestCase(unittest.TestCase):
                 ctx.set(dut.membus.ar.valid, 1)
                 await ctx.negedge(dut.membus.ar.ready)
                 ctx.set(dut.membus.ar.valid, 0)
-                await ctx.tick().repeat(3)
+                await ctx.posedge(dut.membus.r.valid)
                 ctx.set(dut.membus.r.ready, 1)
                 await ctx.tick()
 
