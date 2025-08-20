@@ -95,7 +95,6 @@ class AddressGenerator(wiring.Component):
                     m.d.sync += self.addresses.valid.eq(1)
                     m.next = "Start"
 
-        m.d.sync += self.addresses.payload.last.eq(0)
         m.d.comb += generating.eq(self.addresses.valid & self.addresses.ready)
 
         with m.If(generating):
@@ -116,6 +115,7 @@ class AddressGenerator(wiring.Component):
             m.d.sync += n.eq(0)
             m.d.sync += running.eq(0)
             m.d.sync += self.addresses.valid.eq(0)
+            m.d.sync += self.addresses.payload.last.eq(0)
 
         return m
 
