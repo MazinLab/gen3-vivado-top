@@ -5,7 +5,7 @@ from amaranth_soc.csr import Decoder
 
 from . import axi
 from . import image_cuber_perhipheral, trigger_peripheral
-from .trigger import iq_stream, phase_stream, timestamp, iq, trigger_event
+from .trigger import iq_stream, phase_stream, timestamp, iq, trigger_event, StreamPipelineStage
 from .image_cuber_perhipheral import cuber_axi_signature
 
 class StreamPad(wiring.Component):
@@ -62,13 +62,18 @@ class TriggerSubsystem(wiring.Component):
         self.decoder.add(self.trig_dma.ctlbus, name="TriggerDMA")
         self.decoder.add(self.postage_dma.ctlbus, name="PostageDMA")
         if self.enable_cuber:
-            self.decoder.add(self.cuber_peri.bus, name="CuberDMA")
+            self.decoder_slow = Decoder(addr_width=16, data_width=32)
+            self.converter_slow = trigger_peripheral.AXICSRBridge(addr_width=18, data_width=32)
+            self.decoder_slow.add(self.cuber_peri.bus, name="CuberDMA")
 
         super().__init__(
             {
                 "aclk": In(1),
                 "aresetn": In(1),
+                "aclk256": In(1),
+                "aresetn256": In(1),
                 "s_axi_ctrl": In(axi.StandardizedAxiSignature(self.converter.axi_properties)),
+                "s_axi_ctrl_slow": In(axi.StandardizedAxiSignature(self.converter.axi_properties)),
                 "s_axi_cube": In(axi.StandardizedAxiSignature(cuber_axi_signature.props)),
                 "s_axis_iq": In(axi.StandardizedSignature(iq_stream, data_field="payload", renames={"beat": "user"})),
                 "s_axis_phase": In(axi.StandardizedSignature(phase_stream, data_field="payload", renames={"beat": "user"})),
@@ -93,9 +98,12 @@ class TriggerSubsystem(wiring.Component):
                 cd_sync.clk.eq(self.aclk),
                 cd_sync.rst.eq(~self.aresetn)
             ]
+            m.domains.slow = cd_slow = ClockDomain()
+            m.d.comb += [
+                cd_slow.clk.eq(self.aclk256),
+                cd_slow.rst.eq(~self.aresetn256)
+            ]
 
-        if self.enable_cuber:
-            m.submodules.cuber_peri = cuber_peri = self.cuber_peri
         m.submodules.trig_peri = trig_peri = self.trig_peri
         m.submodules.trig_dma = trig_dma = self.trig_dma
         m.submodules.postage_dma = postage_dma = self.postage_dma
@@ -110,19 +118,30 @@ class TriggerSubsystem(wiring.Component):
         m.d.comb += self.int_fault_dma_trig.eq(trig_dma.fault)
         m.d.comb += self.int_dma_postage.eq(postage_dma.int)
         m.d.comb += self.int_fault_dma_postage.eq(postage_dma.fault)
-        if self.enable_cuber:
-            m.d.comb += self.int_cuber_peri.eq(cuber_peri.int)
 
         axi.connect(m, wiring.flipped(self.s_axis_iq), trig_peri.iq)
         axi.connect(m, wiring.flipped(self.s_axis_phase), trig_peri.phase)
         m.d.comb += trig_peri.timestamp.payload.eq(self.timestamp)
 
         if self.enable_cuber:
-            m.submodules.cuber_axi_pipe = cuber_axi_pipe = axi.AxiPipelineStage(cuber_axi_signature.props)
+            m.submodules.decoder_slow = decoder_slow = DomainRenamer("slow")(self.decoder_slow)
+            m.submodules.converter_slow = converter_slow = DomainRenamer("slow")(self.converter_slow)
+            m.submodules.cuber_peri = cuber_peri = DomainRenamer("slow")(self.cuber_peri)
+            m.submodules.cuber_axi_pipe = cuber_axi_pipe = DomainRenamer("slow")(axi.AxiPipelineStage(cuber_axi_signature.props))
+
+            axi.connect_axi(m, wiring.flipped(self.s_axi_ctrl_slow), converter_slow.axi)
+            wiring.connect(m, converter_slow.csr, decoder_slow.bus)
             axi.connect_axi(m, wiring.flipped(self.s_axi_cube), cuber_axi_pipe.input)
             wiring.connect(m, cuber_axi_pipe.output, cuber_peri.membus)
 
-            wiring.connect(m, trig_peri.cuber_events, cuber_peri.trigger_stream)
+            m.submodules.fifo_input_pipeline = fi = StreamPipelineStage(trig_peri.cuber_events.payload.shape())
+            m.submodules.fifo_output_pipeline = fo = DomainRenamer("slow")(StreamPipelineStage(trig_peri.cuber_events.payload.shape()))
+            m.submodules.cdc_fifo = cdc_fifo = fifo.AsyncFIFOBuffered(width=trig_peri.cuber_events.payload.shape().size, depth=256, w_domain="sync", r_domain="slow")
+            wiring.connect(m, trig_peri.cuber_events, fi.input)
+            wiring.connect(m, fi.output, cdc_fifo.w_stream)
+            wiring.connect(m, cdc_fifo.r_stream, fo.input)
+            wiring.connect(m, fo.output, cuber_peri.trigger_stream)
+            m.d.comb += self.int_cuber_peri.eq(cuber_peri.int)
         else:
             m.d.comb += trig_peri.cuber_events.ready.eq(1)
 
@@ -184,3 +203,8 @@ if __name__ == "__main__":
         f.write(verilog.convert(integrated_trigger, name="trigger_subsystem", platform=RFSoCGen3Platform()))
     with open(sys.argv[1] + ".json", "w") as fj:
         fj.write(map_to_json(integrated_trigger.decoder.bus.memory_map))
+    with open(sys.argv[1] + ".cuber.json", "w") as fj:
+        if enable_cuber:
+            fj.write(map_to_json(integrated_trigger.decoder_slow.bus.memory_map))
+        else:
+            fj.write("[]")

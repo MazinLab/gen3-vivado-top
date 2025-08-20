@@ -168,9 +168,9 @@ class IntegrationTestCase(unittest.TestCase):
                 'fault': 0
             })
             # print(['Trigger', 'DMAControl'])
-            hr(await read_reg(ctrl_mmio, regs, ['TriggerDMA', 'DMAControl']))
+            # hr(await read_reg(ctrl_mmio, regs, ['TriggerDMA', 'DMAControl']))
             # print(['Trigger', 'Debug'])
-            hr(await read_reg(ctrl_mmio, regs, ['TriggerDMA', 'Debug']))
+            # hr(await read_reg(ctrl_mmio, regs, ['TriggerDMA', 'Debug']))
 
             await write_reg(ctrl_mmio, regs, ['TriggerDMA', 'AddressFIFO'], {
                 'address': 0xFF00F800,
@@ -184,6 +184,7 @@ class IntegrationTestCase(unittest.TestCase):
 
         sim = Simulator(dut)
         sim.add_clock(1e-6)
+        # sim.add_clock(0.5e-6, domain="slow")
         sim.add_testbench(testbench)
         sim.add_process(axi_reciever(dut.m_axi_trig, storage))
         sim.add_process(axi_reciever(dut.m_axi_postage, storage))
