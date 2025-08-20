@@ -34,7 +34,7 @@ class UltraRAM(wiring.Component):
         assert isinstance(platform, XilinxPlatform) or (platform is None), "Platform must be sim or Xilinx"
 
         if isinstance(platform, XilinxPlatform):
-            m.submodules.uram = Instance("URAM288E5",
+            m.submodules.uram = Instance("URAM288",
                 i_CLK=ClockSignal(),
                 i_SLEEP=self.sleep,
                 i_ADDR_A=self.a.addr,
