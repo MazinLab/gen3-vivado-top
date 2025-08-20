@@ -522,6 +522,7 @@ class Trigger1xTestCase(unittest.TestCase):
             ctx.set(dut.config.threshold, -10)
             ctx.set(dut.config.holdoff, 32)
             ctx.set(dut.config.postage, 0)
+            ctx.set(dut.config.enabled, 1)
 
             for _ in range(4):
                 await ctx.tick()
@@ -615,6 +616,7 @@ class Trigger1xTestCase(unittest.TestCase):
             ctx.set(dut.config.threshold, -10)
             ctx.set(dut.config.holdoff, 32)
             ctx.set(dut.config.postage, 1)
+            ctx.set(dut.config.enabled, 1)
 
             for v in [-30, -20, -5, -4, 100, -10 - 20, -30, -5]:
                 await stream_put_hold(

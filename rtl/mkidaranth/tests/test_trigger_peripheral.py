@@ -262,6 +262,7 @@ class PeripheralTestCase(unittest.TestCase):
                                     "threshold": threshold,
                                     "holdoff": holdoff,
                                     "postage": postage,
+                                    "enabled": 1
                                 },
                             }
                         )
