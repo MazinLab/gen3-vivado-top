@@ -53,8 +53,8 @@ class TriggerSubsystem(wiring.Component):
         if self.enable_cuber:
             self.cuber_peri = image_cuber_perhipheral.CuberPeri(csr_addr_width=8, csr_data_width=32)
         self.trig_peri = trigger_peripheral.Trigger(addr_width=12, data_width=32)
-        self.trig_dma = trigger_peripheral.AXIDMA(addr_width=48, data_width=64, burst_length=128, ctl_data_width=32)
-        self.postage_dma = trigger_peripheral.AXIDMA(addr_width=48, data_width=32, burst_length=128, ctl_data_width=32)
+        self.trig_dma = trigger_peripheral.AXIDMA(addr_width=48, data_width=64, burst_length=128, input_fifo=256, ctl_data_width=32)
+        self.postage_dma = trigger_peripheral.AXIDMA(addr_width=48, data_width=32, burst_length=128, input_fifo=256, ctl_data_width=32)
         self.decoder = Decoder(addr_width=16, data_width=32)
         self.converter = trigger_peripheral.AXICSRBridge(addr_width=18, data_width=32)
 
