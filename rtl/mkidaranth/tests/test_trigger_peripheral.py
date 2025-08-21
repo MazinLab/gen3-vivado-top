@@ -215,6 +215,64 @@ class AXIDMATestCase(unittest.TestCase):
                 self.assertEqual(storage[i + j * 8192], k)
                 k += 1
 
+    def test_basicdma_inputfifo_skipping(self):
+        dut = AXIDMA(burst_length=16, input_fifo=32)
+
+        storage = {}
+
+        async def testbench(ctx):
+            await _csr_access(
+                self,
+                ctx,
+                dut.ctlbus,
+                dut.ctlbus.memory_map.find_resource(dut._input_fifo_reg).start,
+                0,
+                1,
+                16 << 32,
+            )
+            for i in range(4):
+                await _csr_access(
+                    self,
+                    ctx,
+                    dut.ctlbus,
+                    dut.ctlbus.memory_map.find_resource(dut._afifo).start,
+                    0,
+                    1,
+                    i * 8192 * 2,
+                )
+                for j in range(
+                    dut.ctlbus.memory_map.find_resource(dut._afifo).start + 1,
+                    dut.ctlbus.memory_map.find_resource(dut._afifo).end,
+                ):
+                    await _csr_access(self, ctx, dut.ctlbus, j, 0, 1, 0)
+            await _csr_access(
+                self,
+                ctx,
+                dut.ctlbus,
+                dut.ctlbus.memory_map.find_resource(dut._dmactl).start,
+                0,
+                1,
+                2048,
+            )
+            for i in range(512):
+                ctx.set(dut.stream.payload, i)
+                ctx.set(dut.stream.valid, 1)
+                await ctx.tick().until(dut.stream.ready)
+            ctx.set(dut.stream.valid, 0)
+            for _ in range(64):
+                await ctx.tick()
+
+        sim = Simulator(dut)
+        sim.add_clock(1e-6)
+        sim.add_testbench(testbench)
+        sim.add_process(axi_reciever(self, dut.dmabus, storage))
+        with sim.write_vcd("test_peripheral_dma_inputfifo.vcd"):
+            sim.run()
+        k = 0
+        for j in range(4):
+            for i in range(0, 2048, dut._bpt):
+                self.assertEqual(storage[i + j * 8192 * 2], k)
+                k += 1
 
 class AXICSRBridgeTestCase(unittest.TestCase):
     class Harness(wiring.Component):
