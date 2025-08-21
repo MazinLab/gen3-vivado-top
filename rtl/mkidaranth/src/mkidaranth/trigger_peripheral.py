@@ -413,6 +413,8 @@ class Trigger(wiring.Component):
             self._chunksampler.f.chunk_header.r_data.dropped.eq(drop_latch),
             self._chunksampler.f.chunk_header.r_data.empty.eq(empty_latch),
         ]
+        with m.If(cycle_chunk != 0):
+            m.d.sync += cycle_chunk.eq(cycle_chunk + 1)
         with m.If(self._chunksampler.f.chunk_header.r_stb):
             m.d.sync += [
                 read.eq(self._chunksampler.f.chunk_header.r_data.read),
@@ -420,8 +422,6 @@ class Trigger(wiring.Component):
                 cycle_chunk.eq(1),
                 empty_latch.eq(1),
             ]
-        with m.If(cycle_chunk != 0):
-            m.d.sync += cycle_chunk.eq(cycle_chunk + 1)
         with m.If(
             ~self._trigcontrol.f.prescale.data & (cycle_chunk[:24] == 0xFFFF_FFFF_FFFF)
         ):
