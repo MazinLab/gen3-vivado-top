@@ -540,7 +540,6 @@ class Trigger(wiring.Component):
 
         m.submodules.arbiter = arb = StreamArbiter(trigger_event, 4, credits = 2)
         m.submodules.splitter = split = StreamSplitter(trigger_event, 2)
-        m.submodules.dma_fifo = dma_fifo = fifo.SyncFIFOBuffered(width=trigger_event.size, depth=8)
         m.submodules.cube_fifo = cube_fifo = fifo.SyncFIFOBuffered(width=trigger_event.size, depth=8)
         m.submodules.dma_valve = dma_valve = StreamValve(trigger_event, 0xDEADBEEF)
         m.submodules.cube_valve = cube_valve = StreamValve(trigger_event, 0xCAFEBEEF)
@@ -555,9 +554,8 @@ class Trigger(wiring.Component):
         wiring.connect(m, split.outputs[1], cube_pipe.input)
         wiring.connect(m, dma_pipe.output, dma_valve.input)
         wiring.connect(m, cube_pipe.output, cube_valve.input)
-        wiring.connect(m, dma_valve.output, dma_fifo.w_stream)
         wiring.connect(m, cube_valve.output, cube_fifo.w_stream)
-        wiring.connect(m, dma_fifo.r_stream, wiring.flipped(self.trigger_events))
+        wiring.connect(m, dma_valve.output, wiring.flipped(self.trigger_events))
         wiring.connect(m, cube_fifo.r_stream, wiring.flipped(self.cuber_events))
 
         m.submodules.postage_arbiter = postage_arb = StreamArbiter(data.StructLayout({"iq": iq, "last": 1}), 4, packet=True, credits=2)

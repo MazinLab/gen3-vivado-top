@@ -378,7 +378,7 @@ class StreamArbiter(wiring.Component):
                     & (
                         1
                         if not self.packet
-                        else (self.inputs[i].payload.last | ~platch)
+                        else ((self.inputs[i].payload.last & self.inputs[i].valid & self.inputs[i].ready) | ~platch)
                     )
                 ):
                     m.d.sync += input.eq(_incr(input, self.ninputs))
@@ -432,6 +432,7 @@ class PackageStreams(wiring.Component):
         m = Module()
 
         started = Signal()
+        strobe = Signal()
         iq_latch = Signal(data.ArrayLayout(iq, LANES), reset_less=True)
         iq_this = Signal(data.ArrayLayout(iq, LANES))
 
@@ -440,13 +441,16 @@ class PackageStreams(wiring.Component):
         m.d.comb += self.fault.eq(fault_sticky)
 
         m.d.comb += [
-            self.iq.ready.eq(started | (self.iq.valid & self.phase.valid)),
-            self.phase.ready.eq(started | (self.iq.valid & self.phase.valid)),
+            self.iq.ready.eq(started & (~strobe) | (self.iq.valid & self.phase.valid & ~started)),
+            self.phase.ready.eq(started | (self.iq.valid & self.phase.valid & ~started)),
         ]
 
         with m.If(~started):
             m.d.sync += started.eq(self.iq.valid & self.phase.valid)
-        with m.If(self.iq.valid):
+            m.d.sync += strobe.eq(1)
+        with m.Else():
+            m.d.sync += strobe.eq(~strobe)
+        with m.If(self.iq.valid & self.iq.ready):
             m.d.comb += self.fault.eq(
                 fault_sticky
                 | ~(
@@ -790,10 +794,10 @@ class PostageFIFO(wiring.Component):
                     fsrs.valid & (f.ongoing("triggered") | f.ongoing("writing"))
                 ),
                 self.output_streams[i].payload.iq.eq(fsrs.payload),
-                self.output_streams[i].payload.last.eq(written + 1 == self._length),
+                self.output_streams[i].payload.last.eq(written == self._length - 1),
             ]
 
-            with m.If(fsrs.ready & self.output_streams[i].valid):
+            with m.If(self.output_streams[i].ready & self.output_streams[i].valid):
                 m.d.sync += written.eq(written + 1)
 
             with m.If(~started):
