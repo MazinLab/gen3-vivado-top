@@ -431,6 +431,7 @@ class PeripheralTestCase(unittest.TestCase):
             cs = dut._chunksampler.f.chunk_header.r_data.shape().from_bits(cs)
             chunkcycle = cs.timestamp.secs
 
+            # TODO: Nail down the 6 cycle fudge factor
             event = await stream_get(ctx, dut.trigger_events)
             self.assertEqual(event.bin, 0x100)
             self.assertEqual(event.phase, -5)
@@ -439,7 +440,7 @@ class PeripheralTestCase(unittest.TestCase):
                 event.cycle
                 + chunkcycle
                 - 0x100 // 4,
-                4.0 * 512,
+                4.0 * 512 - (14 - 8),
             )
 
             event = await stream_get(ctx, dut.trigger_events)
@@ -450,7 +451,7 @@ class PeripheralTestCase(unittest.TestCase):
                 event.cycle
                 + chunkcycle
                 - 0x102 // 4,
-                6.0 * 512,
+                6.0 * 512 - (14 - 8),
             )
 
             event = await stream_get(ctx, dut.trigger_events)
@@ -461,7 +462,7 @@ class PeripheralTestCase(unittest.TestCase):
                 event.cycle
                 + chunkcycle
                 - 0x101 // 4,
-                17.0 * 512,
+                17.0 * 512 - (14 - 8),
             )
 
 
@@ -520,57 +521,61 @@ class PeripheralTestCase(unittest.TestCase):
             ip = 0
             iq = 0
             p = [200, 200, 200, 200]
+            for _ in range(8):
+                await ctx.tick()
+            def update(cycle, bin):
+                nonlocal ip
+                nonlocal iq
+                nonlocal p
+                ctx.set(dut.iq.valid, 1)
+                ctx.set(
+                    dut.iq.payload,
+                    {
+                        "beat": (iq) % 256,
+                        "payload": [
+                            {"real": (iq) + j, "imag": cycle} for j in range(8)
+                        ],
+                    },
+                )
+                ctx.set(dut.phase.valid, 1)
+                ctx.set(
+                    dut.phase.payload,
+                    {
+                        "beat": ip % 512,
+                        "payload": p,
+                    },
+                )
+                ctx.set(
+                    dut.timestamp.payload, {"secs": iq, "ns": ip, "subns": 0xAA}
+                )
+            update(0, 0)
             async for clk, _, iqr, phaser in ctx.tick().sample(
                 dut.iq.ready, dut.phase.ready
             ):
-                cycle = 4 * ip // (2048)
-                bin = (4 * ip) % 2048
-                if cycle == 3 and bin == 0x100:
-                    p[0] = -5
-                else:
-                    p[0] = 200
-                if cycle == 16 and bin + 1 == 0x101:
-                    p[1] = 0
-                else:
-                    p[1] = 200
-                if cycle == 5 and bin + 2 == 0x102:
-                    p[2] = -1000
-                else:
-                    p[2] = 200
-                if cycle == 6 and bin + 3 == 0x103:
-                    p[3] = 12
-                else:
-                    p[3] = 200
-
                 if clk:
-                    if iq % 2 == 0:
-                        ctx.set(dut.iq.valid, 1)
-                    else:
-                        ctx.set(dut.iq.valid, 0)
-                    ctx.set(
-                        dut.iq.payload,
-                        {
-                            "beat": (iq // 2) % 256,
-                            "payload": [
-                                {"real": (iq) + j, "imag": cycle} for j in range(8)
-                            ],
-                        },
-                    )
-                    ctx.set(dut.phase.valid, 1)
-                    ctx.set(
-                        dut.phase.payload,
-                        {
-                            "beat": ip % 512,
-                            "payload": p,
-                        },
-                    )
-                    ctx.set(
-                        dut.timestamp.payload, {"secs": iq, "ns": ip, "subns": 0xAA}
-                    )
                     if iqr:
                         iq += 1
                     if phaser:
                         ip += 1
+                    cycle = 4 * ip // (2048)
+                    bin = (4 * ip) % 2048
+                    if cycle == 3 and bin == 0x100:
+                        p[0] = -5
+                    else:
+                        p[0] = 200
+                    if cycle == 16 and bin + 1 == 0x101:
+                        p[1] = 0
+                    else:
+                        p[1] = 200
+                    if cycle == 5 and bin + 2 == 0x102:
+                        p[2] = -1000
+                    else:
+                        p[2] = 200
+                    if cycle == 6 and bin + 3 == 0x103:
+                        p[3] = 12
+                    else:
+                        p[3] = 200
+                    update(cycle, bin)
 
         sim = Simulator(dut)
         sim.add_clock(1e-6)

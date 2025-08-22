@@ -154,15 +154,11 @@ class TriggerSubsystem(wiring.Component):
 
         m.submodules.pad = pad = StreamPad(trigger_event.size, 64)
         m.submodules.strip = strip = StreamStripper(data.StructLayout({"iq": iq, "last": 1}), iq, lambda x: x.iq)
-        m.submodules.trig_fifo = trig_fifo = fifo.SyncFIFOBuffered(width = trigger_event.size, depth = 16)
-        m.submodules.postage_fifo = postage_fifo = fifo.SyncFIFOBuffered(width = 33, depth = 16)
 
-        wiring.connect(m, trig_peri.trigger_events, trig_fifo.w_stream)
-        wiring.connect(m, trig_fifo.r_stream, pad.input)
+        wiring.connect(m, trig_peri.trigger_events, pad.input)
         wiring.connect(m, pad.output, trig_dma.stream)
 
-        wiring.connect(m, trig_peri.postage_events, postage_fifo.w_stream)
-        wiring.connect(m, postage_fifo.r_stream, strip.input)
+        wiring.connect(m, trig_peri.postage_events, strip.input)
         wiring.connect(m, strip.output, postage_dma.stream)
 
         return m
