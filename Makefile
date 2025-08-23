@@ -36,7 +36,7 @@ ${MKIDARANTH_DIR}/.venv/: ${MKIDARANTH_DIR}/pyproject.toml ${MKIDARANTH_DIR}/pdm
 
 ${MKIDARANTH_DIR}/integration.v: ${MKIDARANTH_DIR}/.venv/ ${MKIDARANTH_DIR}/src/*
 	cd ${MKIDARANTH_DIR}; \
-	pdm run python -m mkidaranth.integration integration.v; \
+	pdm run python -m mkidaranth.integration integration.v False; \
 	sed -i 's/m_axi_postage__/m_axi_postage_/g' integration.v; \
 	sed -i 's/m_axi_trig__/m_axi_trig_/g' integration.v; \
 	sed -i 's/s_axi_ctrl__/s_axi_ctrl_/g' integration.v; \
