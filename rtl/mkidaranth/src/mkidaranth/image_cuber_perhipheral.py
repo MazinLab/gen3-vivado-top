@@ -229,46 +229,19 @@ class CuberPeri(wiring.Component):
         
         Bit 15 of the axi address is the mem_number, which indicated which memory module the CPU is trying to read from
         (mem_number = 0 --> mem1  |  mem_number = 1 --> mem2)
-
-        Ready doesn't go HIGH until mem_number matches with the available memory module
         """
 
         m.submodules.address_generator = address_generator = AddressGenerator()
         m.submodules.address_pipeline = address_pipeline = StreamPipelineStage(address_generator.addresses.payload.shape())
 
-        m.d.comb += self.membus.r.payload.id.eq(self.membus.ar.payload.id)
         wiring.connect(m, wiring.flipped(self.membus.ar), address_generator.ar)
 
         wiring.connect(m, address_generator.addresses, address_pipeline.input)
 
-        with m.If(self.membus.ar.valid):
+        with m.If(self.membus.ar.valid & self.membus.ar.ready):
             m.d.sync += cuber.mem_read.payload.mem_num.eq(self.membus.ar.payload.addr[15])
+            m.d.sync += self.membus.r.payload.id.eq(self.membus.ar.payload.id)
         
-
-        good_to_read = (cuber.mem_read.payload.mem_num == cuber.mem_read_output.payload.mem_num) & (cuber.current_cycle_number < cuber.cycles_per_frame - 4)
-        
-        """
-        m.d.comb += address_pipeline.output.ready.eq(0)
-        
-        with m.If(~cuber.mem_read.valid & address_pipeline.output.valid & good_to_read):
-            m.d.comb += address_pipeline.output.ready.eq(1)
-            m.d.sync += [
-                cuber.mem_read.payload.addr.eq(address_pipeline.output.payload.byte_addr >> 3),
-                cuber.mem_read.payload.last.eq(address_pipeline.output.payload.last),
-                cuber.mem_read.valid.eq(1),
-            ]
-        
-        with m.If(cuber.mem_read.valid & cuber.mem_read.ready):
-            m.d.sync += cuber.mem_read.valid.eq(0)
-            with m.If(address_pipeline.output.valid & good_to_read):
-                m.d.comb += address_pipeline.output.ready.eq(1)
-                m.d.sync += [
-                    cuber.mem_read.payload.addr.eq(address_pipeline.output.payload.byte_addr >> 3),
-                    cuber.mem_read.payload.last.eq(address_pipeline.output.payload.last),
-                    cuber.mem_read.valid.eq(1),
-                ]
-        """
-
         m.d.comb += [
             cuber.mem_read.payload.addr.eq(address_pipeline.output.payload.byte_addr >> 3),
             cuber.mem_read.payload.last.eq(address_pipeline.output.payload.last),
