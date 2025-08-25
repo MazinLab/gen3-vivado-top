@@ -236,27 +236,67 @@ class CuberPeri(wiring.Component):
         m.submodules.address_generator = address_generator = AddressGenerator()
         m.submodules.address_pipeline = address_pipeline = StreamPipelineStage(address_generator.addresses.payload.shape())
 
-        wiring.connect(m, address_generator.addresses, address_pipeline.input)
-
-        mem_address = address_pipeline.output.payload.byte_addr >> 3
-        mem_number = self.membus.ar.payload.addr[15]
-
-        m.d.comb += cuber.mem_read_addr.eq(mem_address)
-        m.d.comb += self.membus.r.payload.data.eq(cuber.mem_read_data)
         m.d.comb += self.membus.r.payload.id.eq(self.membus.ar.payload.id)
-        m.d.comb += self.membus.r.payload.last.eq(address_pipeline.output.payload.last)
-
         wiring.connect(m, wiring.flipped(self.membus.ar), address_generator.ar)
 
-        with m.If((mem_number != cuber.mem_read_number) | (self.cuber.cycles_per_frame <= self.cuber.current_cycle_number + 1)):
-            m.d.comb += self.membus.r.valid.eq(0)
-        with m.Else():
-            m.d.comb += self.membus.r.valid.eq(address_pipeline.output.valid)
+        wiring.connect(m, address_generator.addresses, address_pipeline.input)
+
+        with m.If(self.membus.ar.valid):
+            m.d.sync += cuber.mem_read.payload.mem_num.eq(self.membus.ar.payload.addr[15])
         
-        with m.If((mem_number != cuber.mem_read_number) | (self.membus.ar.payload.len >= self.cuber.cycles_per_frame-self.cuber.current_cycle_number)):
-            m.d.comb += address_pipeline.output.ready.eq(0)
-        with m.Else():
-            m.d.comb += address_pipeline.output.ready.eq(self.membus.r.ready)
+
+        good_to_read = (cuber.mem_read.payload.mem_num == cuber.mem_read_output.payload.mem_num) & (cuber.current_cycle_number < cuber.cycles_per_frame - 4)
+        
+        """
+        m.d.comb += address_pipeline.output.ready.eq(0)
+        
+        with m.If(~cuber.mem_read.valid & address_pipeline.output.valid & good_to_read):
+            m.d.comb += address_pipeline.output.ready.eq(1)
+            m.d.sync += [
+                cuber.mem_read.payload.addr.eq(address_pipeline.output.payload.byte_addr >> 3),
+                cuber.mem_read.payload.last.eq(address_pipeline.output.payload.last),
+                cuber.mem_read.valid.eq(1),
+            ]
+        
+        with m.If(cuber.mem_read.valid & cuber.mem_read.ready):
+            m.d.sync += cuber.mem_read.valid.eq(0)
+            with m.If(address_pipeline.output.valid & good_to_read):
+                m.d.comb += address_pipeline.output.ready.eq(1)
+                m.d.sync += [
+                    cuber.mem_read.payload.addr.eq(address_pipeline.output.payload.byte_addr >> 3),
+                    cuber.mem_read.payload.last.eq(address_pipeline.output.payload.last),
+                    cuber.mem_read.valid.eq(1),
+                ]
+        """
+
+        m.d.comb += [
+            cuber.mem_read.payload.addr.eq(address_pipeline.output.payload.byte_addr >> 3),
+            cuber.mem_read.payload.last.eq(address_pipeline.output.payload.last),
+            cuber.mem_read.valid.eq(address_pipeline.output.valid),
+            address_pipeline.output.ready.eq(cuber.mem_read.ready),
+        ]
+
+
+
+        m.d.comb += cuber.mem_read_output.ready.eq(0)
+
+        with m.If(~self.membus.r.valid & cuber.mem_read_output.valid):
+            m.d.comb += cuber.mem_read_output.ready.eq(1)
+            m.d.sync += [
+                self.membus.r.payload.data.eq(cuber.mem_read_output.payload.data),
+                self.membus.r.payload.last.eq(cuber.mem_read_output.payload.last),
+                self.membus.r.valid.eq(1),
+            ]
+        
+        with m.If(self.membus.r.valid & self.membus.r.ready):
+            m.d.sync += self.membus.r.valid.eq(0)
+            with m.If(cuber.mem_read_output.valid):
+                m.d.comb += cuber.mem_read_output.ready.eq(1)
+                m.d.sync += [
+                    self.membus.r.payload.data.eq(cuber.mem_read_output.payload.data),
+                    self.membus.r.payload.last.eq(cuber.mem_read_output.payload.last),
+                    self.membus.r.valid.eq(1),
+                ]
 
 
         return m

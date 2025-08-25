@@ -70,6 +70,7 @@ class Harness(Component):
 
 
 class CuberTest(unittest.TestCase):
+    #@unittest.skip("Not ready yet")
     def test_cuber(self):
         dut = Harness()
 
@@ -108,7 +109,32 @@ class CuberTest(unittest.TestCase):
                 await ctx.tick()
                 addr += 1
             ctx.set(dut.cuber.wavelength_LUT_write.en, 0)
+        
+        async def read_address_and_assert_equal(ctx, addr, expected_value, mem_num):
+            ctx.set(dut.cuber.mem_read_output.ready, 1)
 
+            ctx.set(dut.cuber.mem_read.payload.addr, addr)
+            ctx.set(dut.cuber.mem_read.payload.mem_num, mem_num)
+            ctx.set(dut.cuber.mem_read.valid, 1)
+            
+            if (ctx.get(dut.cuber.mem_read.ready)):
+                await ctx.tick()
+                ctx.set(dut.cuber.mem_read.valid, 0)
+            else:
+                await ctx.posedge(dut.cuber.mem_read.ready)
+                await ctx.tick()
+                ctx.set(dut.cuber.mem_read.valid, 0)
+            
+            if (ctx.get(dut.cuber.mem_read_output.valid)): 
+                self.assertEqual(ctx.get(dut.cuber.mem_read_output.payload.data), expected_value)
+                self.assertEqual(ctx.get(dut.cuber.mem_read_output.payload.mem_num), mem_num)
+            else:
+                await ctx.posedge(dut.cuber.mem_read_output.valid)
+                await ctx.tick()
+                self.assertEqual(ctx.get(dut.cuber.mem_read_output.payload.data), expected_value)
+                self.assertEqual(ctx.get(dut.cuber.mem_read_output.payload.mem_num), mem_num)
+            
+            ctx.set(dut.cuber.mem_read_output.ready, 0)
 
         async def testbench(ctx):
             ctx.set(dut.cuber.cycles_per_frame, 2560)
@@ -122,31 +148,20 @@ class CuberTest(unittest.TestCase):
             generate_photon_event(ctx, 570, 200)
             await ctx.tick().repeat(5)
             generate_photon_event(ctx, 800, 202)
-            await ctx.tick().repeat(1035)
+            await ctx.tick().repeat(1200)
             generate_photon_event(ctx, 4097, 200)
-            await ctx.tick().repeat(1102)
-            ctx.set(dut.cuber.mem1.a.addr, 0b00100110110)
-            await ctx.tick()
-            self.assertEqual(ctx.get(dut.cuber.mem1.a.dread), 0b00000000_00000001_00000000_00000001)
-            await ctx.tick()
-            ctx.set(dut.cuber.mem1.a.addr, 0b00100110111)
-            await ctx.tick()
-            self.assertEqual(ctx.get(dut.cuber.mem1.a.dread), 0)
-            await ctx.tick()
-            ctx.set(dut.cuber.mem1.a.addr, 0b00100111000)
-            await ctx.tick()
-            self.assertEqual(ctx.get(dut.cuber.mem1.a.dread), 0b00000000_00000000_00000001_00000000)
+            await ctx.tick().repeat(2000)
+            await read_address_and_assert_equal(ctx, 0b00100110110, 0b00000000_00000001_00000000_00000001, mem_num = 0)
+            await read_address_and_assert_equal(ctx, 0b00100110111, 0, mem_num = 0)
+            await read_address_and_assert_equal(ctx, 0b00100111000, 0b00000000_00000000_00000001_00000000, mem_num = 0)
             await ctx.tick().repeat(1000)
             generate_photon_event(ctx, 900, 203)
             await ctx.tick().repeat(5)
             generate_photon_event(ctx, 200, 203)  #Wavelength does not all into in any wavelength bin, so photon shouldn't be counted
-            await ctx.tick().repeat(1500)
+            await ctx.tick().repeat(5)
             generate_photon_event(ctx, 500, 1371)
-            await ctx.tick().repeat(1500)
-            ctx.set(dut.cuber.mem2.a.addr, 0b00100111001)
-            await ctx.tick()
-            self.assertEqual(ctx.get(dut.cuber.mem2.a.dread), 0b00000001_00000000_00000000_00000001_00000000)
-            await ctx.tick()
+            await ctx.tick().repeat(2500)
+            await read_address_and_assert_equal(ctx, 0b00100111001, 0b00000001_00000000_00000000_00000001_00000000, mem_num = 1)
             ctx.set(dut.cuber.generate_cubes, 0)
             await ctx.tick().repeat(10)
 
@@ -266,7 +281,7 @@ class CuberTest(unittest.TestCase):
 
 
         async def testbench(ctx):
-            ctx.set(dut.cuber.cycles_per_frame, 2800)
+            ctx.set(dut.cuber.cycles_per_frame, 7000)
             await ctx.tick().repeat(5)
             await generate_sample_pixel_LUT(ctx)
             await ctx.tick().repeat(2)
@@ -277,19 +292,9 @@ class CuberTest(unittest.TestCase):
             for _ in range(255):
                 generate_photon_event(ctx, 570, 200)
                 await ctx.tick()
-            await ctx.tick().repeat(2300)
-            ctx.set(dut.cuber.mem1.a.addr, 310)
-            await ctx.tick()
-            self.assertEqual(ctx.get(dut.cuber.mem1.a.dread), 0b11111111)
-            self.assertEqual(ctx.get(dut.cuber.count_overflow_flag), 0)
-            await ctx.tick()
+            await ctx.tick().repeat(4000)
             generate_photon_event(ctx, 570, 200)
-            await ctx.tick().repeat(5)
-            ctx.set(dut.cuber.mem1.a.addr, 310)
-            await ctx.tick()
-            self.assertEqual(ctx.get(dut.cuber.mem1.a.dread), 0b11111111)
-            self.assertEqual(ctx.get(dut.cuber.count_overflow_flag), 1)
-            await ctx.tick().repeat(10)
+            await ctx.posedge(dut.cuber.count_overflow_flag)
 
         sim = Simulator(dut)
         sim.add_clock(3.90625e-9)

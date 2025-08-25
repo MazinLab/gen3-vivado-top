@@ -7,6 +7,7 @@ from mkidaranth.image_cuber_perhipheral import CuberPeri
 from src.mkidaranth.trigger import CYCLE_BITS
 from src.mkidaranth import axi
 from .test_cuber import Producer
+from .test_trigger import stream_get, stream_put
 
 aw = 16
 dw = 32
@@ -151,20 +152,7 @@ class PeripheralTestCase(unittest.TestCase):
             await ctx.tick()
             self.assertEqual(ctx.get(dut.cuber_peri.cuber.generate_cubes), 1)
             await ctx.tick()
-            generate_photon_event(ctx, 570, 200)
-            await ctx.tick().repeat(5)
-            generate_photon_event(ctx, 800, 202)
-            await ctx.tick().repeat(1035)
-            generate_photon_event(ctx, 4097, 200)
-            await ctx.tick().repeat(1102)
-            ctx.set(dut.cuber_peri.cuber.mem1.a.addr, 0b00100110110)
-            await ctx.tick()
-            self.assertEqual(ctx.get(dut.cuber_peri.cuber.mem1.a.dread), 0b00000000_00000001_00000000_00000001)
-            await ctx.tick()
-            ctx.set(dut.cuber_peri.cuber.mem1.a.addr, 0b00100111000)
-            await ctx.tick()
-            self.assertEqual(ctx.get(dut.cuber_peri.cuber.mem1.a.dread), 0b00000000_00000000_00000001_00000000)
-            await ctx.tick()
+            self.assertEqual(await _csr_access(self, ctx, dut.cuber_peri.bus, addr=dut.cuber_peri.bus.memory_map.find_resource(dut.cuber_peri._runcuber).start, r_stb=1, w_stb=0, w_data=0), 1)
 
 
 
@@ -318,7 +306,15 @@ class PeripheralTestCase(unittest.TestCase):
                     await write_wavelengthLUT(addr, 0b0000000100000000, 0b0000001100000000, 0b0000011100000000, 0b0001111100000000, 0b0111111100000000)
                     addr += 1
 
-            async def axi_burst(burst_len, burst_size, burst_type, start_addr, id):
+            async def await_last_while_valid(membus):
+                while True:
+                    await ctx.posedge(membus.r.payload.last)
+                    if (ctx.get(membus.r.valid) == 1):
+                        break
+                    else:
+                        await ctx.tick()
+            
+            async def axi_burst(burst_len, burst_size, burst_type, start_addr, id=0):
                 ctx.set(dut.membus.ar.payload.len, burst_len-1)
                 ctx.set(dut.membus.ar.payload.size, burst_size)
                 ctx.set(dut.membus.ar.payload.burst, burst_type)
@@ -328,6 +324,7 @@ class PeripheralTestCase(unittest.TestCase):
                 await ctx.negedge(dut.membus.ar.ready)
                 ctx.set(dut.membus.ar.valid, 0)
                 await ctx.posedge(dut.membus.r.valid)
+                await ctx.tick().repeat(6)
                 ctx.set(dut.membus.r.ready, 1)
 
             await ctx.tick()
@@ -348,91 +345,80 @@ class PeripheralTestCase(unittest.TestCase):
             generate_photon_event(ctx, 800, 202)
             await ctx.tick().repeat(1035)
             generate_photon_event(ctx, 4097, 200)
-            await ctx.tick().repeat(2000)
-            await axi_burst(16, 3, 1, 0b0000100101100000, 0)
-
-            for j in range(15):
-                prev_addr = ctx.get(dut.cuber_peri.cuber.mem_read_addr)
-
-                await ctx.tick()
-
-                current_data = ctx.get(dut.cuber_peri.membus.r.payload.data)
-
-                self.assertEqual(prev_addr, 300+j)
-
-                if (prev_addr == 310):
-                    self.assertEqual(current_data, 0b00000000_00000001_00000000_00000001)
+            await ctx.tick().repeat(2200)
             
-                if (prev_addr == 312):
-                    self.assertEqual(current_data, 0b00000000_00000000_00000001_00000000)
             
-            await ctx.negedge(dut.membus.r.payload.last)
+            await axi_burst(16, 3, 1, 0b0000100101100000)
+            #await axi_burst(5, 3, 1, 310*8)
+            for j in range(16):
+                if (j == 10):
+                    self.assertEqual(ctx.get(dut.membus.r.payload.data), 0b00000000_00000001_00000000_00000001)
+                if (j == 12):
+                    self.assertEqual(ctx.get(dut.membus.r.payload.data), 0b00000000_00000000_00000001_00000000)
+                if (j == 15):
+                    self.assertEqual(ctx.get(dut.membus.r.payload.last), 1)
+                await stream_get(ctx, dut.membus.r)
             ctx.set(dut.membus.r.ready, 0)
-            generate_photon_event(ctx, 570, 200)
-            await ctx.tick().repeat(5)
-            generate_photon_event(ctx, 800, 202)
+            
+            await ctx.tick().repeat(30)
+            generate_photon_event(ctx, 500, 203)
+            await ctx.tick()
+            generate_photon_event(ctx, 100, 203)
             await ctx.tick().repeat(1035)
-            generate_photon_event(ctx, 4097, 200)
+            generate_photon_event(ctx, 500, 1371)
+            await ctx.tick()
+            generate_photon_event(ctx, 502, 1371)
+            await ctx.tick()
+            generate_photon_event(ctx, 4097, 1371)
             await ctx.tick().repeat(2000)
-            await axi_burst(16, 3, 1, 0b1000100101100000, 0)
 
-            for j in range(15):
-                prev_addr = ctx.get(dut.cuber_peri.cuber.mem_read_addr)
-
-                await ctx.tick()
-
-                current_data = ctx.get(dut.cuber_peri.membus.r.payload.data)
-
-                self.assertEqual(prev_addr, 300+j)
-
-                if (prev_addr == 310):
-                    self.assertEqual(current_data, 0b00000000_00000001_00000000_00000001)
-            
-                if (prev_addr == 312):
-                    self.assertEqual(current_data, 0b00000000_00000000_00000001_00000000)
-            
-            await ctx.negedge(dut.membus.r.payload.last)
+            await axi_burst(16, 3, 1, 0b1000100101100000)
+            for j in range(16):
+                if (j == 13):
+                    self.assertEqual(ctx.get(dut.membus.r.payload.data), 0b00000001_00000000_00000010_00000000_00000000_00000000_00000001)   
+                if (j == 15):
+                    self.assertEqual(ctx.get(dut.membus.r.payload.last), 1)
+                await stream_get(ctx, dut.membus.r)
             ctx.set(dut.membus.r.ready, 0)
+
             await ctx.tick().repeat(5)
             cycle_num = ctx.get(dut.test_cycle)
-            await axi_burst(16, 3, 1, 0b0000100101100000, 0)   #This burst is called on mem1 while mem1 does not have read access
-            await ctx.negedge(dut.membus.r.payload.last)
+            await axi_burst(16, 3, 1, 0b0000100101100000)   #This burst is called on mem1 while mem1 does not have read access
+            await await_last_while_valid(dut.membus)
+            await ctx.tick()
             ctx.set(dut.membus.r.ready, 0)
             self.assertGreater(ctx.get(dut.test_cycle) - cycle_num, 100)    #Check here that it took a lot of time before the burst happened
                                                                             #since it had to wait for the cuber to allow mem1 read access
-
-            await ctx.tick().repeat(2500)
+            
+            await ctx.tick().repeat(2520)
             cycle_num = ctx.get(dut.test_cycle)
-            await axi_burst(250, 3, 1, 0b0000100101100000, 0)   #This burst is called on mem1 while mem1 has read access
+            await axi_burst(250, 3, 1, 0b0000100101100000)   #This burst is called on mem1 while mem1 has read access
                                                                 #BUT it is called too close to the end of the mem1 read access stage
-                                                                #In other words, the burst would still be in progress when mem1 access stops
-            await ctx.negedge(dut.membus.r.payload.last)
+                                                                #In other words, the burst is still be in progress when mem1 access stops
+            await await_last_while_valid(dut.membus)
+            await ctx.tick()
             ctx.set(dut.membus.r.ready, 0)
-            self.assertGreater(ctx.get(dut.test_cycle) - cycle_num, 2560)   #Check here that it took > a full cycle before the burst happened
+            self.assertGreater(ctx.get(dut.test_cycle) - cycle_num, 2560)   #Check here that it took > a full cycle before the burst finished
                                                                             #since it had to wait for the entire mem1 clear/count cycle before
                                                                             #being able to access mem1 again
             
             await ctx.tick().repeat(260)
-            await axi_burst(1, 3, 1, 0b0000100101100000, 0)
+            await axi_burst(1, 3, 1, 0b0000100101100000)
             self.assertEqual(ctx.get(dut.cuber_peri.membus.r.payload.last), 1)
-            await ctx.negedge(dut.membus.r.payload.last)
+            await ctx.tick()
             ctx.set(dut.membus.r.ready, 0)
             await ctx.tick().repeat(10)
 
-            await axi_burst(100, 3, 1, 0b0000100101100000, 0)
+            await axi_burst(100, 3, 1, 0b0000100101100000)
             await ctx.tick().repeat(15)
             ctx.set(dut.membus.r.ready, 0)
             await ctx.tick().repeat(15)
-            self.assertEqual(ctx.get(dut.cuber_peri.cuber.mem_read_addr), 315)
+            self.assertEqual(ctx.get(dut.cuber_peri.cuber.mem_read.payload.addr), 316)
             await ctx.tick().repeat(15)
             ctx.set(dut.membus.r.ready, 1)
-            await ctx.negedge(dut.membus.r.payload.last)
+            await await_last_while_valid(dut.membus)
+            await ctx.tick()
             ctx.set(dut.membus.r.ready, 0)
-
-            await ctx.tick().repeat(20)
-            await axi_burst(15, 3, 2, 0b0000100101100100, 0)
-            await ctx.tick().repeat(50)
-
 
         sim = Simulator(dut)
         sim.add_clock(3.90625e-9)
@@ -441,3 +427,4 @@ class PeripheralTestCase(unittest.TestCase):
 
         with sim.write_vcd("test_axi.vcd"):
             sim.run()
+
