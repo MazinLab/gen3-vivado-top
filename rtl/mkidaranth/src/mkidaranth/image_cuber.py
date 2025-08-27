@@ -8,6 +8,10 @@ from .trigger import trigger_event, CYCLE_BITS
 from .uram import UltraRAM
 from .skid import SkidBuffer
 
+ID_R_WIDTH = 16
+
+main_user_data_shape = data.StructLayout({"last": 1, "id": ID_R_WIDTH})
+
 class URAMPortFormatter(wiring.Component):
     def __init__(self, port, user_data_shape=unsigned(0)):
         self.user_data_shape = user_data_shape
@@ -58,8 +62,8 @@ class ImageCuber(wiring.Component):
         self.fifo_depth = fifo_depth
         self.wavelength_cutoff_precision = wavelength_cutoff_precision
 
-        self.mem1 = UltraRAM(input_pipeline=False, output_pipeline=True, user_shape=1)
-        self.mem2 = UltraRAM(input_pipeline=False, output_pipeline=True, user_shape=1)
+        self.mem1 = UltraRAM(input_pipeline=False, output_pipeline=True, user_shape=main_user_data_shape)
+        self.mem2 = UltraRAM(input_pipeline=False, output_pipeline=True, user_shape=main_user_data_shape)
 
         self.event_payload_bits = 16 + 11 + 2 + CYCLE_BITS
         super().__init__(
@@ -69,8 +73,8 @@ class ImageCuber(wiring.Component):
                 "generate_cubes": In(1),
                 "pixel_LUT_write": In(WritePort.Signature(addr_width=11, shape=unsigned(12))),
                 "wavelength_LUT_write": In(WritePort.Signature(addr_width=11, shape=unsigned(5*wavelength_cutoff_precision))),
-                "mem_read": In(stream.Signature(data.StructLayout({"addr": 12, "mem_num": 1, "last": 1}))),
-                "mem_read_output": Out(stream.Signature(data.StructLayout({"data": 64, "mem_num": 1, "last": 1}))),
+                "mem_read": In(stream.Signature(data.StructLayout({"addr": 12, "mem_num": 1, "last": 1, "id": ID_R_WIDTH}))),
+                "mem_read_output": Out(stream.Signature(data.StructLayout({"data": 64, "mem_num": 1, "last": 1, "id": ID_R_WIDTH}))),
                 "lost_photon_flag": Out(1),
                 "count_overflow_flag": Out(1),
                 "current_cycle_number": Out(16),         #Will always be <= cycles_per_frame
@@ -92,10 +96,10 @@ class ImageCuber(wiring.Component):
         m.submodules.dmem1 = mem1 = self.mem1
         m.submodules.dmem2 = mem2 = self.mem2
 
-        m.submodules.mem1fa = mem1fa = URAMPortFormatter(mem1.a, user_data_shape=unsigned(1))
-        m.submodules.mem1fb = mem1fb = URAMPortFormatter(mem1.b, user_data_shape=unsigned(1))
-        m.submodules.mem2fa = mem2fa = URAMPortFormatter(mem2.a, user_data_shape=unsigned(1))
-        m.submodules.mem2fb = mem2fb = URAMPortFormatter(mem2.b, user_data_shape=unsigned(1))
+        m.submodules.mem1fa = mem1fa = URAMPortFormatter(mem1.a, user_data_shape=main_user_data_shape)
+        m.submodules.mem1fb = mem1fb = URAMPortFormatter(mem1.b, user_data_shape=main_user_data_shape)
+        m.submodules.mem2fa = mem2fa = URAMPortFormatter(mem2.a, user_data_shape=main_user_data_shape)
+        m.submodules.mem2fb = mem2fb = URAMPortFormatter(mem2.b, user_data_shape=main_user_data_shape)
 
         i = Signal(12)
         m.d.comb += self.current_cycle_number.eq(i+1)
@@ -300,13 +304,15 @@ class ImageCuber(wiring.Component):
 
                     m.d.comb += [
                         memfb.read.payload.addr.eq(self.mem_read.payload.addr),
-                        memfb.read.payload.user_data.eq(self.mem_read.payload.last),
+                        memfb.read.payload.user_data.last.eq(self.mem_read.payload.last),
+                        memfb.read.payload.user_data.id.eq(self.mem_read.payload.id),
                         memfb.read.valid.eq(self.mem_read.valid),
                         self.mem_read.ready.eq(memfb.read.ready),
 
                         self.mem_read_output.payload.data.eq(memfb.read_output.payload.data),
                         self.mem_read_output.payload.mem_num.eq(machine_number),
-                        self.mem_read_output.payload.last.eq(memfb.read_output.payload.user_data),
+                        self.mem_read_output.payload.last.eq(memfb.read_output.payload.user_data.last),
+                        self.mem_read_output.payload.id.eq(memfb.read_output.payload.user_data.id),
                         self.mem_read_output.valid.eq(memfb.read_output.valid),
                         memfb.read_output.ready.eq(self.mem_read_output.ready),
                     ]

@@ -36,7 +36,7 @@ class AddressGenerator(wiring.Component):
         super().__init__(
             {
                 "ar": In(stream.Signature(axi.ReadRequestChannel(cuber_axi_signature.props), payload_init=axi.ReadRequestChannel(cuber_axi_signature.props).INIT)),
-                "addresses": Out(stream.Signature(data.StructLayout({"byte_addr": address_generator_props.ADDR_WIDTH-1, "last": 1}))),
+                "addresses": Out(stream.Signature(data.StructLayout({"mem_num": 1, "byte_addr": address_generator_props.ADDR_WIDTH-1, "last": 1, "id": address_generator_props.ID_R_WIDTH}))),
             }
         )
     
@@ -93,6 +93,10 @@ class AddressGenerator(wiring.Component):
 
                     m.d.sync += compute_addresses.eq(0)
                     m.d.sync += self.addresses.valid.eq(1)
+
+                    m.d.sync += self.addresses.payload.mem_num.eq(ar_saved.addr[15])
+                    m.d.sync += self.addresses.payload.id.eq(ar_saved.id)
+
                     m.next = "Start"
 
         m.d.comb += generating.eq(self.addresses.valid & self.addresses.ready)
@@ -237,14 +241,12 @@ class CuberPeri(wiring.Component):
         wiring.connect(m, wiring.flipped(self.membus.ar), address_generator.ar)
 
         wiring.connect(m, address_generator.addresses, address_pipeline.input)
-
-        with m.If(self.membus.ar.valid & self.membus.ar.ready):
-            m.d.sync += cuber.mem_read.payload.mem_num.eq(self.membus.ar.payload.addr[15])
-            m.d.sync += self.membus.r.payload.id.eq(self.membus.ar.payload.id)
         
         m.d.comb += [
             cuber.mem_read.payload.addr.eq(address_pipeline.output.payload.byte_addr >> 3),
             cuber.mem_read.payload.last.eq(address_pipeline.output.payload.last),
+            cuber.mem_read.payload.mem_num.eq(address_pipeline.output.payload.mem_num),
+            cuber.mem_read.payload.id.eq(address_pipeline.output.payload.id),
             cuber.mem_read.valid.eq(address_pipeline.output.valid),
             address_pipeline.output.ready.eq(cuber.mem_read.ready),
         ]
@@ -258,6 +260,7 @@ class CuberPeri(wiring.Component):
             m.d.sync += [
                 self.membus.r.payload.data.eq(cuber.mem_read_output.payload.data),
                 self.membus.r.payload.last.eq(cuber.mem_read_output.payload.last),
+                self.membus.r.payload.id.eq(cuber.mem_read_output.payload.id),
                 self.membus.r.valid.eq(1),
             ]
         
@@ -268,6 +271,7 @@ class CuberPeri(wiring.Component):
                 m.d.sync += [
                     self.membus.r.payload.data.eq(cuber.mem_read_output.payload.data),
                     self.membus.r.payload.last.eq(cuber.mem_read_output.payload.last),
+                    self.membus.r.payload.id.eq(cuber.mem_read_output.payload.id),
                     self.membus.r.valid.eq(1),
                 ]
 
