@@ -163,14 +163,10 @@ class IntegrationTestCase(unittest.TestCase):
             ctrl_mmio = (ctx, dut.s_axi_ctrl)
             await write_reg(ctrl_mmio, regs, ['Trigger', 'ValveControl'], {"trigger": 3, "cuber": 3, "stamper": 3})
             await write_reg(ctrl_mmio, regs, ['TriggerDMA', 'DMAControl'], {
-                'buffer_size': 1024,
+                'buffer_size': 1024*8,
                 'flush': 0,
                 'fault': 0
             })
-            # print(['Trigger', 'DMAControl'])
-            # hr(await read_reg(ctrl_mmio, regs, ['TriggerDMA', 'DMAControl']))
-            # print(['Trigger', 'Debug'])
-            # hr(await read_reg(ctrl_mmio, regs, ['TriggerDMA', 'Debug']))
 
             await write_reg(ctrl_mmio, regs, ['TriggerDMA', 'AddressFIFO'], {
                 'address': 0xFF00F800,
@@ -178,9 +174,27 @@ class IntegrationTestCase(unittest.TestCase):
                 'count': 0,
                 'lowmark': 1,
             })
-            for _ in range(32):
-                # print(['Trigger', 'Debug'])
-                (await read_reg(ctrl_mmio, regs, ['TriggerDMA', 'Debug']))
+            await write_reg(ctrl_mmio, regs, ['TriggerDMA', 'AddressFIFO'], {
+                'address': 0xFF008000,
+                'depth': 0,
+                'count': 0,
+                'lowmark': 1,
+            })
+            # print(['TriggerDMA', 'Debug'])
+            # hr(await read_reg(ctrl_mmio, regs, ['TriggerDMA', 'Debug']))
+            # print(['TriggerDMA', 'AddressFIFO'])
+            # hr(await read_reg(ctrl_mmio, regs, ['TriggerDMA', 'AddressFIFO']))
+            while True:
+                result = await read_reg(ctrl_mmio, regs, ['TriggerDMA', 'Debug'])
+                if result['address_wait']:
+                    result = (await read_reg(ctrl_mmio, regs, ['TriggerDMA', 'AddressFIFO']))
+                    if result['count'] == 0:
+                        break
+            # print(['TriggerDMA', 'Debug'])
+            # hr(await read_reg(ctrl_mmio, regs, ['TriggerDMA', 'Debug']))
+            # print(['TriggerDMA', 'AddressFIFO'])
+            # hr(await read_reg(ctrl_mmio, regs, ['TriggerDMA', 'AddressFIFO']))
+
 
         sim = Simulator(dut)
         sim.add_clock(1e-6)

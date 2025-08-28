@@ -12,6 +12,7 @@ trigger_config = data.StructLayout(
         "threshold": signed(16),
         "holdoff": 8,
         "postage": 1,
+        "enabled": 1
     }
 )
 
@@ -588,6 +589,8 @@ class Trigger1x(wiring.Component):
                         self.input_state.info.holding.holdoff - 1
                     )
         with m.If(~self.input_stream.valid):
+            m.d.sync += self.output_state.state.eq(TriggerState.State.RESET)
+        with m.If(~self.config.enabled):
             m.d.sync += self.output_state.state.eq(TriggerState.State.RESET)
         return m
 
