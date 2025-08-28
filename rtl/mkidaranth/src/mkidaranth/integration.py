@@ -70,8 +70,10 @@ class TriggerSubsystem(wiring.Component):
             {
                 "aclk": In(1),
                 "aresetn": In(1),
-                "aclk256": In(1),
-                "aresetn256": In(1),
+                "s_axi_ctrl_slow_aclk": In(1),
+                "s_axi_ctrl_slow_aresetn": In(1),
+                "s_axi_cube_aclk": In(1),
+                "s_axi_cube_aresetn": In(1),
                 "s_axi_ctrl": In(axi.StandardizedAxiSignature(self.converter.axi_properties)),
                 "s_axi_ctrl_slow": In(axi.StandardizedAxiSignature(self.converter.axi_properties)),
                 "s_axi_cube": In(axi.StandardizedAxiSignature(cuber_axi_signature.props)),
@@ -100,8 +102,8 @@ class TriggerSubsystem(wiring.Component):
             ]
             m.domains.slow = cd_slow = ClockDomain()
             m.d.comb += [
-                cd_slow.clk.eq(self.aclk256),
-                cd_slow.rst.eq(~self.aresetn256)
+                cd_slow.clk.eq(self.s_axi_ctrl_slow_aclk),
+                cd_slow.rst.eq(~self.s_axi_ctrl_slow_aresetn)
             ]
 
         m.submodules.trig_peri = trig_peri = self.trig_peri
