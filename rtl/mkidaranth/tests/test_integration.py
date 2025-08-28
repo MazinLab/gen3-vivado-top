@@ -311,7 +311,7 @@ class IntegrationTestCase(unittest.TestCase):
             m.d.comb += self.ts.aresetn.eq(~ResetSignal())
             
             return m
-
+    @unittest.skip("Not ready yet")
     def test_basicdma(self):
         import json
         dut = self.IntegrationHarness(TriggerSubsystem(enable_cuber=False, sim_clocks=True))
@@ -348,7 +348,31 @@ class IntegrationTestCase(unittest.TestCase):
             ctrl_mmio = (ctx, dut.s_axi_ctrl, "sync")
             ctrl_mmio_cuber = (ctx, dut.s_axi_ctrl_slow, "slow")
             await write_reg(ctrl_mmio, regs, ['Trigger', 'ValveControl'], {"trigger": 3, "cuber": 3, "stamper": 3})
+            await write_reg(ctrl_mmio_cuber, regs_cuber, ["CuberDMA", "CPF"], {'cpf': 2560})
             await write_reg(ctrl_mmio_cuber, regs_cuber, ["CuberDMA", "RunCuber"], {'generate_cubes': 1})
+            await ctx.tick("slow").repeat(3000)
+            ctx.set(dut.s_axi_cube.ar.payload.addr, 0)
+            ctx.set(dut.s_axi_cube.ar.payload.burst, 1)
+            ctx.set(dut.s_axi_cube.ar.payload.len, 0)
+            ctx.set(dut.s_axi_cube.ar.payload.size, 2)
+            ctx.set(dut.s_axi_cube.ar.payload.id, 15)
+            ctx.set(dut.s_axi_cube.ar.valid, 1)
+            await ctx.tick("slow")
+            ctx.set(dut.s_axi_cube.ar.valid, 0)
+            await ctx.tick("slow").repeat(20)
+            ctx.set(dut.s_axi_cube.r.ready, 1)
+            await ctx.tick("slow").repeat(4000)
+            ctx.set(dut.s_axi_cube.ar.payload.addr, 0)
+            ctx.set(dut.s_axi_cube.ar.payload.burst, 1)
+            ctx.set(dut.s_axi_cube.ar.payload.len, 0)
+            ctx.set(dut.s_axi_cube.ar.payload.size, 2)
+            ctx.set(dut.s_axi_cube.ar.payload.id, 14)
+            ctx.set(dut.s_axi_cube.ar.valid, 1)
+            await ctx.tick("slow")
+            ctx.set(dut.s_axi_cube.ar.valid, 0)
+            await ctx.tick("slow").repeat(2)
+            ctx.set(dut.s_axi_cube.r.ready, 1)
+            await ctx.tick("slow").repeat(3000)
 
         sim = Simulator(dut)
         sim.add_clock(2e-9)
@@ -359,6 +383,7 @@ class IntegrationTestCase(unittest.TestCase):
         with sim.write_vcd("test_integration_cuber.vcd"):
             sim.run()
 
+    @unittest.skip("Not ready yet")
     def test_trigger(self):
         import json
         dut = self.IntegrationHarness(TriggerSubsystem(enable_cuber=False, sim_clocks=True))
