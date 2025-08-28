@@ -10,46 +10,46 @@ from mkidaranth import axi
 
 from dataclasses import dataclass
 
-async def stream_get(ctx, stream):
+async def stream_get(ctx, stream, domain="sync"):
     ctx.set(stream.ready, 1)
-    (payload,) = await ctx.tick().sample(stream.payload).until(stream.valid)
+    (payload,) = await ctx.tick(domain).sample(stream.payload).until(stream.valid)
     ctx.set(stream.ready, 0)
     return payload
 
 
-async def stream_put(ctx, stream, payload):
+async def stream_put(ctx, stream, payload, domain="sync"):
     ctx.set(stream.valid, 1)
     ctx.set(stream.payload, payload)
-    await ctx.tick().until(stream.ready)
+    await ctx.tick(domain).until(stream.ready)
     ctx.set(stream.valid, 0)
 
 
-async def stream_put_hold(ctx, stream, payload):
+async def stream_put_hold(ctx, stream, payload, domain="sync"):
     ctx.set(stream.valid, 1)
     ctx.set(stream.payload, payload)
-    await ctx.tick().until(stream.ready)
+    await ctx.tick(domain).until(stream.ready)
 
-async def axil_address(ctx, awr, addr):
-    await stream_put(ctx, awr, {"addr": addr})
+async def axil_address(ctx, awr, addr, domain="sync"):
+    await stream_put(ctx, awr, {"addr": addr}, domain)
 
-async def axil_rdata(ctx, axi):
-    response = (await stream_get(ctx, axi.r))
+async def axil_rdata(ctx, axi, domain="sync"):
+    response = (await stream_get(ctx, axi.r, domain))
     return response.data, response.resp
 
-async def axil_wdata(ctx, axi, data):
-    await stream_put(ctx, axi.w, {"data": data, "strb": -1})
+async def axil_wdata(ctx, axi, data, domain="sync"):
+    await stream_put(ctx, axi.w, {"data": data, "strb": -1}, domain)
 
-async def axil_bresp(ctx, axi):
-    return (await stream_get(ctx, axi.b)).resp
+async def axil_bresp(ctx, axi, domain="sync"):
+    return (await stream_get(ctx, axi.b, domain)).resp
 
-async def axil_read(ctx, axi, addr):
-    await axil_address(ctx, axi.ar, addr)
-    return (await axil_rdata(ctx, axi))[0]
+async def axil_read(ctx, axi, addr, domain="sync"):
+    await axil_address(ctx, axi.ar, addr, domain)
+    return (await axil_rdata(ctx, axi, domain))[0]
 
-async def axil_write(ctx, axi, addr, data):
-    await axil_address(ctx, axi.aw, addr)
-    await axil_wdata(ctx, axi, data)
-    await axil_bresp(ctx, axi)
+async def axil_write(ctx, axi, addr, data, domain="sync"):
+    await axil_address(ctx, axi.aw, addr, domain)
+    await axil_wdata(ctx, axi, data, domain)
+    await axil_bresp(ctx, axi, domain)
 
 def pulse_process(self, stream, mark, cyc):
     i = 0
@@ -119,7 +119,7 @@ def pulse_process_iq(self, stream):
     return process
 
 
-def axi_reciever(bus, storage, addr_wait=lambda: 0, data_wait=lambda: 0, resp_wait=lambda: 0):
+def axi_reciever(bus, storage, addr_wait=lambda: 0, data_wait=lambda: 0, resp_wait=lambda: 0, domain="sync"):
     async def recv(ctx):
         address = 0
         incr = 0
@@ -137,7 +137,7 @@ def axi_reciever(bus, storage, addr_wait=lambda: 0, data_wait=lambda: 0, resp_wa
             awaddr,
             awsize,
             awlen,
-        ) in ctx.tick().sample(
+        ) in ctx.tick(domain).sample(
             bus.w.ready,
             bus.w.valid,
             bus.w.payload.data,
@@ -168,7 +168,7 @@ async def read_reg(mmio, regs, path):
         if [r[0] for r in reg['path']] == path:
             val = 0
             for i, addr in enumerate(range(reg['start'], reg['end'])):
-                val |= ((await axil_read(mmio[0], mmio[1], addr << 2)) << (i * 32))
+                val |= ((await axil_read(mmio[0], mmio[1], addr << 2, domain=mmio[2])) << (i * 32))
             vals = {}
             valc = val
             for k, v in reg['fields']:
@@ -186,7 +186,7 @@ async def write_reg(mmio, regs, path, fields):
                 val |= (fields[k] & ((1 << v) - 1)) << acc
                 acc += v
             for i, addr in enumerate(range(reg['start'], reg['end'])):
-                await axil_write(mmio[0], mmio[1], addr << 2, (val >> (i * 32)) & 0xFFFFFFFF)
+                await axil_write(mmio[0], mmio[1], addr << 2, (val >> (i * 32)) & 0xFFFFFFFF, domain=mmio[2])
             return
     assert False
 
@@ -274,10 +274,13 @@ class IntegrationTestCase(unittest.TestCase):
     class IntegrationHarness(wiring.Component):
         def __init__(self, ts):
             self.ts = ts
-            
+
+            from mkidaranth.image_cuber_perhipheral import cuber_axi_signature
             super().__init__(
                 {
                     "s_axi_ctrl": wiring.In(axi.Signature(ts.converter.axi_properties)),
+                    "s_axi_ctrl_slow": wiring.In(axi.Signature(ts.converter.axi_properties)),
+                    "s_axi_cube": wiring.In(axi.Signature(cuber_axi_signature.props)),
                     "m_axi_trig": wiring.Out(axi.Signature(ts.trig_dma.dma_bus_signature.props)),
                     "m_axi_postage": wiring.Out(axi.Signature(ts.postage_dma.dma_bus_signature.props)),
                     "s_axis_iq": wiring.In(stream.Signature(iq_stream._payload_shape)),
@@ -297,6 +300,8 @@ class IntegrationTestCase(unittest.TestCase):
             m.d.comb += cms.eq(self.cycle_mark_sim)
 
             axi.connect_axi(m, wiring.flipped(self.s_axi_ctrl), self.ts.s_axi_ctrl)
+            axi.connect_axi(m, wiring.flipped(self.s_axi_ctrl_slow), self.ts.s_axi_ctrl_slow)
+            axi.connect_axi(m, wiring.flipped(self.s_axi_cube), self.ts.s_axi_cube)
             axi.connect_axi(m, wiring.flipped(self.m_axi_trig), self.ts.m_axi_trig)
             axi.connect_axi(m, wiring.flipped(self.m_axi_postage), self.ts.m_axi_postage)
             axi.connect(m, wiring.flipped(self.s_axis_iq), self.ts.s_axis_iq)
@@ -315,7 +320,7 @@ class IntegrationTestCase(unittest.TestCase):
         storage = {}
 
         async def testbench(ctx):
-            ctrl_mmio = (ctx, dut.s_axi_ctrl)
+            ctrl_mmio = (ctx, dut.s_axi_ctrl, "sync")
             await write_reg(ctrl_mmio, regs, ['Trigger', 'ValveControl'], {"trigger": 3, "cuber": 3, "stamper": 3})
             tmimo = HuskyDMASim(ctrl_mmio, regs, 'TriggerDMA')
             fb1 = SimBuffer(8192, 0)
@@ -325,11 +330,33 @@ class IntegrationTestCase(unittest.TestCase):
 
         sim = Simulator(dut)
         sim.add_clock(1e-6)
-        # sim.add_clock(0.5e-6, domain="slow")
         sim.add_testbench(testbench)
         sim.add_process(axi_reciever(dut.m_axi_trig, storage))
         sim.add_process(axi_reciever(dut.m_axi_postage, storage))
         with sim.write_vcd("test_integration_magic.vcd"):
+            sim.run()
+
+    def test_cuber(self):
+        import json
+        dut = self.IntegrationHarness(TriggerSubsystem(enable_cuber=True, sim_clocks=True))
+        regs = json.loads(map_to_json(dut.ts.decoder.bus.memory_map))
+        regs_cuber = json.loads(map_to_json(dut.ts.decoder_slow.bus.memory_map))
+
+        storage = {}
+
+        async def testbench(ctx):
+            ctrl_mmio = (ctx, dut.s_axi_ctrl, "sync")
+            ctrl_mmio_cuber = (ctx, dut.s_axi_ctrl_slow, "slow")
+            await write_reg(ctrl_mmio, regs, ['Trigger', 'ValveControl'], {"trigger": 3, "cuber": 3, "stamper": 3})
+            await write_reg(ctrl_mmio_cuber, regs_cuber, ["CuberDMA", "RunCuber"], {'generate_cubes': 1})
+
+        sim = Simulator(dut)
+        sim.add_clock(2e-9)
+        sim.add_clock(4e-9, domain="slow")
+        sim.add_testbench(testbench)
+        sim.add_process(axi_reciever(dut.m_axi_trig, storage))
+        sim.add_process(axi_reciever(dut.m_axi_postage, storage))
+        with sim.write_vcd("test_integration_cuber.vcd"):
             sim.run()
 
     def test_trigger(self):
@@ -340,7 +367,7 @@ class IntegrationTestCase(unittest.TestCase):
         storage = {}
 
         async def testbench(ctx):
-            ctrl_mmio = (ctx, dut.s_axi_ctrl)
+            ctrl_mmio = (ctx, dut.s_axi_ctrl, "sync")
             tmimo = HuskyDMASim(ctrl_mmio, regs, 'TriggerDMA')
             pmimo = HuskyDMASim(ctrl_mmio, regs, 'PostageDMA')
             fb1 = SimBuffer(8192, 0)
