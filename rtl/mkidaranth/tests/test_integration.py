@@ -311,7 +311,7 @@ class IntegrationTestCase(unittest.TestCase):
             m.d.comb += self.ts.aresetn.eq(~ResetSignal())
             
             return m
-    @unittest.skip("Not ready yet")
+
     def test_basicdma(self):
         import json
         dut = self.IntegrationHarness(TriggerSubsystem(enable_cuber=False, sim_clocks=True))
@@ -383,7 +383,6 @@ class IntegrationTestCase(unittest.TestCase):
         with sim.write_vcd("test_integration_cuber.vcd"):
             sim.run()
 
-    @unittest.skip("Not ready yet")
     def test_trigger(self):
         import json
         dut = self.IntegrationHarness(TriggerSubsystem(enable_cuber=False, sim_clocks=True))
