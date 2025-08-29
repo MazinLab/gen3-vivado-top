@@ -94,10 +94,10 @@ class UltraRAM(wiring.Component):
                 p_BWE_MODE_B="PARITY_INDEPENDENT",
                 p_OREG_A="TRUE" if self.output_pipeline else "FALSE",
                 p_OREG_B="TRUE" if self.output_pipeline else "FALSE",
-                p_OREG_ECC_A="TRUE" if self.output_pipeline else "FALSE",
-                p_OREG_ECC_B="TRUE" if self.output_pipeline else "FALSE",
-                p_IREG_PRE_A="FALSE",   #"TRUE" if self.input_pipeline else "FALSE",
-                p_IREG_PRE_B="FALSE",   #"TRUE" if self.input_pipeline else "FALSE",
+                p_OREG_ECC_A="FALSE",
+                p_OREG_ECC_B="FALSE",
+                p_IREG_PRE_A="TRUE" if self.input_pipeline else "FALSE",
+                p_IREG_PRE_B="TRUE" if self.input_pipeline else "FALSE",
             )
         elif platform is None:
             m.submodules.sim_uram = sim_uram = memory.Memory(shape=unsigned(72), depth=1024*4, init=[])
