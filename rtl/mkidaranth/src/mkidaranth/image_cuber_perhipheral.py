@@ -151,6 +151,7 @@ class CuberPeri(wiring.Component):
         membus_r_valid: csr.Field(csr.action.R, 1)
         membus_r_ready: csr.Field(csr.action.R, 1)
         current_cycle: csr.Field(csr.action.R, 16)
+        photon_count: csr.Field(csr.action.R, 16)
     
 
     def __init__(self, *, csr_addr_width, csr_data_width, debug_reg=True):
@@ -245,6 +246,8 @@ class CuberPeri(wiring.Component):
                 self._debug.f.membus_r_ready.r_data.eq(self.membus.r.ready),
                 self._debug.f.current_cycle.r_data.eq(cuber.current_cycle_number),
             ]
+            with m.If(self.trigger_stream.valid & self.trigger_stream.ready):
+                m.d.sync += self._debug.f.photon_count.r_data.eq(self._debug.f.photon_count.r_data)
 
         #AXI code
         """
