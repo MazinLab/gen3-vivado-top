@@ -143,8 +143,18 @@ class CuberPeri(wiring.Component):
             data.StructLayout({"bin": 11, "edge0": 16, "edge1": 16, "edge2": 16, "edge3": 16, "edge4": 16}),
         )
     
+    class debugRegister(csr.Register, access = "r"):
+        trigger_stream_valid: csr.Field(csr.action.R, 1)
+        trigger_stream_ready: csr.Field(csr.action.R, 1)
+        membus_ar_valid: csr.Field(csr.action.R, 1)
+        membus_ar_ready: csr.Field(csr.action.R, 1)
+        membus_r_valid: csr.Field(csr.action.R, 1)
+        membus_r_ready: csr.Field(csr.action.R, 1)
+        current_cycle: csr.Field(csr.action.R, 16)
+    
 
-    def __init__(self, *, csr_addr_width, csr_data_width):
+    def __init__(self, *, csr_addr_width, csr_data_width, debug_reg=True):
+        self.debug_reg = debug_reg
         self.cuber = ImageCuber()
         regs = csr.Builder(addr_width=csr_addr_width, data_width=csr_data_width)
         self._cpf = regs.add("CPF", self.CPF())
@@ -152,6 +162,8 @@ class CuberPeri(wiring.Component):
         self._errorcounts = regs.add("ErrorCounts", self.ErrorCounts())
         self._pixelLUTconfig = regs.add("pixelLUTconfig", self.pixelLUTconfig())
         self._wavelengthLUTconfig = regs.add("wavelengthLUTconfig", self.wavelengthLUTconfig())
+        if self.debug_reg:
+            self._debug = regs.add("debugRegister", self.debugRegister())
         self._bridge = csr.Bridge(regs.as_memory_map())
 
         super().__init__(
@@ -222,6 +234,17 @@ class CuberPeri(wiring.Component):
         m.d.sync += cuber.wavelength_LUT_write.data.eq(getBinEdges(self._wavelengthLUTconfig.f.wavelengthLUTconfig.w_data))
         m.d.sync += cuber.wavelength_LUT_write.en.eq(self._wavelengthLUTconfig.f.wavelengthLUTconfig.w_stb)
 
+
+        if self.debug_reg:
+            m.d.sync += [
+                self._debug.f.trigger_stream_valid.r_data.eq(self.trigger_stream.valid),
+                self._debug.f.trigger_stream_ready.r_data.eq(self.trigger_stream.ready),
+                self._debug.f.membus_ar_valid.r_data.eq(self.membus.ar.valid),
+                self._debug.f.membus_ar_ready.r_data.eq(self.membus.ar.ready),
+                self._debug.f.membus_r_valid.r_data.eq(self.membus.r.valid),
+                self._debug.f.membus_r_ready.r_data.eq(self.membus.r.ready),
+                self._debug.f.current_cycle.r_data.eq(cuber.current_cycle_number),
+            ]
 
         #AXI code
         """

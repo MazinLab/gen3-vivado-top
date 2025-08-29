@@ -189,10 +189,10 @@ class ImageCuber(wiring.Component):
 
                         pixel = Signal(12)
                         muxer = Signal()
-                        wavelength_cutoffs = Signal(5*self.wavelength_cutoff_precision)
+                        wavelength_cutoffs = Signal(signed(5*self.wavelength_cutoff_precision))
                         wavelength_bin = Signal(2)
                         not_within_bin = Signal()
-                        divided_phase = Signal(16)
+                        divided_phase = Signal(signed(16))
 
                         m.d.sync += pixel_LUT.b.addr.eq(inc_bin)
                         m.d.sync += pixel_LUT.b.en.eq(1)
@@ -219,7 +219,7 @@ class ImageCuber(wiring.Component):
 
                             with m.State("State1"):
                                 def wavelength_cutoff(n):
-                                    return wavelength_cutoffs[n*self.wavelength_cutoff_precision:(n+1)*self.wavelength_cutoff_precision]
+                                    return wavelength_cutoffs[n*self.wavelength_cutoff_precision:(n+1)*self.wavelength_cutoff_precision].as_signed()
 
                                 with m.If((divided_phase >= wavelength_cutoff(0)) & (divided_phase < wavelength_cutoff(1))):
                                     m.d.sync += wavelength_bin.eq(0)
