@@ -288,6 +288,8 @@ class ImageCuber(wiring.Component):
                                 m.d.sync += counting.eq(0)
                                 m.next = "State0"
 
+                    with m.If(i >= self.cycles_per_frame-12):
+                        m.d.sync += buffered_stream.ready.eq(0)
 
                     with m.If(i >= self.cycles_per_frame-1):
                         m.d.sync += i.eq(0)

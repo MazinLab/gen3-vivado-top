@@ -70,7 +70,7 @@ class Harness(Component):
 
 
 class CuberTest(unittest.TestCase):
-    #@unittest.skip("Not ready yet")
+    #@unittest.skip("Skip"")
     def test_cuber(self):
         dut = Harness()
 
@@ -173,7 +173,7 @@ class CuberTest(unittest.TestCase):
         with sim.write_vcd("test_cuber.vcd"):
             sim.run()
 
-    #@unittest.skip("Not ready yet")
+    #@unittest.skip("Skip")
     def test_fifo_overflow(self):
         dut = Harness()
 
@@ -239,7 +239,7 @@ class CuberTest(unittest.TestCase):
         with sim.write_vcd("test_fifo_overflow.vcd"):
             sim.run()
 
-    #@unittest.skip("Not ready yet")
+    #@unittest.skip("Skip")
     def test_count_overflow(self):
         dut = Harness()
 
