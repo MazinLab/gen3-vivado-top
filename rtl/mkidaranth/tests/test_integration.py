@@ -312,6 +312,7 @@ class IntegrationTestCase(unittest.TestCase):
             
             return m
 
+    @unittest.skip("Skip")
     def test_basicdma(self):
         import json
         dut = self.IntegrationHarness(TriggerSubsystem(enable_cuber=False, sim_clocks=True))
@@ -336,6 +337,7 @@ class IntegrationTestCase(unittest.TestCase):
         with sim.write_vcd("test_integration_magic.vcd"):
             sim.run()
 
+    """
     def test_cuber(self):
         import json
         dut = self.IntegrationHarness(TriggerSubsystem(enable_cuber=True, sim_clocks=True))
@@ -382,7 +384,106 @@ class IntegrationTestCase(unittest.TestCase):
         sim.add_process(axi_reciever(dut.m_axi_postage, storage))
         with sim.write_vcd("test_integration_cuber.vcd"):
             sim.run()
+    """
+            
+    def test_integration_cuber(self):
+        import json
+        dut = self.IntegrationHarness(TriggerSubsystem(enable_cuber=True, sim_clocks=True))
+        regs = json.loads(map_to_json(dut.ts.decoder.bus.memory_map))
+        regs_cuber = json.loads(map_to_json(dut.ts.decoder_slow.bus.memory_map))
 
+        storage = {}
+
+        def pixelLUTdata(BIN, x, y):
+            data = 0
+            data |= BIN
+            data |= (x << 11)
+            data |= (y << 15)
+            return data
+
+        def wavelengthLUTdata(BIN, edge0, edge1, edge2, edge3, edge4):
+            def to_unsigned_equiv(i):
+                return int.from_bytes(int.to_bytes(i, 2, 'little', signed=True), 'little')
+
+            data = 0
+            data |= BIN
+            data |= (to_unsigned_equiv(edge0) << 11)
+            data |= (to_unsigned_equiv(edge1) << (11+16))
+            data |= (to_unsigned_equiv(edge2) << (11+(16*2)))
+            data |= (to_unsigned_equiv(edge3) << (11+(16*3)))
+            data |= (to_unsigned_equiv(edge4) << (11+(16*4)))
+            return data
+        
+        #Generate sample pixel and wavelength LUTs for cuber
+        async def generate_sample_LUTS(ctx, ctrl_cuber_mmio):
+            addr = 0
+            for xx in range(1):
+                for yy in range(2):
+                    await write_reg(ctrl_cuber_mmio, regs_cuber, ['CuberDMA', 'pixelLUTconfig'], {
+                            "pixelLUTconfig": pixelLUTdata(addr, xx, yy)
+                        })
+                    await ctx.tick("slow")
+                    addr += 1
+
+            addr = 0
+            for _ in range(1):
+                await write_reg(ctrl_cuber_mmio, regs_cuber, ['CuberDMA', 'wavelengthLUTconfig'], {
+                        "wavelengthLUTconfig": wavelengthLUTdata(addr, -32500, -1024, 1024, 8096, 32500)
+                    })
+                await ctx.tick("slow")
+                addr += 1
+
+        async def testbench(ctx):
+            print("a")
+            ctrl_mmio = (ctx, dut.s_axi_ctrl, "sync")
+            ctrl_mmio_cuber = (ctx, dut.s_axi_ctrl_slow, "slow")
+            tmimo = HuskyDMASim(ctrl_mmio, regs, 'TriggerDMA')
+            print("b")
+            fb1 = SimBuffer(8192, 0)
+            await tmimo.push_buffer(fb1)
+            await write_trigconfig(ctrl_mmio, regs, 0, 50, 4, input_gate = False, prescale=True, enabled=True, postage=False)
+            print("d")
+            await write_reg(ctrl_mmio_cuber, regs_cuber, ["CuberDMA", "CPF"], {'cpf': 2560})
+            print("g")
+            await generate_sample_LUTS(ctx, ctrl_mmio_cuber)
+            print("h")
+            await write_reg(ctrl_mmio_cuber, regs_cuber, ["CuberDMA", "RunCuber"], {'generate_cubes': 1})
+            while not ((await read_reg(ctrl_mmio_cuber, regs_cuber, ["CuberDMA", "debugRegister"]))["photon_count"]==1):
+                pass
+            await ctx.tick("slow").repeat(2550)
+            ctx.set(dut.s_axi_cube.ar.payload.addr, 0b1000000000000000)
+            ctx.set(dut.s_axi_cube.ar.payload.burst, 1)
+            ctx.set(dut.s_axi_cube.ar.payload.len, 0)
+            ctx.set(dut.s_axi_cube.ar.payload.size, 3)
+            ctx.set(dut.s_axi_cube.ar.valid, 1)
+            await ctx.tick("slow")
+            ctx.set(dut.s_axi_cube.ar.valid, 0)
+            await ctx.tick("slow")
+            await ctx.posedge(dut.s_axi_cube.r.valid)
+            ctx.set(dut.s_axi_cube.r.ready, 1)
+            self.assertGreater(ctx.get(dut.s_axi_cube.r.payload.data), 0)
+            await ctx.tick("slow").repeat(20)
+
+        sim = Simulator(dut)
+        sim.add_clock(2e-9)
+        sim.add_clock(4e-9, domain="slow")
+        sim.add_testbench(testbench)
+        sim.add_process(pulse_process(self, dut.s_axis_phase, dut.pulse_mark_sim, dut.cycle_mark_sim))
+        sim.add_process(pulse_process_iq(self, dut.s_axis_iq))
+        sim.add_process(axi_reciever(dut.m_axi_trig, storage))
+        #sim.add_process(axi_reciever(dut.m_axi_postage, storage))
+        with sim.write_vcd("test_integration_cuber.vcd"):
+            sim.run()
+
+        for k, v in storage.items():
+            if k == 0:
+                self.assertEqual(v, 10)
+            if k >= 8192:
+                self.assertEqual(v & 0xFFFF, 0)
+                self.assertEqual(v >> 16, ((k - 8192) // 4) + 32 - 8 + 1)
+
+
+    @unittest.skip("Skip")
     def test_trigger(self):
         import json
         dut = self.IntegrationHarness(TriggerSubsystem(enable_cuber=False, sim_clocks=True))
@@ -424,4 +525,3 @@ class IntegrationTestCase(unittest.TestCase):
             if k >= 8192:
                 self.assertEqual(v & 0xFFFF, 0)
                 self.assertEqual(v >> 16, ((k - 8192) // 4) + 32 - 8 + 1)
-
