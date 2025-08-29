@@ -247,7 +247,7 @@ class CuberPeri(wiring.Component):
                 self._debug.f.current_cycle.r_data.eq(cuber.current_cycle_number),
             ]
             with m.If(self.trigger_stream.valid & self.trigger_stream.ready):
-                m.d.sync += self._debug.f.photon_count.r_data.eq(self._debug.f.photon_count.r_data)
+                m.d.sync += self._debug.f.photon_count.r_data.eq(self._debug.f.photon_count.r_data + 1)
 
         #AXI code
         """
