@@ -422,9 +422,11 @@ class PeripheralTestCase(unittest.TestCase):
             await ctx.tick()
             ctx.set(dut.membus.r.ready, 0)
             await ctx.tick().repeat(1880)
-            await ctx.tick().repeat(5)
+            await ctx.tick().repeat(4)
             ctx.set(dut.membus.r.ready, 1)
             await axi_burst(1, 3, 1, 0)
+            await ctx.tick()
+            await axi_burst(1, 3, 1, 32768)
             await ctx.tick().repeat(50)
 
         sim = Simulator(dut)
