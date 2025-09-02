@@ -312,7 +312,7 @@ class IntegrationTestCase(unittest.TestCase):
             
             return m
 
-    @unittest.skip("Skip")
+    #@unittest.skip("Skip")
     def test_basicdma(self):
         import json
         dut = self.IntegrationHarness(TriggerSubsystem(enable_cuber=False, sim_clocks=True))
@@ -434,19 +434,14 @@ class IntegrationTestCase(unittest.TestCase):
                 addr += 1
 
         async def testbench(ctx):
-            print("a")
             ctrl_mmio = (ctx, dut.s_axi_ctrl, "sync")
             ctrl_mmio_cuber = (ctx, dut.s_axi_ctrl_slow, "slow")
             tmimo = HuskyDMASim(ctrl_mmio, regs, 'TriggerDMA')
-            print("b")
             fb1 = SimBuffer(8192, 0)
             await tmimo.push_buffer(fb1)
             await write_trigconfig(ctrl_mmio, regs, 0, 50, 4, input_gate = False, prescale=True, enabled=True, postage=False)
-            print("d")
             await write_reg(ctrl_mmio_cuber, regs_cuber, ["CuberDMA", "CPF"], {'cpf': 2560})
-            print("g")
             await generate_sample_LUTS(ctx, ctrl_mmio_cuber)
-            print("h")
             await write_reg(ctrl_mmio_cuber, regs_cuber, ["CuberDMA", "RunCuber"], {'generate_cubes': 1})
             while not ((await read_reg(ctrl_mmio_cuber, regs_cuber, ["CuberDMA", "debugRegister"]))["photon_count"]==1):
                 pass
@@ -483,7 +478,7 @@ class IntegrationTestCase(unittest.TestCase):
                 self.assertEqual(v >> 16, ((k - 8192) // 4) + 32 - 8 + 1)
 
 
-    @unittest.skip("Skip")
+    #@unittest.skip("Skip")
     def test_trigger(self):
         import json
         dut = self.IntegrationHarness(TriggerSubsystem(enable_cuber=False, sim_clocks=True))

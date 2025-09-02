@@ -52,25 +52,16 @@ class URAMPortFormatter(wiring.Component):
             self.read.ready.eq((skid_buffer.i.ready | (~skid_buffer.o.valid)) & (~self.write.valid)),
         ]
 
+        wiring.connect(m, skid_buffer.o, wiring.flipped(self.read_output))
+
         """
-        with m.If((skid_buffer.i.ready | (~skid_buffer.o.valid)) & (~self.write.valid)):
-            m.d.comb += skid_buffer.i.valid.eq(self.port.dread_valid)
-            m.d.comb += self.read.ready.eq(1)
-        with m.Else():
-            m.d.comb += skid_buffer.i.valid.eq(0)
-            m.d.comb += self.read.ready.eq(0)
-        """
-
-
-        #wiring.connect(m, skid_buffer.o, wiring.flipped(self.read_output))
-
         m.d.comb += [
             self.read_output.payload.data.eq(skid_buffer.o.payload.data),
             self.read_output.payload.user_data.eq(skid_buffer.o.payload.user_data),
             self.read_output.valid.eq(skid_buffer.o.valid),
             skid_buffer.o.ready.eq(self.read_output.ready)
         ]
-        # | (~skid_buffer.o.valid)) & (~self.write.valid)
+        """
             
 
         return m
@@ -337,8 +328,9 @@ class ImageCuber(wiring.Component):
                         memfb.read_output.ready.eq(self.mem_read_output.ready),
                     ]
 
-                    with m.If((self.mem_read.payload.mem_num != machine_number) | (self.current_cycle_number >= self.cycles_per_frame - 8)):
-                        m.d.comb += memfb.read_output.ready.eq(0)
+                    with m.If((self.mem_read.payload.mem_num != machine_number)):
+                        m.d.comb += self.mem_read.ready.eq(0)
+                        m.d.comb += memfb.read.valid.eq(0)
 
                     with m.If(i == self.cycles_per_frame - 1):
                         m.d.sync += i.eq(0)
