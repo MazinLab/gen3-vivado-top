@@ -126,7 +126,7 @@ class AddressGenerator(wiring.Component):
 
 class CuberPeri(wiring.Component):
     class CPF(csr.Register, access = "rw"):
-        cpf: csr.Field(csr.action.RW, 16)
+        cpf: csr.Field(csr.action.RW, 24)
     class RunCuber(csr.Register, access = "rw"):
         generate_cubes: csr.Field(csr.action.RW, 1)
     class ErrorCounts(csr.Register, access = "rw"):
@@ -187,7 +187,7 @@ class CuberPeri(wiring.Component):
         m.submodules.bridge = self._bridge
         wiring.connect(m, wiring.flipped(self.bus), self._bridge.bus)
 
-        cpf = Signal(16, reset_less=True)
+        cpf = Signal(24, reset_less=True)
         m.d.comb += cpf.eq(self._cpf.f.cpf.data)
 
         generate_cubes = Signal(1, reset_less=True)

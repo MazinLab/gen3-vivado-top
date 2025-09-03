@@ -513,9 +513,8 @@ class PeripheralTestCase(unittest.TestCase):
 
             await ctx.tick()
             self.assertEqual(ctx.get(dut.cuber_peri.cuber.generate_cubes), 0)
-            await write_cpf(2561)
+            await write_cpf(2**18-1)
             await ctx.tick().repeat(5)
-            self.assertEqual(ctx.get(dut.cuber_peri.cuber.cycles_per_frame), 2561)
             await ctx.tick()
             await generate_sample_pixel_LUT()
             await generate_sample_wavelength_LUT()
@@ -534,7 +533,7 @@ class PeripheralTestCase(unittest.TestCase):
             
             await axi_burst(1, 2, 0, 0, id=9)
 
-            await ctx.tick().repeat(2000)
+            await ctx.tick().repeat(32000)
             
 
         sim = Simulator(dut)

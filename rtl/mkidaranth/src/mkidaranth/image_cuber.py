@@ -78,7 +78,7 @@ class ImageCuber(wiring.Component):
         super().__init__(
             {
                 "i_stream": In(stream.Signature(trigger_event)),
-                "cycles_per_frame": In(16),
+                "cycles_per_frame": In(24),
                 "generate_cubes": In(1),
                 "pixel_LUT_write": In(WritePort.Signature(addr_width=11, shape=unsigned(12))),
                 "wavelength_LUT_write": In(WritePort.Signature(addr_width=11, shape=unsigned(5*wavelength_cutoff_precision))),
@@ -86,7 +86,7 @@ class ImageCuber(wiring.Component):
                 "mem_read_output": Out(stream.Signature(data.StructLayout({"data": 64, "mem_num": 1, "last": 1, "id": ID_R_WIDTH}))),
                 "lost_photon_flag": Out(1),
                 "count_overflow_flag": Out(1),
-                "current_cycle_number": Out(16),         #Will always be <= cycles_per_frame
+                "current_cycle_number": Out(24),         #Will always be <= cycles_per_frame
             }
         )
 
@@ -110,7 +110,7 @@ class ImageCuber(wiring.Component):
         m.submodules.mem2fa = mem2fa = URAMPortFormatter(mem2.a, user_data_shape=main_user_data_shape)
         m.submodules.mem2fb = mem2fb = URAMPortFormatter(mem2.b, user_data_shape=main_user_data_shape)
 
-        i = Signal(12)
+        i = Signal(24)
         m.d.comb += self.current_cycle_number.eq(i+1)
 
         m.submodules.pixel_LUT = pixel_LUT = UltraRAM(input_pipeline=False, output_pipeline=True)
