@@ -1,6 +1,7 @@
 from amaranth import *
 from amaranth.lib import wiring, fifo, stream, data
 from amaranth.lib.wiring import In, Out
+from amaranth.build.dsl import Attrs
 from amaranth_soc.csr import Decoder
 
 from . import axi
@@ -8,13 +9,14 @@ from . import image_cuber_perhipheral, trigger_peripheral
 from .trigger import iq_stream, phase_stream, timestamp, iq, trigger_event, StreamPipelineStage
 from .image_cuber_perhipheral import cuber_axi_signature
 
+
 class StreamPad(wiring.Component):
     def __init__(self, input_width, output_width):
         assert output_width >= input_width
         super().__init__(
             {
                 "input": In(stream.Signature(unsigned(input_width))),
-                "output": Out(stream.Signature(unsigned(output_width)))
+                "output": Out(stream.Signature(unsigned(output_width))),
             }
         )
 
@@ -23,18 +25,16 @@ class StreamPad(wiring.Component):
         m.d.comb += [
             self.input.ready.eq(self.output.ready),
             self.output.valid.eq(self.input.valid),
-            self.output.payload.eq(self.input.payload)
+            self.output.payload.eq(self.input.payload),
         ]
         return m
+
 
 class StreamStripper(wiring.Component):
-    def __init__(self, input_shape, output_shape, strip = lambda x: x):
+    def __init__(self, input_shape, output_shape, strip=lambda x: x):
         self.strip = strip
         super().__init__(
-            {
-                "input": In(stream.Signature(input_shape)),
-                "output": Out(stream.Signature(output_shape))
-            }
+            {"input": In(stream.Signature(input_shape)), "output": Out(stream.Signature(output_shape))}
         )
 
     def elaborate(self, platform):
@@ -42,19 +42,24 @@ class StreamStripper(wiring.Component):
         m.d.comb += [
             self.input.ready.eq(self.output.ready),
             self.output.valid.eq(self.input.valid),
-            self.output.payload.eq(self.strip(self.input.payload))
+            self.output.payload.eq(self.strip(self.input.payload)),
         ]
         return m
 
+
 class TriggerSubsystem(wiring.Component):
-    def __init__(self, enable_cuber = True, sim_clocks = False):
+    def __init__(self, enable_cuber=True, sim_clocks=False):
         self.enable_cuber = enable_cuber
         self.sim_clocks = sim_clocks
         if self.enable_cuber:
             self.cuber_peri = image_cuber_perhipheral.CuberPeri(csr_addr_width=8, csr_data_width=32)
         self.trig_peri = trigger_peripheral.Trigger(addr_width=12, data_width=32)
-        self.trig_dma = trigger_peripheral.AXIDMA(addr_width=48, data_width=64, burst_length=128, input_fifo=256, ctl_data_width=32)
-        self.postage_dma = trigger_peripheral.AXIDMA(addr_width=48, data_width=32, burst_length=128, input_fifo=256, ctl_data_width=32)
+        self.trig_dma = trigger_peripheral.AXIDMA(
+            addr_width=48, data_width=64, burst_length=128, input_fifo=256, ctl_data_width=32
+        )
+        self.postage_dma = trigger_peripheral.AXIDMA(
+            addr_width=48, data_width=32, burst_length=128, input_fifo=256, ctl_data_width=32
+        )
         self.decoder = Decoder(addr_width=16, data_width=32)
         self.converter = trigger_peripheral.AXICSRBridge(addr_width=18, data_width=32)
 
@@ -77,8 +82,12 @@ class TriggerSubsystem(wiring.Component):
                 "s_axi_ctrl": In(axi.StandardizedAxiSignature(self.converter.axi_properties)),
                 "s_axi_ctrl_slow": In(axi.StandardizedAxiSignature(self.converter.axi_properties)),
                 "s_axi_cube": In(axi.StandardizedAxiSignature(cuber_axi_signature.props)),
-                "s_axis_iq": In(axi.StandardizedSignature(iq_stream, data_field="payload", renames={"beat": "user"})),
-                "s_axis_phase": In(axi.StandardizedSignature(phase_stream, data_field="payload", renames={"beat": "user"})),
+                "s_axis_iq": In(
+                    axi.StandardizedSignature(iq_stream, data_field="payload", renames={"beat": "user"})
+                ),
+                "s_axis_phase": In(
+                    axi.StandardizedSignature(phase_stream, data_field="payload", renames={"beat": "user"})
+                ),
                 "timestamp": In(timestamp),
                 "m_axi_trig": Out(axi.StandardizedAxiSignature(self.trig_dma.dma_bus_signature.props)),
                 "m_axi_postage": Out(axi.StandardizedAxiSignature(self.postage_dma.dma_bus_signature.props)),
@@ -90,20 +99,26 @@ class TriggerSubsystem(wiring.Component):
                 "int_fault_dma_postage": Out(1),
             }
         )
-    
+
     def elaborate(self, platform):
         m = Module()
 
+        self.s_axi_ctrl_slow_aclk._attrs = Attrs(
+            X_INTERFACE_INFO="xilinx.com:signal:clock:1.0 s_axi_ctrl_slow_aclk CLK",
+            X_INTERFACE_PARAMETER="ASSOCIATED_BUSIF s_axi_ctrl_slow, ASSOCIATED_RESET s_axi_ctrl_slow_aresetn, FREQ_HZ 256000000",
+        )
+        self.s_axi_cube_aclk._attrs = Attrs(
+            X_INTERFACE_INFO="xilinx.com:signal:clock:1.0 s_axi_cube_aclk CLK",
+            X_INTERFACE_PARAMETER="ASSOCIATED_BUSIF s_axi_cube, ASSOCIATED_RESET s_axi_cube_aresetn, FREQ_HZ 256000000",
+        )
+
         if not self.sim_clocks:
             m.domains.sync = cd_sync = ClockDomain()
-            m.d.comb += [
-                cd_sync.clk.eq(self.aclk),
-                cd_sync.rst.eq(~self.aresetn)
-            ]
+            m.d.comb += [cd_sync.clk.eq(self.aclk), cd_sync.rst.eq(~self.aresetn)]
             m.domains.slow = cd_slow = ClockDomain()
             m.d.comb += [
                 cd_slow.clk.eq(self.s_axi_ctrl_slow_aclk),
-                cd_slow.rst.eq(~self.s_axi_ctrl_slow_aresetn)
+                cd_slow.rst.eq(~self.s_axi_ctrl_slow_aresetn),
             ]
 
         m.submodules.trig_peri = trig_peri = self.trig_peri
@@ -129,16 +144,24 @@ class TriggerSubsystem(wiring.Component):
             m.submodules.decoder_slow = decoder_slow = DomainRenamer("slow")(self.decoder_slow)
             m.submodules.converter_slow = converter_slow = DomainRenamer("slow")(self.converter_slow)
             m.submodules.cuber_peri = cuber_peri = DomainRenamer("slow")(self.cuber_peri)
-            m.submodules.cuber_axi_pipe = cuber_axi_pipe = DomainRenamer("slow")(axi.AxiPipelineStage(cuber_axi_signature.props))
+            m.submodules.cuber_axi_pipe = cuber_axi_pipe = DomainRenamer("slow")(
+                axi.AxiPipelineStage(cuber_axi_signature.props)
+            )
 
             axi.connect_axi(m, wiring.flipped(self.s_axi_ctrl_slow), converter_slow.axi)
             wiring.connect(m, converter_slow.csr, decoder_slow.bus)
             axi.connect_axi(m, wiring.flipped(self.s_axi_cube), cuber_axi_pipe.input)
             wiring.connect(m, cuber_axi_pipe.output, cuber_peri.membus)
 
-            m.submodules.fifo_input_pipeline = fi = StreamPipelineStage(trig_peri.cuber_events.payload.shape())
-            m.submodules.fifo_output_pipeline = fo = DomainRenamer("slow")(StreamPipelineStage(trig_peri.cuber_events.payload.shape()))
-            m.submodules.cdc_fifo = cdc_fifo = fifo.AsyncFIFOBuffered(width=trig_peri.cuber_events.payload.shape().size, depth=256, w_domain="sync", r_domain="slow")
+            m.submodules.fifo_input_pipeline = fi = StreamPipelineStage(
+                trig_peri.cuber_events.payload.shape()
+            )
+            m.submodules.fifo_output_pipeline = fo = DomainRenamer("slow")(
+                StreamPipelineStage(trig_peri.cuber_events.payload.shape())
+            )
+            m.submodules.cdc_fifo = cdc_fifo = fifo.AsyncFIFOBuffered(
+                width=trig_peri.cuber_events.payload.shape().size, depth=256, w_domain="sync", r_domain="slow"
+            )
             wiring.connect(m, trig_peri.cuber_events, fi.input)
             wiring.connect(m, fi.output, cdc_fifo.w_stream)
             wiring.connect(m, cdc_fifo.r_stream, fo.input)
@@ -147,15 +170,21 @@ class TriggerSubsystem(wiring.Component):
         else:
             m.d.comb += trig_peri.cuber_events.ready.eq(1)
 
-        m.submodules.trig_dma_pipe = trig_dma_pipe = axi.AxiPipelineStage(self.trig_dma.dma_bus_signature.props)
+        m.submodules.trig_dma_pipe = trig_dma_pipe = axi.AxiPipelineStage(
+            self.trig_dma.dma_bus_signature.props
+        )
         wiring.connect(m, trig_dma.dmabus, trig_dma_pipe.input)
         axi.connect_axi(m, trig_dma_pipe.output, wiring.flipped(self.m_axi_trig))
-        m.submodules.postage_dma_pipe = postage_dma_pipe = axi.AxiPipelineStage(self.postage_dma.dma_bus_signature.props)
+        m.submodules.postage_dma_pipe = postage_dma_pipe = axi.AxiPipelineStage(
+            self.postage_dma.dma_bus_signature.props
+        )
         wiring.connect(m, postage_dma.dmabus, postage_dma_pipe.input)
         axi.connect_axi(m, postage_dma_pipe.output, wiring.flipped(self.m_axi_postage))
 
         m.submodules.pad = pad = StreamPad(trigger_event.size, 64)
-        m.submodules.strip = strip = StreamStripper(data.StructLayout({"iq": iq, "last": 1}), iq, lambda x: x.iq)
+        m.submodules.strip = strip = StreamStripper(
+            data.StructLayout({"iq": iq, "last": 1}), iq, lambda x: x.iq
+        )
 
         wiring.connect(m, trig_peri.trigger_events, pad.input)
         wiring.connect(m, pad.output, trig_dma.stream)
@@ -165,21 +194,26 @@ class TriggerSubsystem(wiring.Component):
 
         return m
 
+
 def map_to_json(memory_map):
     import json
+
     registers = []
     for resource in memory_map.all_resources():
         fields = []
         for k in resource.resource.field:
             fields.append((k, getattr(resource.resource.field, k).port.shape.width))
-        registers.append({
-            "path": resource.path,
-            "start": resource.start,
-            "end": resource.end,
-            "width": resource.width,
-            "fields" : fields
-        })
+        registers.append(
+            {
+                "path": resource.path,
+                "start": resource.start,
+                "end": resource.end,
+                "width": resource.width,
+                "fields": fields,
+            }
+        )
     return json.dumps(registers)
+
 
 if __name__ == "__main__":
     import sys
