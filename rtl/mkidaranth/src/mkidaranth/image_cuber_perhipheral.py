@@ -142,6 +142,8 @@ class CuberPeri(wiring.Component):
             csr.action.W,
             data.StructLayout({"bin": 11, "edge0": 16, "edge1": 16, "edge2": 16, "edge3": 16, "edge4": 16}),
         )
+    class frameCounter(csr.Register, access = "r"):
+        frame_count: csr.Field(csr.action.R, 8)
     
     class debugRegister(csr.Register, access = "r"):
         trigger_stream_valid: csr.Field(csr.action.R, 1)
@@ -165,6 +167,7 @@ class CuberPeri(wiring.Component):
         self._errorcounts = regs.add("ErrorCounts", self.ErrorCounts())
         self._pixelLUTconfig = regs.add("pixelLUTconfig", self.pixelLUTconfig())
         self._wavelengthLUTconfig = regs.add("wavelengthLUTconfig", self.wavelengthLUTconfig())
+        self._framecounter = regs.add("framecounter", self.frameCounter())
         if self.debug_reg:
             self._debug = regs.add("debugRegister", self.debugRegister())
         self._bridge = csr.Bridge(regs.as_memory_map())
@@ -237,6 +240,8 @@ class CuberPeri(wiring.Component):
         m.d.sync += cuber.wavelength_LUT_write.data.eq(getBinEdges(self._wavelengthLUTconfig.f.wavelengthLUTconfig.w_data))
         m.d.sync += cuber.wavelength_LUT_write.en.eq(self._wavelengthLUTconfig.f.wavelengthLUTconfig.w_stb)
 
+        with m.If(cuber.current_cycle_number == cuber.cycles_per_frame):
+            m.d.sync += self._framecounter.f.frame_count.r_data.eq(self._framecounter.f.frame_count.r_data + 1)
 
         if self.debug_reg:
             m.d.sync += [
