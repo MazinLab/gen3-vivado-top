@@ -152,7 +152,7 @@ class CuberPeri(wiring.Component):
         membus_ar_ready: csr.Field(csr.action.R, 1)
         membus_r_valid: csr.Field(csr.action.R, 1)
         membus_r_ready: csr.Field(csr.action.R, 1)
-        current_cycle: csr.Field(csr.action.R, 16)
+        current_cycle: csr.Field(csr.action.R, 24)
         photon_count: csr.Field(csr.action.R, 16)
         read_mem_number: csr.Field(csr.action.R, 1)
         interrupt: csr.Field(csr.action.R, 1)
