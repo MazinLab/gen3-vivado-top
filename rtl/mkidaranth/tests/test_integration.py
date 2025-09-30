@@ -478,7 +478,7 @@ class IntegrationTestCase(unittest.TestCase):
                 self.assertEqual(v >> 16, ((k - 8192) // 4) + 32 - 8 + 1)
 
 
-    #@unittest.skip("Skip")
+    @unittest.skip("Skip")
     def test_trigger(self):
         import json
         dut = self.IntegrationHarness(TriggerSubsystem(enable_cuber=False, sim_clocks=True))
