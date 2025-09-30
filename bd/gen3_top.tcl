@@ -3734,6 +3734,7 @@ proc create_hier_cell_photon_pipe { parentCell nameHier } {
   connect_bd_intf_net -intf_net axis_register_slice_3_M_AXIS [get_bd_intf_pins axis_register_slice_3/M_AXIS] [get_bd_intf_pins phasematch/S_AXIS]
   connect_bd_intf_net -intf_net axis_register_slice_5_M_AXIS [get_bd_intf_pins RAWIQ_AXIS] [get_bd_intf_pins axis_register_slice_5/M_AXIS]
   connect_bd_intf_net -intf_net axis_register_slice_7_M_AXIS [get_bd_intf_pins DDCIQ_AXIS] [get_bd_intf_pins axis_register_slice_7/M_AXIS]
+  connect_bd_intf_net -intf_net axis_register_slice_8_M_AXIS [get_bd_intf_pins axis_register_slice_8/M_AXIS] [get_bd_intf_pins swapiq_0/s_axis]
   connect_bd_intf_net -intf_net axis_register_slice_9_M_AXIS [get_bd_intf_pins ALIGNEDLOIQ_AXIS] [get_bd_intf_pins axis_register_slice_9/M_AXIS]
   connect_bd_intf_net -intf_net istream_V_1 [get_bd_intf_pins istream_V] [get_bd_intf_pins axis_register_slice_2/S_AXIS]
   connect_bd_intf_net -intf_net opfb_output_r [get_bd_intf_pins axis_register_slice_8/S_AXIS] [get_bd_intf_pins opfb/output_r]
@@ -3746,19 +3747,15 @@ proc create_hier_cell_photon_pipe { parentCell nameHier } {
   connect_bd_intf_net -intf_net reschan_DDCIQ_AXIS [get_bd_intf_pins axis_register_slice_7/S_AXIS] [get_bd_intf_pins reschan/DDCIQ_AXIS]
   connect_bd_intf_net -intf_net reschan_IQ_AXIS [get_bd_intf_pins axis_broadcaster_1/S_AXIS] [get_bd_intf_pins reschan/LOIQ_AXIS]
   connect_bd_intf_net -intf_net reschan_RAWIQ_AXIS [get_bd_intf_pins axis_register_slice_5/S_AXIS] [get_bd_intf_pins reschan/RAWIQ_AXIS]
+  connect_bd_intf_net -intf_net swapiq_0_m_axis [get_bd_intf_pins axis_register_slice_0/S_AXIS] [get_bd_intf_pins swapiq_0/m_axis]
 
   # Create port connections
-  connect_bd_net -net ap_clk_1 [get_bd_pins aclk] [get_bd_pins axis_broadcaster_1/aclk] [get_bd_pins axis_register_slice_0/aclk] [get_bd_pins axis_register_slice_1/aclk] [get_bd_pins axis_register_slice_10/aclk] [get_bd_pins axis_register_slice_11/aclk] [get_bd_pins axis_register_slice_12/aclk] [get_bd_pins axis_register_slice_13/aclk] [get_bd_pins axis_register_slice_2/aclk] [get_bd_pins axis_register_slice_3/aclk] [get_bd_pins axis_register_slice_5/aclk] [get_bd_pins axis_register_slice_7/aclk] [get_bd_pins axis_register_slice_8/aclk] [get_bd_pins axis_register_slice_9/aclk] [get_bd_pins opfb/ap_clk] [get_bd_pins phase/aclk] [get_bd_pins phasematch/aclk] [get_bd_pins phasematch_broadcaster_2/aclk] [get_bd_pins reschan/aclk]
-  connect_bd_net -net ap_rst_n_1 [get_bd_pins ap_rst_n] [get_bd_pins axis_broadcaster_1/aresetn] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn] [get_bd_pins axis_register_slice_10/aresetn] [get_bd_pins axis_register_slice_11/aresetn] [get_bd_pins axis_register_slice_12/aresetn] [get_bd_pins axis_register_slice_13/aresetn] [get_bd_pins axis_register_slice_2/aresetn] [get_bd_pins axis_register_slice_3/aresetn] [get_bd_pins axis_register_slice_5/aresetn] [get_bd_pins axis_register_slice_7/aresetn] [get_bd_pins axis_register_slice_8/aresetn] [get_bd_pins axis_register_slice_9/aresetn] [get_bd_pins opfb/ap_rst_n] [get_bd_pins phasematch/aresetn] [get_bd_pins phasematch_broadcaster_2/aresetn] [get_bd_pins reschan/ap_rst_n]
+  connect_bd_net -net ap_clk_1 [get_bd_pins aclk] [get_bd_pins axis_broadcaster_1/aclk] [get_bd_pins axis_register_slice_0/aclk] [get_bd_pins axis_register_slice_1/aclk] [get_bd_pins axis_register_slice_10/aclk] [get_bd_pins axis_register_slice_11/aclk] [get_bd_pins axis_register_slice_12/aclk] [get_bd_pins axis_register_slice_13/aclk] [get_bd_pins axis_register_slice_2/aclk] [get_bd_pins axis_register_slice_3/aclk] [get_bd_pins axis_register_slice_5/aclk] [get_bd_pins axis_register_slice_7/aclk] [get_bd_pins axis_register_slice_8/aclk] [get_bd_pins axis_register_slice_9/aclk] [get_bd_pins opfb/ap_clk] [get_bd_pins phase/aclk] [get_bd_pins phasematch/aclk] [get_bd_pins phasematch_broadcaster_2/aclk] [get_bd_pins reschan/aclk] [get_bd_pins swapiq_0/aclk]
+  connect_bd_net -net ap_rst_n_1 [get_bd_pins ap_rst_n] [get_bd_pins axis_broadcaster_1/aresetn] [get_bd_pins axis_register_slice_0/aresetn] [get_bd_pins axis_register_slice_1/aresetn] [get_bd_pins axis_register_slice_10/aresetn] [get_bd_pins axis_register_slice_11/aresetn] [get_bd_pins axis_register_slice_12/aresetn] [get_bd_pins axis_register_slice_13/aresetn] [get_bd_pins axis_register_slice_2/aresetn] [get_bd_pins axis_register_slice_3/aresetn] [get_bd_pins axis_register_slice_5/aresetn] [get_bd_pins axis_register_slice_7/aresetn] [get_bd_pins axis_register_slice_8/aresetn] [get_bd_pins axis_register_slice_9/aresetn] [get_bd_pins opfb/ap_rst_n] [get_bd_pins phasematch/aresetn] [get_bd_pins phasematch_broadcaster_2/aresetn] [get_bd_pins reschan/ap_rst_n] [get_bd_pins swapiq_0/aresetn]
   connect_bd_net -net aresetn1_1 [get_bd_pins aresetn] [get_bd_pins opfb/aresetn] [get_bd_pins phasematch/aresetn1]
-  connect_bd_net -net axis_register_slice_8_m_axis_tdata [get_bd_pins axis_register_slice_8/m_axis_tdata] [get_bd_pins swapiq_0/din]
-  connect_bd_net -net axis_register_slice_8_m_axis_tlast [get_bd_pins axis_register_slice_0/s_axis_tlast] [get_bd_pins axis_register_slice_8/m_axis_tlast]
-  connect_bd_net -net axis_register_slice_8_m_axis_tuser [get_bd_pins axis_register_slice_0/s_axis_tuser] [get_bd_pins axis_register_slice_8/m_axis_tuser]
-  connect_bd_net -net axis_register_slice_8_m_axis_tvalid [get_bd_pins axis_register_slice_0/s_axis_tvalid] [get_bd_pins axis_register_slice_8/m_axis_tvalid]
   connect_bd_net -net phasematch_M_AXIS_tvalid [get_bd_pins phasematch/M_AXIS_tvalid] [get_bd_pins phasematch_broadcaster_2/s_axis_tvalid]
   connect_bd_net -net phasematch_dout [get_bd_pins matchedfilter_interrupts] [get_bd_pins phasematch/matchfilt_interrupts]
   connect_bd_net -net s_axi_aclk_1 [get_bd_pins reload_aclk] [get_bd_pins opfb/reload_aclk] [get_bd_pins phasematch/s_axi_aclk]
-  connect_bd_net -net swapiq_0_dout [get_bd_pins axis_register_slice_0/s_axis_tdata] [get_bd_pins swapiq_0/dout]
 
   # Restore current instance
   current_bd_instance $oldCurInst
