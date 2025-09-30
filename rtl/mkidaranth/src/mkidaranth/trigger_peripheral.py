@@ -459,6 +459,7 @@ class Trigger(wiring.Component):
         drop_latch = Signal(reset_less=True)
         fault_latch = Signal(reset_less=True)
         cycle_chunk = Signal(24 + 9, reset_less=True)
+        force_tickover = Signal()
         empty_latch = Signal(init=1)
 
         # Register Management
@@ -478,8 +479,9 @@ class Trigger(wiring.Component):
             self._chunksampler.f.chunk_header.r_data.dropped.eq(drop_latch),
             self._chunksampler.f.chunk_header.r_data.empty.eq(empty_latch),
         ]
-        with m.If(cycle_chunk != 0):
+        with m.If(cycle_chunk != 0 | force_tickover):
             m.d.sync += cycle_chunk.eq(cycle_chunk + 1)
+            m.d.sync += force_tickover.eq(0)
         with m.If(self._chunksampler.f.chunk_header.r_stb):
             m.d.sync += [
                 read.eq(self._chunksampler.f.chunk_header.r_data.read),
@@ -487,6 +489,11 @@ class Trigger(wiring.Component):
                 cycle_chunk.eq(1),
                 empty_latch.eq(1),
             ]
+            with m.If(self._trigcontrol.f.prescale.data):
+                m.d.sync += [
+                    cycle_chunk.eq(cycle[:9] + 1),
+                    force_tickover.eq(1)
+                ]
         with m.If(
             ~self._trigcontrol.f.prescale.data & (cycle_chunk[:24] == 0xFFFF_FFFF_FFFF)
         ):

@@ -3,7 +3,7 @@ from amaranth.lib import wiring, memory
 from amaranth.vendor import XilinxPlatform
 
 class UltraRAMPort(wiring.Signature):
-    def __init__(self):
+    def __init__(self, user_shape):
         super().__init__({
             "addr": wiring.Out(12),
             "en": wiring.Out(1),
@@ -11,7 +11,9 @@ class UltraRAMPort(wiring.Signature):
             "we": wiring.Out(9),
 
             "dwrite": wiring.Out(72),
+            "dread_user": wiring.Out(user_shape),
             "dread": wiring.In(72),
+            "dread_user_out": wiring.In(user_shape),
             "dread_valid": wiring.In(1),
 
             "sbiterr": wiring.In(1),
@@ -19,22 +21,45 @@ class UltraRAMPort(wiring.Signature):
         })
 
 class UltraRAM(wiring.Component):
-    def __init__(self, input_pipeline=True, output_pipeline=True):
+    def __init__(self, input_pipeline=True, output_pipeline=True, user_shape=unsigned(0)):
         self.input_pipeline = input_pipeline
         self.output_pipeline = output_pipeline
+        self.user_shape = user_shape
         super().__init__({   
-            "a": wiring.In(UltraRAMPort()),
-            "b": wiring.In(UltraRAMPort()),
+            "a": wiring.In(UltraRAMPort(user_shape=user_shape)),
+            "b": wiring.In(UltraRAMPort(user_shape=user_shape)),
             "sleep": wiring.In(1),
         })
 
     def elaborate(self, platform):
         m = Module()
 
+        arui = Signal(self.user_shape)
+        arum = Signal(self.user_shape)
+        brui = Signal(self.user_shape)
+        brum = Signal(self.user_shape)
+
+        m.d.sync += arum.eq(arui)
+        m.d.sync += brum.eq(brui)
+
+        if self.input_pipeline:
+            m.d.sync += arui.eq(self.a.dread_user)
+            m.d.sync += brui.eq(self.b.dread_user)
+        else:
+            m.d.comb += arui.eq(self.a.dread_user)
+            m.d.comb += brui.eq(self.b.dread_user)
+        
+        if self.output_pipeline:
+            m.d.sync += self.a.dread_user_out.eq(arum)
+            m.d.sync += self.b.dread_user_out.eq(brum)
+        else:
+            m.d.comb += self.a.dread_user_out.eq(arum)
+            m.d.comb += self.b.dread_user_out.eq(brum)
+
         assert isinstance(platform, XilinxPlatform) or (platform is None), "Platform must be sim or Xilinx"
 
         if isinstance(platform, XilinxPlatform):
-            m.submodules.uram = Instance("URAM288E5",
+            m.submodules.uram = Instance("URAM288",
                 i_CLK=ClockSignal(),
                 i_SLEEP=self.sleep,
                 i_ADDR_A=self.a.addr,
@@ -69,8 +94,8 @@ class UltraRAM(wiring.Component):
                 p_BWE_MODE_B="PARITY_INDEPENDENT",
                 p_OREG_A="TRUE" if self.output_pipeline else "FALSE",
                 p_OREG_B="TRUE" if self.output_pipeline else "FALSE",
-                p_OREG_ECC_A="TRUE" if self.output_pipeline else "FALSE",
-                p_OREG_ECC_B="TRUE" if self.output_pipeline else "FALSE",
+                p_OREG_ECC_A="FALSE",
+                p_OREG_ECC_B="FALSE",
                 p_IREG_PRE_A="TRUE" if self.input_pipeline else "FALSE",
                 p_IREG_PRE_B="TRUE" if self.input_pipeline else "FALSE",
             )

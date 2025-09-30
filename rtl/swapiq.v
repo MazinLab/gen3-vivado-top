@@ -1,0 +1,61 @@
+module swapiq(aclk, aresetn, m_axis_tvalid, m_axis_tdata, m_axis_tlast, m_axis_tuser, s_axis_tvalid, s_axis_tdata, s_axis_tlast, s_axis_tuser);
+    input aclk;
+    wire aclk;
+    input aresetn;
+    wire aresetn;
+
+    input s_axis_tvalid;
+    wire s_axis_tvalid;
+    input [511:0] s_axis_tdata;
+    wire [511:0] s_axis_tdata;
+    input s_axis_tlast;
+    wire s_axis_tlast;
+    input [15:0] s_axis_tuser;
+    wire [15:0] s_axis_tuser;
+
+    output m_axis_tvalid;
+    wire m_axis_tvalid;
+    output [511:0] m_axis_tdata;
+    wire [511:0] m_axis_tdata;
+    output m_axis_tlast;
+    wire m_axis_tlast;
+    output [15:0] m_axis_tuser;
+    wire [15:0] m_axis_tuser;
+
+    assign m_axis_tvalid = s_axis_tvalid;
+    assign m_axis_tlast = s_axis_tlast;
+    assign m_axis_tuser = s_axis_tuser;
+
+    assign m_axis_tdata[511:496] = s_axis_tdata[495:480];
+    assign m_axis_tdata[495:480] = s_axis_tdata[511:496];
+    assign m_axis_tdata[479:464] = s_axis_tdata[463:448];
+    assign m_axis_tdata[463:448] = s_axis_tdata[479:464];
+    assign m_axis_tdata[447:432] = s_axis_tdata[431:416];
+    assign m_axis_tdata[431:416] = s_axis_tdata[447:432];
+    assign m_axis_tdata[415:400] = s_axis_tdata[399:384];
+    assign m_axis_tdata[399:384] = s_axis_tdata[415:400];
+    assign m_axis_tdata[383:368] = s_axis_tdata[367:352];
+    assign m_axis_tdata[367:352] = s_axis_tdata[383:368];
+    assign m_axis_tdata[351:336] = s_axis_tdata[335:320];
+    assign m_axis_tdata[335:320] = s_axis_tdata[351:336];
+    assign m_axis_tdata[319:304] = s_axis_tdata[303:288];
+    assign m_axis_tdata[303:288] = s_axis_tdata[319:304];
+    assign m_axis_tdata[287:272] = s_axis_tdata[271:256];
+    assign m_axis_tdata[271:256] = s_axis_tdata[287:272];
+    assign m_axis_tdata[255:240] = s_axis_tdata[239:224];
+    assign m_axis_tdata[239:224] = s_axis_tdata[255:240];
+    assign m_axis_tdata[223:208] = s_axis_tdata[207:192];
+    assign m_axis_tdata[207:192] = s_axis_tdata[223:208];
+    assign m_axis_tdata[191:176] = s_axis_tdata[175:160];
+    assign m_axis_tdata[175:160] = s_axis_tdata[191:176];
+    assign m_axis_tdata[159:144] = s_axis_tdata[143:128];
+    assign m_axis_tdata[143:128] = s_axis_tdata[159:144];
+    assign m_axis_tdata[127:112] = s_axis_tdata[111:96];
+    assign m_axis_tdata[111:96] = s_axis_tdata[127:112];
+    assign m_axis_tdata[95:80] = s_axis_tdata[79:64];
+    assign m_axis_tdata[79:64] = s_axis_tdata[95:80];
+    assign m_axis_tdata[63:48] = s_axis_tdata[47:32];
+    assign m_axis_tdata[47:32] = s_axis_tdata[63:48];
+    assign m_axis_tdata[31:16] = s_axis_tdata[15:0];
+    assign m_axis_tdata[15:0] = s_axis_tdata[31:16];
+endmodule

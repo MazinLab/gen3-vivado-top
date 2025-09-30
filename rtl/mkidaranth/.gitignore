@@ -2,6 +2,7 @@
 *.\*
 integration.v
 integration.v.json
+integration.v.cuber.json
 *.ipynb
 # Byte-compiled / optimized / DLL files
 __pycache__/

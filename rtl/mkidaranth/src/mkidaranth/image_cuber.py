@@ -5,30 +5,88 @@ from amaranth.lib.memory import Memory, WritePort, ReadPort
 from amaranth.lib.wiring import Component, In, Out
 from amaranth.lib import stream, wiring, data, enum, fifo, memory
 from .trigger import trigger_event, CYCLE_BITS
+from .uram import UltraRAM
+from .skid import SkidBuffer
 
+ID_R_WIDTH = 16
+
+main_user_data_shape = data.StructLayout({"last": 1, "id": ID_R_WIDTH})
+
+class URAMPortFormatter(wiring.Component):
+    def __init__(self, port, user_data_shape=unsigned(0)):
+        self.user_data_shape = user_data_shape
+        self.port = port
+        
+        super().__init__(
+            {
+                "write": In(stream.Signature(data.StructLayout({"addr": 12, "data": 72}))),
+                "read": In(stream.Signature(data.StructLayout({"addr": 12, "user_data": user_data_shape}))),
+                "read_output": Out(stream.Signature(data.StructLayout({"data": 72, "user_data": user_data_shape})))
+            }
+        )
+    
+    def elaborate(self, platform):
+        m = Module()
+
+        m.d.comb += [
+            self.write.ready.eq(1),
+            self.port.en.eq((self.read.valid & self.read.ready) | (self.write.valid & self.write.ready)),
+            self.port.write.eq(self.write.valid & self.write.ready),
+            self.port.dwrite.eq(self.write.payload.data),
+            self.port.we.eq(0b111111111),
+        ]
+
+        with m.If(self.write.valid):
+            m.d.comb += self.port.addr.eq(self.write.payload.addr)
+        with m.Elif(self.read.valid):
+            m.d.comb += self.port.addr.eq(self.read.payload.addr)
+            m.d.comb += self.port.dread_user.eq(self.read.payload.user_data)
+    
+
+        m.submodules.skid_buffer = skid_buffer = SkidBuffer(shape=data.StructLayout({"data": 72, "user_data": self.user_data_shape}), depth=4)
+
+        m.d.comb += [
+            skid_buffer.i.payload.data.eq(self.port.dread),
+            skid_buffer.i.payload.user_data.eq(self.port.dread_user_out),
+            skid_buffer.i.valid.eq(self.port.dread_valid),
+            self.read.ready.eq((skid_buffer.i.ready | (~skid_buffer.o.valid)) & (~self.write.valid)),
+        ]
+
+        wiring.connect(m, skid_buffer.o, wiring.flipped(self.read_output))
+
+        """
+        m.d.comb += [
+            self.read_output.payload.data.eq(skid_buffer.o.payload.data),
+            self.read_output.payload.user_data.eq(skid_buffer.o.payload.user_data),
+            self.read_output.valid.eq(skid_buffer.o.valid),
+            skid_buffer.o.ready.eq(self.read_output.ready)
+        ]
+        """
+            
+
+        return m
 
 class ImageCuber(wiring.Component):
     def __init__(self, fifo_depth = 2048, wavelength_cutoff_precision = 8):
         self.fifo_depth = fifo_depth
         self.wavelength_cutoff_precision = wavelength_cutoff_precision
 
-        self.mem1 = Memory(shape=unsigned(64), depth=2048, init=[])
-        self.mem2 = Memory(shape=unsigned(64), depth=2048, init=[])
+        self.mem1 = UltraRAM(input_pipeline=False, output_pipeline=True, user_shape=main_user_data_shape)
+        self.mem2 = UltraRAM(input_pipeline=False, output_pipeline=True, user_shape=main_user_data_shape)
 
         self.event_payload_bits = 16 + 11 + 2 + CYCLE_BITS
         super().__init__(
             {
                 "i_stream": In(stream.Signature(trigger_event)),
-                "cycles_per_frame": In(16),
+                "cycles_per_frame": In(24),
                 "generate_cubes": In(1),
                 "pixel_LUT_write": In(WritePort.Signature(addr_width=11, shape=unsigned(12))),
                 "wavelength_LUT_write": In(WritePort.Signature(addr_width=11, shape=unsigned(5*wavelength_cutoff_precision))),
-                "mem_read_addr": In(16),
-                "mem_read_data": Out(64),
-                "mem_read_number": Out(1),
+                "mem_read": In(stream.Signature(data.StructLayout({"addr": 12, "mem_num": 1, "last": 1, "id": ID_R_WIDTH}))),
+                "mem_read_output": Out(stream.Signature(data.StructLayout({"data": 64, "mem_num": 1, "last": 1, "id": ID_R_WIDTH}))),
                 "lost_photon_flag": Out(1),
                 "count_overflow_flag": Out(1),
-                "current_cycle_number": Out(16),         #Will always be <= cycles_per_frame
+                "current_cycle_number": Out(24),         #Will always be <= cycles_per_frame
             }
         )
 
@@ -47,43 +105,32 @@ class ImageCuber(wiring.Component):
         m.submodules.dmem1 = mem1 = self.mem1
         m.submodules.dmem2 = mem2 = self.mem2
 
-        read_port1 = mem1.read_port(domain="sync")
-        write_port11 = mem1.write_port(domain="sync")
-        write_port12 = mem1.write_port(domain="sync")
+        m.submodules.mem1fa = mem1fa = URAMPortFormatter(mem1.a, user_data_shape=main_user_data_shape)
+        m.submodules.mem1fb = mem1fb = URAMPortFormatter(mem1.b, user_data_shape=main_user_data_shape)
+        m.submodules.mem2fa = mem2fa = URAMPortFormatter(mem2.a, user_data_shape=main_user_data_shape)
+        m.submodules.mem2fb = mem2fb = URAMPortFormatter(mem2.b, user_data_shape=main_user_data_shape)
 
-        read_port2 = mem2.read_port(domain="sync")
-        write_port21 = mem2.write_port(domain="sync")
-        write_port22 = mem2.write_port(domain="sync")
-
-        i = Signal(12)
+        i = Signal(24)
         m.d.comb += self.current_cycle_number.eq(i+1)
 
-        """
-        For testing purposes, can use the following:
+        m.submodules.pixel_LUT = pixel_LUT = UltraRAM(input_pipeline=False, output_pipeline=True)
+        m.submodules.wavelength_LUT = wavelength_LUT = UltraRAM(input_pipeline=False, output_pipeline=True)
 
-        pixel_LUT_init = []
-        for xx in range(14):
-            for yy in range(146):
-                pixel_LUT_init.append((xx<<8) | yy)
-        """
-
-        m.submodules.pixel_LUT = pixel_LUT = Memory(shape = unsigned(12), depth = 2048, init = [])
-        pixel_LUT_write = pixel_LUT.write_port(domain="sync")
-        wiring.connect(m, self.pixel_LUT_write, pixel_LUT_write)
-        pixel_LUT_read = pixel_LUT.read_port(domain="sync")
-
-        """
-        For testing purposes, can use the following:
-
-        wavelength_LUT_init = []
-        for _ in range(2048):
-            wavelength_LUT_init.append(0b0111111100011111000001110000001100000001)
-        """
-
-        m.submodules.wavelength_LUT = wavelength_LUT = Memory(shape = unsigned(5*self.wavelength_cutoff_precision), depth = 2048, init = [])
-        wavelength_LUT_write = wavelength_LUT.write_port(domain="sync")
-        wiring.connect(m, self.wavelength_LUT_write, wavelength_LUT_write)
-        wavelength_LUT_read = wavelength_LUT.read_port(domain="sync")
+        m.d.comb += [
+            pixel_LUT.a.addr.eq(self.pixel_LUT_write.addr),
+            pixel_LUT.a.dwrite.eq(self.pixel_LUT_write.data),
+            pixel_LUT.a.write.eq(self.pixel_LUT_write.en),
+            wavelength_LUT.a.addr.eq(self.wavelength_LUT_write.addr),
+            wavelength_LUT.a.dwrite.eq(self.wavelength_LUT_write.data),
+            wavelength_LUT.a.write.eq(self.wavelength_LUT_write.en),
+            
+            pixel_LUT.a.en.eq(1),
+            pixel_LUT.a.we.eq(0b111111111),
+            pixel_LUT.b.we.eq(0b111111111),
+            wavelength_LUT.a.en.eq(1),
+            wavelength_LUT.a.we.eq(0b111111111),
+            wavelength_LUT.b.we.eq(0b111111111),
+        ]
 
         #Error detection
         m.d.sync += self.lost_photon_flag.eq(0)
@@ -102,18 +149,14 @@ class ImageCuber(wiring.Component):
                 with m.If(prev_payload != temp_payload):
                     m.d.sync += self.lost_photon_flag.eq(1)   #Throws error pulse when photon event isn't read due to FIFO overflow
 
-        new_photon = Signal()
-        LUTS_read = Signal()
-        uploading = Signal()
-        reading = Signal()
+        counting = Signal()
 
-        def state_machine(write_port1, write_port2, read_port, machine_number):
+        def state_machine(memfa, memfb, machine_number):
             with m.FSM(init="Configuring"):
                 with m.State("Configuring"):
                     m.d.sync += buffered_stream.ready.eq(0)
-                    m.d.sync += write_port1.en.eq(0)
-                    m.d.sync += write_port2.en.eq(0)
-                    m.d.comb += read_port.addr.eq(0)
+                    m.d.sync += memfa.write.valid.eq(0)
+                    m.d.sync += memfb.write.valid.eq(0)
 
                     with m.If(self.generate_cubes):
                         with m.If(machine_number == 0):
@@ -122,19 +165,20 @@ class ImageCuber(wiring.Component):
                             m.next = "Stalling"
 
                 with m.State("Clearing"):
-                    m.d.sync += buffered_stream.ready.eq(0)
-                    m.d.sync += write_port1.en.eq(1)
-                    m.d.sync += write_port1.addr.eq(i)
-                    m.d.sync += write_port1.data.eq(0)
-                    m.d.sync += write_port2.en.eq(1)
-                    m.d.sync += write_port2.addr.eq(2047-i)
-                    m.d.sync += write_port2.data.eq(0)
-                    m.d.comb += read_port.addr.eq(0)
                     m.d.sync += i.eq(i+1)
+                    m.d.sync += buffered_stream.ready.eq(0)
+
+                    m.d.sync += memfa.write.payload.data.eq(0)
+                    m.d.sync += memfa.write.valid.eq(1)
+                    m.d.sync += memfa.write.payload.addr.eq(i)
+
+                    m.d.sync += memfb.write.payload.data.eq(0)
+                    m.d.sync += memfb.write.valid.eq(1)
+                    m.d.sync += memfb.write.payload.addr.eq(i)
 
                     with m.If(i == 1024):
-                        m.d.sync += write_port1.en.eq(0)
-                        m.d.sync += write_port2.en.eq(0)
+                        m.d.sync += memfa.write.valid.eq(0)
+                        m.d.sync += memfb.write.valid.eq(0)
                         m.next = "Counting"
                     
                     with m.If(~self.generate_cubes):
@@ -143,122 +187,122 @@ class ImageCuber(wiring.Component):
                     
                 with m.State("Counting"):
                     m.d.sync += buffered_stream.ready.eq(1)
-                    m.d.sync += write_port1.en.eq(0)
-                    m.d.sync += write_port2.en.eq(0)
+                    m.d.sync += memfa.write.valid.eq(0)
+                    m.d.sync += memfb.write.valid.eq(0)
+                    m.d.sync += memfb.write.payload.addr.eq(0)
                     m.d.sync += i.eq(i+1)
-                    m.d.sync += new_photon.eq(0)
 
                     with m.If(buffered_stream.valid & buffered_stream.ready):
                         inc_bin = buffered_payload.bin
                         inc_phase = buffered_payload.phase
 
                         pixel = Signal(12)
-                        pixel_to_upload = Signal(12)
-                        wavelength_cutoffs = Signal(5*self.wavelength_cutoff_precision)
+                        muxer = Signal()
+                        wavelength_cutoffs = Signal(signed(5*self.wavelength_cutoff_precision))
                         wavelength_bin = Signal(2)
                         not_within_bin = Signal()
-                        muxer = Signal()
-                        divided_phase = Signal(16)
+                        divided_phase = Signal(signed(16))
 
-                        m.d.sync += pixel_LUT_read.addr.eq(inc_bin)
-                        m.d.sync += wavelength_LUT_read.addr.eq(inc_bin)
+                        m.d.sync += pixel_LUT.b.addr.eq(inc_bin)
+                        m.d.sync += pixel_LUT.b.en.eq(1)
+                        m.d.sync += wavelength_LUT.b.addr.eq(inc_bin)
+                        m.d.sync += wavelength_LUT.b.en.eq(1)
                         
                         m.d.sync += divided_phase.eq(inc_phase>>(16-self.wavelength_cutoff_precision))
 
                         m.d.sync += buffered_stream.ready.eq(0)
-                        m.d.sync += new_photon.eq(1)
+                        m.d.sync += counting.eq(1)
                     
-                    with m.If(new_photon):
-                        m.d.sync += LUTS_read.eq(1)
-                        m.d.sync += new_photon.eq(0)
+                    with m.If(counting):
                         m.d.sync += buffered_stream.ready.eq(0)
 
-                    with m.If(LUTS_read):
-                        m.d.comb += pixel.eq(pixel_LUT_read.data)
-                        m.d.sync += muxer.eq(pixel[11])
-                        m.d.comb += wavelength_cutoffs.eq(wavelength_LUT_read.data)
+                        with m.FSM(init = "State0"):
+                            with m.State("State0"):
+                                with m.If(pixel_LUT.b.dread_valid & wavelength_LUT.b.dread_valid):
+                                    m.d.sync += pixel.eq(pixel_LUT.b.dread)
+                                    m.d.sync += wavelength_cutoffs.eq(wavelength_LUT.b.dread)
 
+                                    m.d.sync += pixel_LUT.b.en.eq(0)
+                                    m.d.sync += wavelength_LUT.b.en.eq(0)
+                                    m.next = "State1"
+
+                            with m.State("State1"):
+                                def wavelength_cutoff(n):
+                                    return wavelength_cutoffs[n*self.wavelength_cutoff_precision:(n+1)*self.wavelength_cutoff_precision].as_signed()
+
+                                with m.If((divided_phase >= wavelength_cutoff(0)) & (divided_phase < wavelength_cutoff(1))):
+                                    m.d.sync += wavelength_bin.eq(0)
+                                    m.d.sync += not_within_bin.eq(0)
+                                with m.Elif((divided_phase >= wavelength_cutoff(1)) & (divided_phase < wavelength_cutoff(2))):
+                                    m.d.sync += wavelength_bin.eq(1)
+                                    m.d.sync += not_within_bin.eq(0)
+                                with m.Elif((divided_phase >= wavelength_cutoff(2)) & (divided_phase < wavelength_cutoff(3))):
+                                    m.d.sync += wavelength_bin.eq(2)
+                                    m.d.sync += not_within_bin.eq(0)
+                                with m.Elif((divided_phase >= wavelength_cutoff(3)) & (divided_phase < wavelength_cutoff(4))):
+                                    m.d.sync += wavelength_bin.eq(3)
+                                    m.d.sync += not_within_bin.eq(0)
+                                with m.Else():
+                                    m.d.sync += not_within_bin.eq(1)
+
+                                """
+                                ADDRESS SCHEME: pixel = 4 x-bits + 8 y-bits (LSB is y, MSB is x)
+                                                Use the 11 least significant bits as the memory address
+                                                Take the most significant bit (MSB of x) and use it as a MUX
+                                                If 0, then data = 32 lest significant of the 64 data bits at the address
+                                                If 1, then data = 32 most significant of the 64 data bits at the address
+                                """
+
+                                m.d.sync += memfa.read.payload.addr.eq(pixel[0:11])
+                                m.d.sync += memfa.read.valid.eq(1)
+                                m.d.sync += memfa.read_output.ready.eq(1)
+                                m.next = "State2"
+
+                            with m.State("State2"):
+                                m.d.sync += muxer.eq(pixel[11])
+                                m.d.sync += memfa.read.valid.eq(0)
+
+                                with m.If(memfa.read_output.valid):
+                                    m.d.sync += memfa.read_output.ready.eq(0)
+
+                                    byte_array = Array([Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8)])
+                                    for j in range(8):
+                                        m.d.sync += byte_array[j].eq(memfa.read_output.payload.data[8*j:8*(j+1)])
+                                    m.next = "State3"
+                            
+                            with m.State("State3"):                  
+                                byte_array_new = Array([Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8)])
+                                index = wavelength_bin | (muxer<<2)
+
+                                for j in range(8):
+                                    with m.If((j == index) & (byte_array[j] != 0b11111111) & (not_within_bin == 0)):
+                                        m.d.comb += byte_array_new[j].eq((byte_array[j] + 1)[:8])
+                                    with m.Elif((j == index) & (byte_array[j] == 0b11111111) & (not_within_bin == 0)):
+                                        m.d.comb += byte_array_new[j].eq(byte_array[j])
+                                        m.d.sync += self.count_overflow_flag.eq(1)
+                                    with m.Else():
+                                        m.d.comb += byte_array_new[j].eq(byte_array[j])
+
+                                new_data = Cat(byte_array_new[j] for j in range(8))
+                                m.d.sync += memfa.write.payload.data.eq(new_data)
+                                m.d.sync += memfa.write.payload.addr.eq(pixel[0:11])
+                                m.next = "State4"
+
+                            with m.State("State4"):
+                                m.d.sync += memfa.write.valid.eq(1)
+                                m.next = "State5"
+
+                            with m.State("State5"):
+                                m.d.sync += memfa.write.valid.eq(0)
+                                m.d.sync += counting.eq(0)
+                                m.next = "State0"
+
+                    with m.If(i >= self.cycles_per_frame-12):
                         m.d.sync += buffered_stream.ready.eq(0)
-
-                        def wavelength_cutoff(n):
-                            return wavelength_cutoffs[n*self.wavelength_cutoff_precision:(n+1)*self.wavelength_cutoff_precision]
-
-                        with m.If((divided_phase >= wavelength_cutoff(0)) & (divided_phase < wavelength_cutoff(1))):
-                            m.d.sync += wavelength_bin.eq(0)
-                            m.d.sync += not_within_bin.eq(0)
-                        with m.Elif((divided_phase >= wavelength_cutoff(1)) & (divided_phase < wavelength_cutoff(2))):
-                            m.d.sync += wavelength_bin.eq(1)
-                            m.d.sync += not_within_bin.eq(0)
-                        with m.Elif((divided_phase >= wavelength_cutoff(2)) & (divided_phase < wavelength_cutoff(3))):
-                            m.d.sync += wavelength_bin.eq(2)
-                            m.d.sync += not_within_bin.eq(0)
-                        with m.Elif((divided_phase >= wavelength_cutoff(3)) & (divided_phase < wavelength_cutoff(4))):
-                            m.d.sync += wavelength_bin.eq(3)
-                            m.d.sync += not_within_bin.eq(0)
-                        with m.Else():
-                            m.d.sync += not_within_bin.eq(1)
-
-                        """
-                        ADDRESS SCHEME: pixel = 4 x-bits + 8 y-bits (LSB is y, MSB is x)
-                                        Use the 11 least significant bits as the memory address
-                                        Take the most significant bit (MSB of x) and use it as a MUX
-                                        If 0, then data = 32 lest significant of the 64 data bits at the address
-                                        If 1, then data = 32 most significant of the 64 data bits at the address
-                        """
-
-                        m.d.sync += write_port1.addr.eq(pixel[0:11])
-                        m.d.comb += read_port.addr.eq(pixel[0:11])
-                        m.d.sync += reading.eq(1)
-                        m.d.sync += pixel_to_upload.eq(pixel)
-                        m.d.sync += LUTS_read.eq(0)
-
-                    with m.If((reading) & (~uploading)):
-                        m.d.sync += write_port1.addr.eq(pixel_to_upload[0:11])
-                        m.d.comb += read_port.addr.eq(pixel_to_upload[0:11])
-
-                        byte_array = Array([Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8)])
-                        for j in range(8):
-                            m.d.comb += byte_array[j].eq(read_port.data[8*j:8*(j+1)])
-
-                        index = wavelength_bin | (muxer<<2)                      
-
-                        byte_array_new = Array([Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8)])
-
-                        m.d.sync += self.count_overflow_flag.eq(0)
-                        for j in range(8):
-                            with m.If((j == index) & (byte_array[j] != 0b11111111) & (not_within_bin == 0)):
-                                m.d.comb += byte_array_new[j].eq((byte_array[j] + 1)[:8])
-                            with m.Elif((j == index) & (byte_array[j] == 0b11111111) & (not_within_bin == 0)):
-                                m.d.comb += byte_array_new[j].eq(byte_array[j])
-                                m.d.sync += self.count_overflow_flag.eq(1)
-                            with m.Else():
-                                m.d.comb += byte_array_new[j].eq(byte_array[j])
-
-                        new_data = Cat(byte_array_new[j] for j in range(8))
-
-                        m.d.sync += write_port1.data.eq(new_data)
-
-                        m.d.sync += uploading.eq(1)
-                        m.d.sync += buffered_stream.ready.eq(0)
-                    
-
-                    with m.If(uploading):
-                        m.d.sync += write_port1.addr.eq(pixel_to_upload[0:11])
-                        m.d.comb += read_port.addr.eq(pixel_to_upload[0:11])
-                        m.d.sync += buffered_stream.ready.eq(0)
-
-                        m.d.sync += write_port1.en.eq(1)
-
-                        with m.If(write_port1.en == 1):
-                            m.d.sync += write_port1.en.eq(0)
-                            m.d.sync += uploading.eq(0)
-                            m.d.sync += reading.eq(0)
-                            m.d.sync += buffered_stream.ready.eq(1)
-
 
                     with m.If(i >= self.cycles_per_frame-1):
                         m.d.sync += i.eq(0)
-                        m.d.sync += write_port1.en.eq(0)
+                        m.d.sync += memfa.write.valid.eq(0)
                         m.next = "Stalling"
 
                     with m.If(~self.generate_cubes):
@@ -267,10 +311,26 @@ class ImageCuber(wiring.Component):
 
                 with m.State("Stalling"):
                     m.d.sync += i.eq(i+1)
+                    m.d.sync += memfb.write.valid.eq(0)
 
-                    m.d.comb += read_port.addr.eq(self.mem_read_addr)
-                    m.d.comb += self.mem_read_data.eq(read_port.data)
-                    m.d.comb += self.mem_read_number.eq(machine_number)
+                    m.d.comb += [
+                        memfb.read.payload.addr.eq(self.mem_read.payload.addr),
+                        memfb.read.payload.user_data.last.eq(self.mem_read.payload.last),
+                        memfb.read.payload.user_data.id.eq(self.mem_read.payload.id),
+                        memfb.read.valid.eq(self.mem_read.valid),
+                        self.mem_read.ready.eq(memfb.read.ready),
+
+                        self.mem_read_output.payload.data.eq(memfb.read_output.payload.data),
+                        self.mem_read_output.payload.mem_num.eq(machine_number),
+                        self.mem_read_output.payload.last.eq(memfb.read_output.payload.user_data.last),
+                        self.mem_read_output.payload.id.eq(memfb.read_output.payload.user_data.id),
+                        self.mem_read_output.valid.eq(memfb.read_output.valid),
+                        memfb.read_output.ready.eq(self.mem_read_output.ready),
+                    ]
+
+                    with m.If((self.mem_read.payload.mem_num != machine_number)):
+                        m.d.comb += self.mem_read.ready.eq(0)
+                        m.d.comb += memfb.read.valid.eq(0)
 
                     with m.If(i == self.cycles_per_frame - 1):
                         m.d.sync += i.eq(0)
@@ -281,12 +341,11 @@ class ImageCuber(wiring.Component):
                         m.next = "Configuring"
 
 
-
         #State machine memory 1
-        state_machine(write_port11, write_port12, read_port1, 0)
+        state_machine(mem1fa, mem1fb, 0)
         
         #State machine memory 2
-        state_machine(write_port21, write_port22, read_port2, 1)
+        state_machine(mem2fa, mem2fb, 1)
         
         
         return m

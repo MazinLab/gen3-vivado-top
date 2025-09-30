@@ -28,6 +28,7 @@ update_ip_catalog -rebuild
 set obj [get_filesets sources_1]
  set files [list \
   [file normalize "${origin_dir}/rtl/lfsr_div.v"] \
+  [file normalize "${origin_dir}/rtl/swapiq.v"] \
   [file normalize "${origin_dir}/rtl/mkidaranth/integration.v"] \
   [file normalize "${ip_repo}/wb2axip/rtl/sfifo.v"] \
   [file normalize "${ip_repo}/wb2axip/rtl/axis2mm.v"] \
