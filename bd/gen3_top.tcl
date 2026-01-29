@@ -319,14 +319,31 @@ proc create_hier_cell_reload { parentCell nameHier } {
   # Create instance: axis_broadcaster_1, and set properties
   set axis_broadcaster_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 axis_broadcaster_1 ]
   set_property -dict [list \
+    CONFIG.HAS_TKEEP {1} \
+    CONFIG.HAS_TLAST {1} \
+    CONFIG.HAS_TREADY {1} \
+    CONFIG.HAS_TSTRB {0} \
     CONFIG.M00_TDATA_REMAP {tdata[15:0]} \
     CONFIG.M01_TDATA_REMAP {tdata[15:0]} \
     CONFIG.M02_TDATA_REMAP {tdata[15:0]} \
     CONFIG.M03_TDATA_REMAP {tdata[15:0]} \
     CONFIG.M_TDATA_NUM_BYTES {2} \
+    CONFIG.M_TUSER_WIDTH {0} \
     CONFIG.NUM_MI {4} \
     CONFIG.S_TDATA_NUM_BYTES {2} \
+    CONFIG.S_TUSER_WIDTH {0} \
     CONFIG.TDEST_WIDTH {0} \
+    CONFIG.TID_WIDTH {0} \
+  ] $axis_broadcaster_1
+
+  set_property -dict [list \
+    CONFIG.HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.HAS_TLAST.VALUE_MODE {auto} \
+    CONFIG.HAS_TREADY.VALUE_MODE {auto} \
+    CONFIG.HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.M_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.TID_WIDTH.VALUE_MODE {auto} \
   ] $axis_broadcaster_1
 
 
@@ -482,6 +499,10 @@ proc create_hier_cell_firs { parentCell nameHier } {
   # Create instance: axis_broadcaster_0, and set properties
   set axis_broadcaster_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 axis_broadcaster_0 ]
   set_property -dict [list \
+    CONFIG.HAS_TKEEP {1} \
+    CONFIG.HAS_TLAST {1} \
+    CONFIG.HAS_TREADY {1} \
+    CONFIG.HAS_TSTRB {1} \
     CONFIG.M02_TDATA_REMAP {tdata[7:0]} \
     CONFIG.M03_TDATA_REMAP {tdata[7:0]} \
     CONFIG.M04_TDATA_REMAP {tdata[7:0]} \
@@ -496,14 +517,36 @@ proc create_hier_cell_firs { parentCell nameHier } {
     CONFIG.M13_TDATA_REMAP {tdata[7:0]} \
     CONFIG.M14_TDATA_REMAP {tdata[7:0]} \
     CONFIG.M15_TDATA_REMAP {tdata[7:0]} \
+    CONFIG.M_TDATA_NUM_BYTES {1} \
+    CONFIG.M_TUSER_WIDTH {0} \
     CONFIG.NUM_MI {16} \
+    CONFIG.S_TDATA_NUM_BYTES {1} \
+    CONFIG.S_TUSER_WIDTH {0} \
+    CONFIG.TDEST_WIDTH {0} \
+    CONFIG.TID_WIDTH {0} \
+  ] $axis_broadcaster_0
+
+  set_property -dict [list \
+    CONFIG.HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.HAS_TLAST.VALUE_MODE {auto} \
+    CONFIG.HAS_TREADY.VALUE_MODE {auto} \
+    CONFIG.HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.M_TDATA_NUM_BYTES.VALUE_MODE {auto} \
+    CONFIG.M_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TDATA_NUM_BYTES.VALUE_MODE {auto} \
+    CONFIG.S_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.TID_WIDTH.VALUE_MODE {auto} \
   ] $axis_broadcaster_0
 
 
   # Create instance: axis_broadcaster_1, and set properties
   set axis_broadcaster_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 axis_broadcaster_1 ]
   set_property -dict [list \
+    CONFIG.HAS_TKEEP {0} \
+    CONFIG.HAS_TLAST {1} \
     CONFIG.HAS_TREADY {0} \
+    CONFIG.HAS_TSTRB {0} \
     CONFIG.M00_TDATA_REMAP {tdata[31:0]} \
     CONFIG.M01_TDATA_REMAP {tdata[63:32]} \
     CONFIG.M02_TDATA_REMAP {tdata[95:64]} \
@@ -521,8 +564,22 @@ proc create_hier_cell_firs { parentCell nameHier } {
     CONFIG.M14_TDATA_REMAP {tdata[479:448]} \
     CONFIG.M15_TDATA_REMAP {tdata[511:480]} \
     CONFIG.M_TDATA_NUM_BYTES {4} \
+    CONFIG.M_TUSER_WIDTH {0} \
     CONFIG.NUM_MI {16} \
     CONFIG.S_TDATA_NUM_BYTES {64} \
+    CONFIG.S_TUSER_WIDTH {0} \
+    CONFIG.TDEST_WIDTH {0} \
+    CONFIG.TID_WIDTH {0} \
+  ] $axis_broadcaster_1
+
+  set_property -dict [list \
+    CONFIG.HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.HAS_TLAST.VALUE_MODE {auto} \
+    CONFIG.HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.M_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.TID_WIDTH.VALUE_MODE {auto} \
   ] $axis_broadcaster_1
 
 
@@ -538,13 +595,13 @@ proc create_hier_cell_firs { parentCell nameHier } {
     CONFIG.Clock_Frequency {300.0} \
     CONFIG.CoefficientSource {COE_File} \
     CONFIG.Coefficient_Fanout {false} \
-    CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane0.coe} \
-    CONFIG.Coefficient_Fractional_Bits {26} \
+    CONFIG.Coefficient_File {../../../../../../../../data/8_tap_narrow/lane0.coe} \
+    CONFIG.Coefficient_Fractional_Bits {15} \
     CONFIG.Coefficient_Sets {256} \
     CONFIG.Coefficient_Sign {Signed} \
     CONFIG.Coefficient_Structure {Inferred} \
     CONFIG.Coefficient_Width {16} \
-    CONFIG.ColumnConfig {4} \
+    CONFIG.ColumnConfig {8} \
     CONFIG.Control_Broadcast_Fanout {false} \
     CONFIG.Control_Column_Fanout {false} \
     CONFIG.Control_LUT_Pipeline {false} \
@@ -587,13 +644,13 @@ proc create_hier_cell_firs { parentCell nameHier } {
     CONFIG.Clock_Frequency {300.0} \
     CONFIG.CoefficientSource {COE_File} \
     CONFIG.Coefficient_Fanout {false} \
-    CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane1.coe} \
-    CONFIG.Coefficient_Fractional_Bits {26} \
+    CONFIG.Coefficient_File {../../../../../../../../data/8_tap_narrow/lane1.coe} \
+    CONFIG.Coefficient_Fractional_Bits {15} \
     CONFIG.Coefficient_Sets {256} \
     CONFIG.Coefficient_Sign {Signed} \
     CONFIG.Coefficient_Structure {Inferred} \
     CONFIG.Coefficient_Width {16} \
-    CONFIG.ColumnConfig {4} \
+    CONFIG.ColumnConfig {8} \
     CONFIG.Control_Broadcast_Fanout {false} \
     CONFIG.Control_Column_Fanout {false} \
     CONFIG.Control_LUT_Pipeline {false} \
@@ -636,13 +693,13 @@ proc create_hier_cell_firs { parentCell nameHier } {
     CONFIG.Clock_Frequency {300.0} \
     CONFIG.CoefficientSource {COE_File} \
     CONFIG.Coefficient_Fanout {false} \
-    CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane2.coe} \
-    CONFIG.Coefficient_Fractional_Bits {26} \
+    CONFIG.Coefficient_File {../../../../../../../../data/8_tap_narrow/lane2.coe} \
+    CONFIG.Coefficient_Fractional_Bits {15} \
     CONFIG.Coefficient_Sets {256} \
     CONFIG.Coefficient_Sign {Signed} \
     CONFIG.Coefficient_Structure {Inferred} \
     CONFIG.Coefficient_Width {16} \
-    CONFIG.ColumnConfig {4} \
+    CONFIG.ColumnConfig {8} \
     CONFIG.Control_Broadcast_Fanout {false} \
     CONFIG.Control_Column_Fanout {false} \
     CONFIG.Control_LUT_Pipeline {false} \
@@ -685,13 +742,13 @@ proc create_hier_cell_firs { parentCell nameHier } {
     CONFIG.Clock_Frequency {300.0} \
     CONFIG.CoefficientSource {COE_File} \
     CONFIG.Coefficient_Fanout {false} \
-    CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane3.coe} \
-    CONFIG.Coefficient_Fractional_Bits {26} \
+    CONFIG.Coefficient_File {../../../../../../../../data/8_tap_narrow/lane3.coe} \
+    CONFIG.Coefficient_Fractional_Bits {15} \
     CONFIG.Coefficient_Sets {256} \
     CONFIG.Coefficient_Sign {Signed} \
     CONFIG.Coefficient_Structure {Inferred} \
     CONFIG.Coefficient_Width {16} \
-    CONFIG.ColumnConfig {4} \
+    CONFIG.ColumnConfig {8} \
     CONFIG.Control_Broadcast_Fanout {false} \
     CONFIG.Control_Column_Fanout {false} \
     CONFIG.Control_LUT_Pipeline {false} \
@@ -734,13 +791,13 @@ proc create_hier_cell_firs { parentCell nameHier } {
     CONFIG.Clock_Frequency {300.0} \
     CONFIG.CoefficientSource {COE_File} \
     CONFIG.Coefficient_Fanout {false} \
-    CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane4.coe} \
-    CONFIG.Coefficient_Fractional_Bits {26} \
+    CONFIG.Coefficient_File {../../../../../../../../data/8_tap_narrow/lane4.coe} \
+    CONFIG.Coefficient_Fractional_Bits {15} \
     CONFIG.Coefficient_Sets {256} \
     CONFIG.Coefficient_Sign {Signed} \
     CONFIG.Coefficient_Structure {Inferred} \
     CONFIG.Coefficient_Width {16} \
-    CONFIG.ColumnConfig {4} \
+    CONFIG.ColumnConfig {8} \
     CONFIG.Control_Broadcast_Fanout {false} \
     CONFIG.Control_Column_Fanout {false} \
     CONFIG.Control_LUT_Pipeline {false} \
@@ -783,13 +840,13 @@ proc create_hier_cell_firs { parentCell nameHier } {
     CONFIG.Clock_Frequency {300.0} \
     CONFIG.CoefficientSource {COE_File} \
     CONFIG.Coefficient_Fanout {false} \
-    CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane5.coe} \
-    CONFIG.Coefficient_Fractional_Bits {26} \
+    CONFIG.Coefficient_File {../../../../../../../../data/8_tap_narrow/lane5.coe} \
+    CONFIG.Coefficient_Fractional_Bits {15} \
     CONFIG.Coefficient_Sets {256} \
     CONFIG.Coefficient_Sign {Signed} \
     CONFIG.Coefficient_Structure {Inferred} \
     CONFIG.Coefficient_Width {16} \
-    CONFIG.ColumnConfig {4} \
+    CONFIG.ColumnConfig {8} \
     CONFIG.Control_Broadcast_Fanout {false} \
     CONFIG.Control_Column_Fanout {false} \
     CONFIG.Control_LUT_Pipeline {false} \
@@ -832,13 +889,13 @@ proc create_hier_cell_firs { parentCell nameHier } {
     CONFIG.Clock_Frequency {300.0} \
     CONFIG.CoefficientSource {COE_File} \
     CONFIG.Coefficient_Fanout {false} \
-    CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane6.coe} \
-    CONFIG.Coefficient_Fractional_Bits {26} \
+    CONFIG.Coefficient_File {../../../../../../../../data/8_tap_narrow/lane6.coe} \
+    CONFIG.Coefficient_Fractional_Bits {15} \
     CONFIG.Coefficient_Sets {256} \
     CONFIG.Coefficient_Sign {Signed} \
     CONFIG.Coefficient_Structure {Inferred} \
     CONFIG.Coefficient_Width {16} \
-    CONFIG.ColumnConfig {4} \
+    CONFIG.ColumnConfig {8} \
     CONFIG.Control_Broadcast_Fanout {false} \
     CONFIG.Control_Column_Fanout {false} \
     CONFIG.Control_LUT_Pipeline {false} \
@@ -881,13 +938,13 @@ proc create_hier_cell_firs { parentCell nameHier } {
     CONFIG.Clock_Frequency {300.0} \
     CONFIG.CoefficientSource {COE_File} \
     CONFIG.Coefficient_Fanout {false} \
-    CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane7.coe} \
-    CONFIG.Coefficient_Fractional_Bits {26} \
+    CONFIG.Coefficient_File {../../../../../../../../data/8_tap_narrow/lane7.coe} \
+    CONFIG.Coefficient_Fractional_Bits {15} \
     CONFIG.Coefficient_Sets {256} \
     CONFIG.Coefficient_Sign {Signed} \
     CONFIG.Coefficient_Structure {Inferred} \
     CONFIG.Coefficient_Width {16} \
-    CONFIG.ColumnConfig {4} \
+    CONFIG.ColumnConfig {8} \
     CONFIG.Control_Broadcast_Fanout {false} \
     CONFIG.Control_Column_Fanout {false} \
     CONFIG.Control_LUT_Pipeline {false} \
@@ -930,13 +987,13 @@ proc create_hier_cell_firs { parentCell nameHier } {
     CONFIG.Clock_Frequency {300.0} \
     CONFIG.CoefficientSource {COE_File} \
     CONFIG.Coefficient_Fanout {false} \
-    CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane8.coe} \
-    CONFIG.Coefficient_Fractional_Bits {26} \
+    CONFIG.Coefficient_File {../../../../../../../../data/8_tap_narrow/lane8.coe} \
+    CONFIG.Coefficient_Fractional_Bits {15} \
     CONFIG.Coefficient_Sets {256} \
     CONFIG.Coefficient_Sign {Signed} \
     CONFIG.Coefficient_Structure {Inferred} \
     CONFIG.Coefficient_Width {16} \
-    CONFIG.ColumnConfig {4} \
+    CONFIG.ColumnConfig {8} \
     CONFIG.Control_Broadcast_Fanout {false} \
     CONFIG.Control_Column_Fanout {false} \
     CONFIG.Control_LUT_Pipeline {false} \
@@ -979,13 +1036,13 @@ proc create_hier_cell_firs { parentCell nameHier } {
     CONFIG.Clock_Frequency {300.0} \
     CONFIG.CoefficientSource {COE_File} \
     CONFIG.Coefficient_Fanout {false} \
-    CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane9.coe} \
-    CONFIG.Coefficient_Fractional_Bits {26} \
+    CONFIG.Coefficient_File {../../../../../../../../data/8_tap_narrow/lane9.coe} \
+    CONFIG.Coefficient_Fractional_Bits {15} \
     CONFIG.Coefficient_Sets {256} \
     CONFIG.Coefficient_Sign {Signed} \
     CONFIG.Coefficient_Structure {Inferred} \
     CONFIG.Coefficient_Width {16} \
-    CONFIG.ColumnConfig {4} \
+    CONFIG.ColumnConfig {8} \
     CONFIG.Control_Broadcast_Fanout {false} \
     CONFIG.Control_Column_Fanout {false} \
     CONFIG.Control_LUT_Pipeline {false} \
@@ -1028,13 +1085,13 @@ proc create_hier_cell_firs { parentCell nameHier } {
     CONFIG.Clock_Frequency {300.0} \
     CONFIG.CoefficientSource {COE_File} \
     CONFIG.Coefficient_Fanout {false} \
-    CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane10.coe} \
-    CONFIG.Coefficient_Fractional_Bits {26} \
+    CONFIG.Coefficient_File {../../../../../../../../data/8_tap_narrow/lane10.coe} \
+    CONFIG.Coefficient_Fractional_Bits {15} \
     CONFIG.Coefficient_Sets {256} \
     CONFIG.Coefficient_Sign {Signed} \
     CONFIG.Coefficient_Structure {Inferred} \
     CONFIG.Coefficient_Width {16} \
-    CONFIG.ColumnConfig {4} \
+    CONFIG.ColumnConfig {8} \
     CONFIG.Control_Broadcast_Fanout {false} \
     CONFIG.Control_Column_Fanout {false} \
     CONFIG.Control_LUT_Pipeline {false} \
@@ -1077,13 +1134,13 @@ proc create_hier_cell_firs { parentCell nameHier } {
     CONFIG.Clock_Frequency {300.0} \
     CONFIG.CoefficientSource {COE_File} \
     CONFIG.Coefficient_Fanout {false} \
-    CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane11.coe} \
-    CONFIG.Coefficient_Fractional_Bits {26} \
+    CONFIG.Coefficient_File {../../../../../../../../data/8_tap_narrow/lane11.coe} \
+    CONFIG.Coefficient_Fractional_Bits {15} \
     CONFIG.Coefficient_Sets {256} \
     CONFIG.Coefficient_Sign {Signed} \
     CONFIG.Coefficient_Structure {Inferred} \
     CONFIG.Coefficient_Width {16} \
-    CONFIG.ColumnConfig {4} \
+    CONFIG.ColumnConfig {8} \
     CONFIG.Control_Broadcast_Fanout {false} \
     CONFIG.Control_Column_Fanout {false} \
     CONFIG.Control_LUT_Pipeline {false} \
@@ -1126,13 +1183,13 @@ proc create_hier_cell_firs { parentCell nameHier } {
     CONFIG.Clock_Frequency {300.0} \
     CONFIG.CoefficientSource {COE_File} \
     CONFIG.Coefficient_Fanout {false} \
-    CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane12.coe} \
-    CONFIG.Coefficient_Fractional_Bits {26} \
+    CONFIG.Coefficient_File {../../../../../../../../data/8_tap_narrow/lane12.coe} \
+    CONFIG.Coefficient_Fractional_Bits {15} \
     CONFIG.Coefficient_Sets {256} \
     CONFIG.Coefficient_Sign {Signed} \
     CONFIG.Coefficient_Structure {Inferred} \
     CONFIG.Coefficient_Width {16} \
-    CONFIG.ColumnConfig {4} \
+    CONFIG.ColumnConfig {8} \
     CONFIG.Control_Broadcast_Fanout {false} \
     CONFIG.Control_Column_Fanout {false} \
     CONFIG.Control_LUT_Pipeline {false} \
@@ -1175,13 +1232,13 @@ proc create_hier_cell_firs { parentCell nameHier } {
     CONFIG.Clock_Frequency {300.0} \
     CONFIG.CoefficientSource {COE_File} \
     CONFIG.Coefficient_Fanout {false} \
-    CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane13.coe} \
-    CONFIG.Coefficient_Fractional_Bits {26} \
+    CONFIG.Coefficient_File {../../../../../../../../data/8_tap_narrow/lane13.coe} \
+    CONFIG.Coefficient_Fractional_Bits {15} \
     CONFIG.Coefficient_Sets {256} \
     CONFIG.Coefficient_Sign {Signed} \
     CONFIG.Coefficient_Structure {Inferred} \
     CONFIG.Coefficient_Width {16} \
-    CONFIG.ColumnConfig {4} \
+    CONFIG.ColumnConfig {8} \
     CONFIG.Control_Broadcast_Fanout {false} \
     CONFIG.Control_Column_Fanout {false} \
     CONFIG.Control_LUT_Pipeline {false} \
@@ -1224,13 +1281,13 @@ proc create_hier_cell_firs { parentCell nameHier } {
     CONFIG.Clock_Frequency {300.0} \
     CONFIG.CoefficientSource {COE_File} \
     CONFIG.Coefficient_Fanout {false} \
-    CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane14.coe} \
-    CONFIG.Coefficient_Fractional_Bits {26} \
+    CONFIG.Coefficient_File {../../../../../../../../data/8_tap_narrow/lane14.coe} \
+    CONFIG.Coefficient_Fractional_Bits {15} \
     CONFIG.Coefficient_Sets {256} \
     CONFIG.Coefficient_Sign {Signed} \
     CONFIG.Coefficient_Structure {Inferred} \
     CONFIG.Coefficient_Width {16} \
-    CONFIG.ColumnConfig {4} \
+    CONFIG.ColumnConfig {8} \
     CONFIG.Control_Broadcast_Fanout {false} \
     CONFIG.Control_Column_Fanout {false} \
     CONFIG.Control_LUT_Pipeline {false} \
@@ -1273,13 +1330,13 @@ proc create_hier_cell_firs { parentCell nameHier } {
     CONFIG.Clock_Frequency {300.0} \
     CONFIG.CoefficientSource {COE_File} \
     CONFIG.Coefficient_Fanout {false} \
-    CONFIG.Coefficient_File {../../../../../../../../data/4_tap_equiripple/lane15.coe} \
-    CONFIG.Coefficient_Fractional_Bits {26} \
+    CONFIG.Coefficient_File {../../../../../../../../data/8_tap_narrow/lane15.coe} \
+    CONFIG.Coefficient_Fractional_Bits {15} \
     CONFIG.Coefficient_Sets {256} \
     CONFIG.Coefficient_Sign {Signed} \
     CONFIG.Coefficient_Structure {Inferred} \
     CONFIG.Coefficient_Width {16} \
-    CONFIG.ColumnConfig {4} \
+    CONFIG.ColumnConfig {8} \
     CONFIG.Control_Broadcast_Fanout {false} \
     CONFIG.Control_Column_Fanout {false} \
     CONFIG.Control_LUT_Pipeline {false} \
@@ -1463,7 +1520,10 @@ proc create_hier_cell_fft { parentCell nameHier } {
   # Create instance: axis_broadcaster_0, and set properties
   set axis_broadcaster_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 axis_broadcaster_0 ]
   set_property -dict [list \
+    CONFIG.HAS_TKEEP {0} \
+    CONFIG.HAS_TLAST {1} \
     CONFIG.HAS_TREADY {0} \
+    CONFIG.HAS_TSTRB {0} \
     CONFIG.M00_TDATA_REMAP {tdata[31:0]} \
     CONFIG.M01_TDATA_REMAP {tdata[63:32]} \
     CONFIG.M02_TDATA_REMAP {tdata[95:64]} \
@@ -1481,8 +1541,22 @@ proc create_hier_cell_fft { parentCell nameHier } {
     CONFIG.M14_TDATA_REMAP {tdata[479:448]} \
     CONFIG.M15_TDATA_REMAP {tdata[511:480]} \
     CONFIG.M_TDATA_NUM_BYTES {4} \
+    CONFIG.M_TUSER_WIDTH {0} \
     CONFIG.NUM_MI {16} \
     CONFIG.S_TDATA_NUM_BYTES {64} \
+    CONFIG.S_TUSER_WIDTH {0} \
+    CONFIG.TDEST_WIDTH {0} \
+    CONFIG.TID_WIDTH {0} \
+  ] $axis_broadcaster_0
+
+  set_property -dict [list \
+    CONFIG.HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.HAS_TLAST.VALUE_MODE {auto} \
+    CONFIG.HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.M_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.TID_WIDTH.VALUE_MODE {auto} \
   ] $axis_broadcaster_0
 
 
@@ -1646,7 +1720,10 @@ proc create_hier_cell_reschan { parentCell nameHier } {
   # Create instance: axis_broadcaster_0, and set properties
   set axis_broadcaster_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 axis_broadcaster_0 ]
   set_property -dict [list \
+    CONFIG.HAS_TKEEP {1} \
+    CONFIG.HAS_TLAST {1} \
     CONFIG.HAS_TREADY {0} \
+    CONFIG.HAS_TSTRB {1} \
     CONFIG.M00_TDATA_REMAP {tdata[255:0]} \
     CONFIG.M00_TUSER_REMAP {tuser[7:0]} \
     CONFIG.M01_TDATA_REMAP {tdata[255:0]} \
@@ -1655,13 +1732,26 @@ proc create_hier_cell_reschan { parentCell nameHier } {
     CONFIG.M_TUSER_WIDTH {8} \
     CONFIG.S_TDATA_NUM_BYTES {32} \
     CONFIG.S_TUSER_WIDTH {8} \
+    CONFIG.TDEST_WIDTH {0} \
+    CONFIG.TID_WIDTH {0} \
+  ] $axis_broadcaster_0
+
+  set_property -dict [list \
+    CONFIG.HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.HAS_TLAST.VALUE_MODE {auto} \
+    CONFIG.HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.TID_WIDTH.VALUE_MODE {auto} \
   ] $axis_broadcaster_0
 
 
   # Create instance: axis_broadcaster_1, and set properties
   set axis_broadcaster_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 axis_broadcaster_1 ]
   set_property -dict [list \
+    CONFIG.HAS_TKEEP {1} \
+    CONFIG.HAS_TLAST {1} \
     CONFIG.HAS_TREADY {0} \
+    CONFIG.HAS_TSTRB {1} \
     CONFIG.M00_TDATA_REMAP {tdata[255:0]} \
     CONFIG.M00_TUSER_REMAP {tuser[7:0]} \
     CONFIG.M01_TDATA_REMAP {tdata[255:0]} \
@@ -1670,6 +1760,16 @@ proc create_hier_cell_reschan { parentCell nameHier } {
     CONFIG.M_TUSER_WIDTH {8} \
     CONFIG.S_TDATA_NUM_BYTES {32} \
     CONFIG.S_TUSER_WIDTH {8} \
+    CONFIG.TDEST_WIDTH {0} \
+    CONFIG.TID_WIDTH {0} \
+  ] $axis_broadcaster_1
+
+  set_property -dict [list \
+    CONFIG.HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.HAS_TLAST.VALUE_MODE {auto} \
+    CONFIG.HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.TID_WIDTH.VALUE_MODE {auto} \
   ] $axis_broadcaster_1
 
 
@@ -1920,7 +2020,10 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
   # Create instance: axis_broadcaster_0, and set properties
   set axis_broadcaster_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 axis_broadcaster_0 ]
   set_property -dict [list \
+    CONFIG.HAS_TKEEP {0} \
     CONFIG.HAS_TLAST {1} \
+    CONFIG.HAS_TREADY {0} \
+    CONFIG.HAS_TSTRB {0} \
     CONFIG.M00_TDATA_REMAP {tdata[15:0]} \
     CONFIG.M00_TUSER_REMAP {tuser[8:0]} \
     CONFIG.M01_TDATA_REMAP {tdata[31:16]} \
@@ -1934,6 +2037,16 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
     CONFIG.NUM_MI {4} \
     CONFIG.S_TDATA_NUM_BYTES {8} \
     CONFIG.S_TUSER_WIDTH {16} \
+    CONFIG.TDEST_WIDTH {0} \
+    CONFIG.TID_WIDTH {0} \
+  ] $axis_broadcaster_0
+
+  set_property -dict [list \
+    CONFIG.HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.HAS_TREADY.VALUE_MODE {auto} \
+    CONFIG.HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.TID_WIDTH.VALUE_MODE {auto} \
   ] $axis_broadcaster_0
 
 
@@ -1977,47 +2090,159 @@ proc create_hier_cell_phasematch { parentCell nameHier } {
   # Create instance: axis_subset_converter_0, and set properties
   set axis_subset_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter:1.1 axis_subset_converter_0 ]
   set_property -dict [list \
+    CONFIG.M_HAS_TKEEP {0} \
     CONFIG.M_HAS_TLAST {0} \
+    CONFIG.M_HAS_TREADY {0} \
+    CONFIG.M_HAS_TSTRB {0} \
     CONFIG.M_TDATA_NUM_BYTES {2} \
+    CONFIG.M_TDEST_WIDTH {0} \
+    CONFIG.M_TID_WIDTH {0} \
     CONFIG.M_TUSER_WIDTH {9} \
+    CONFIG.S_HAS_TKEEP {0} \
+    CONFIG.S_HAS_TLAST {1} \
+    CONFIG.S_HAS_TREADY {0} \
+    CONFIG.S_HAS_TSTRB {0} \
     CONFIG.S_TDATA_NUM_BYTES {3} \
+    CONFIG.S_TDEST_WIDTH {0} \
+    CONFIG.S_TID_WIDTH {0} \
     CONFIG.S_TUSER_WIDTH {9} \
     CONFIG.TDATA_REMAP {tdata[15:0]} \
     CONFIG.TLAST_REMAP {1'b0} \
     CONFIG.TUSER_REMAP {tuser[8:0]} \
   ] $axis_subset_converter_0
 
+  set_property -dict [list \
+    CONFIG.M_HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.M_HAS_TREADY.VALUE_MODE {auto} \
+    CONFIG.M_HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.M_TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.M_TID_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TLAST.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TREADY.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.S_TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TID_WIDTH.VALUE_MODE {auto} \
+  ] $axis_subset_converter_0
+
 
   # Create instance: axis_subset_converter_1, and set properties
   set axis_subset_converter_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter:1.1 axis_subset_converter_1 ]
   set_property -dict [list \
+    CONFIG.M_HAS_TKEEP {0} \
     CONFIG.M_HAS_TLAST {0} \
+    CONFIG.M_HAS_TREADY {0} \
+    CONFIG.M_HAS_TSTRB {0} \
     CONFIG.M_TDATA_NUM_BYTES {2} \
+    CONFIG.M_TDEST_WIDTH {0} \
+    CONFIG.M_TID_WIDTH {0} \
+    CONFIG.M_TUSER_WIDTH {0} \
+    CONFIG.S_HAS_TKEEP {0} \
+    CONFIG.S_HAS_TLAST {1} \
+    CONFIG.S_HAS_TREADY {0} \
+    CONFIG.S_HAS_TSTRB {0} \
     CONFIG.S_TDATA_NUM_BYTES {3} \
+    CONFIG.S_TDEST_WIDTH {0} \
+    CONFIG.S_TID_WIDTH {0} \
+    CONFIG.S_TUSER_WIDTH {0} \
     CONFIG.TDATA_REMAP {tdata[15:0]} \
     CONFIG.TLAST_REMAP {1'b0} \
+  ] $axis_subset_converter_1
+
+  set_property -dict [list \
+    CONFIG.M_HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.M_HAS_TREADY.VALUE_MODE {auto} \
+    CONFIG.M_HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.M_TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.M_TID_WIDTH.VALUE_MODE {auto} \
+    CONFIG.M_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TLAST.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TREADY.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.S_TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TID_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TUSER_WIDTH.VALUE_MODE {auto} \
   ] $axis_subset_converter_1
 
 
   # Create instance: axis_subset_converter_2, and set properties
   set axis_subset_converter_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter:1.1 axis_subset_converter_2 ]
   set_property -dict [list \
+    CONFIG.M_HAS_TKEEP {0} \
     CONFIG.M_HAS_TLAST {0} \
+    CONFIG.M_HAS_TREADY {0} \
+    CONFIG.M_HAS_TSTRB {0} \
     CONFIG.M_TDATA_NUM_BYTES {2} \
+    CONFIG.M_TDEST_WIDTH {0} \
+    CONFIG.M_TID_WIDTH {0} \
+    CONFIG.M_TUSER_WIDTH {0} \
+    CONFIG.S_HAS_TKEEP {0} \
+    CONFIG.S_HAS_TLAST {1} \
+    CONFIG.S_HAS_TREADY {0} \
+    CONFIG.S_HAS_TSTRB {0} \
     CONFIG.S_TDATA_NUM_BYTES {3} \
+    CONFIG.S_TDEST_WIDTH {0} \
+    CONFIG.S_TID_WIDTH {0} \
+    CONFIG.S_TUSER_WIDTH {0} \
     CONFIG.TDATA_REMAP {tdata[15:0]} \
     CONFIG.TLAST_REMAP {1'b0} \
+  ] $axis_subset_converter_2
+
+  set_property -dict [list \
+    CONFIG.M_HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.M_HAS_TREADY.VALUE_MODE {auto} \
+    CONFIG.M_HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.M_TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.M_TID_WIDTH.VALUE_MODE {auto} \
+    CONFIG.M_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TLAST.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TREADY.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.S_TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TID_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TUSER_WIDTH.VALUE_MODE {auto} \
   ] $axis_subset_converter_2
 
 
   # Create instance: axis_subset_converter_3, and set properties
   set axis_subset_converter_3 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter:1.1 axis_subset_converter_3 ]
   set_property -dict [list \
+    CONFIG.M_HAS_TKEEP {0} \
     CONFIG.M_HAS_TLAST {0} \
+    CONFIG.M_HAS_TREADY {0} \
+    CONFIG.M_HAS_TSTRB {0} \
     CONFIG.M_TDATA_NUM_BYTES {2} \
+    CONFIG.M_TDEST_WIDTH {0} \
+    CONFIG.M_TID_WIDTH {0} \
+    CONFIG.M_TUSER_WIDTH {0} \
+    CONFIG.S_HAS_TKEEP {0} \
+    CONFIG.S_HAS_TLAST {1} \
+    CONFIG.S_HAS_TREADY {0} \
+    CONFIG.S_HAS_TSTRB {0} \
     CONFIG.S_TDATA_NUM_BYTES {3} \
+    CONFIG.S_TDEST_WIDTH {0} \
+    CONFIG.S_TID_WIDTH {0} \
+    CONFIG.S_TUSER_WIDTH {0} \
     CONFIG.TDATA_REMAP {tdata[15:0]} \
     CONFIG.TLAST_REMAP {1'b0} \
+  ] $axis_subset_converter_3
+
+  set_property -dict [list \
+    CONFIG.M_HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.M_HAS_TREADY.VALUE_MODE {auto} \
+    CONFIG.M_HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.M_TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.M_TID_WIDTH.VALUE_MODE {auto} \
+    CONFIG.M_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TLAST.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TREADY.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.S_TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TID_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TUSER_WIDTH.VALUE_MODE {auto} \
   ] $axis_subset_converter_3
 
 
@@ -2319,15 +2544,30 @@ proc create_hier_cell_phase { parentCell nameHier } {
   # Create instance: axis_broadcaster_0, and set properties
   set axis_broadcaster_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 axis_broadcaster_0 ]
   set_property -dict [list \
+    CONFIG.HAS_TKEEP {0} \
     CONFIG.HAS_TLAST {1} \
     CONFIG.HAS_TREADY {0} \
+    CONFIG.HAS_TSTRB {0} \
     CONFIG.M00_TDATA_REMAP {tdata[31:0]} \
     CONFIG.M01_TDATA_REMAP {tdata[63:32]} \
     CONFIG.M02_TDATA_REMAP {tdata[95:64]} \
     CONFIG.M03_TDATA_REMAP {tdata[127:96]} \
     CONFIG.M_TDATA_NUM_BYTES {4} \
+    CONFIG.M_TUSER_WIDTH {0} \
     CONFIG.NUM_MI {4} \
     CONFIG.S_TDATA_NUM_BYTES {16} \
+    CONFIG.S_TUSER_WIDTH {0} \
+    CONFIG.TDEST_WIDTH {0} \
+    CONFIG.TID_WIDTH {0} \
+  ] $axis_broadcaster_0
+
+  set_property -dict [list \
+    CONFIG.HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.M_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.TID_WIDTH.VALUE_MODE {auto} \
   ] $axis_broadcaster_0
 
 
@@ -2357,48 +2597,156 @@ proc create_hier_cell_phase { parentCell nameHier } {
   # Create instance: axis_subset_converter_0, and set properties
   set axis_subset_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter:1.1 axis_subset_converter_0 ]
   set_property -dict [list \
+    CONFIG.M_HAS_TKEEP {0} \
     CONFIG.M_HAS_TLAST {1} \
+    CONFIG.M_HAS_TREADY {0} \
+    CONFIG.M_HAS_TSTRB {0} \
     CONFIG.M_TDATA_NUM_BYTES {2} \
+    CONFIG.M_TDEST_WIDTH {0} \
+    CONFIG.M_TID_WIDTH {0} \
+    CONFIG.M_TUSER_WIDTH {0} \
+    CONFIG.S_HAS_TKEEP {0} \
     CONFIG.S_HAS_TLAST {1} \
+    CONFIG.S_HAS_TREADY {0} \
+    CONFIG.S_HAS_TSTRB {0} \
     CONFIG.S_TDATA_NUM_BYTES {3} \
+    CONFIG.S_TDEST_WIDTH {0} \
+    CONFIG.S_TID_WIDTH {0} \
+    CONFIG.S_TUSER_WIDTH {0} \
     CONFIG.TDATA_REMAP {tdata[15:0]} \
     CONFIG.TLAST_REMAP {1'b0} \
+  ] $axis_subset_converter_0
+
+  set_property -dict [list \
+    CONFIG.M_HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.M_HAS_TREADY.VALUE_MODE {auto} \
+    CONFIG.M_HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.M_TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.M_TID_WIDTH.VALUE_MODE {auto} \
+    CONFIG.M_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TREADY.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.S_TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TID_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TUSER_WIDTH.VALUE_MODE {auto} \
   ] $axis_subset_converter_0
 
 
   # Create instance: axis_subset_converter_1, and set properties
   set axis_subset_converter_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter:1.1 axis_subset_converter_1 ]
   set_property -dict [list \
+    CONFIG.M_HAS_TKEEP {0} \
     CONFIG.M_HAS_TLAST {1} \
+    CONFIG.M_HAS_TREADY {0} \
+    CONFIG.M_HAS_TSTRB {0} \
     CONFIG.M_TDATA_NUM_BYTES {2} \
+    CONFIG.M_TDEST_WIDTH {0} \
+    CONFIG.M_TID_WIDTH {0} \
+    CONFIG.M_TUSER_WIDTH {0} \
+    CONFIG.S_HAS_TKEEP {0} \
     CONFIG.S_HAS_TLAST {1} \
+    CONFIG.S_HAS_TREADY {0} \
+    CONFIG.S_HAS_TSTRB {0} \
     CONFIG.S_TDATA_NUM_BYTES {3} \
+    CONFIG.S_TDEST_WIDTH {0} \
+    CONFIG.S_TID_WIDTH {0} \
+    CONFIG.S_TUSER_WIDTH {0} \
     CONFIG.TDATA_REMAP {tdata[15:0]} \
     CONFIG.TLAST_REMAP {1'b0} \
+  ] $axis_subset_converter_1
+
+  set_property -dict [list \
+    CONFIG.M_HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.M_HAS_TREADY.VALUE_MODE {auto} \
+    CONFIG.M_HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.M_TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.M_TID_WIDTH.VALUE_MODE {auto} \
+    CONFIG.M_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TREADY.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.S_TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TID_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TUSER_WIDTH.VALUE_MODE {auto} \
   ] $axis_subset_converter_1
 
 
   # Create instance: axis_subset_converter_2, and set properties
   set axis_subset_converter_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter:1.1 axis_subset_converter_2 ]
   set_property -dict [list \
+    CONFIG.M_HAS_TKEEP {0} \
     CONFIG.M_HAS_TLAST {1} \
+    CONFIG.M_HAS_TREADY {0} \
+    CONFIG.M_HAS_TSTRB {0} \
     CONFIG.M_TDATA_NUM_BYTES {2} \
+    CONFIG.M_TDEST_WIDTH {0} \
+    CONFIG.M_TID_WIDTH {0} \
+    CONFIG.M_TUSER_WIDTH {0} \
+    CONFIG.S_HAS_TKEEP {0} \
     CONFIG.S_HAS_TLAST {1} \
+    CONFIG.S_HAS_TREADY {0} \
+    CONFIG.S_HAS_TSTRB {0} \
     CONFIG.S_TDATA_NUM_BYTES {3} \
+    CONFIG.S_TDEST_WIDTH {0} \
+    CONFIG.S_TID_WIDTH {0} \
+    CONFIG.S_TUSER_WIDTH {0} \
     CONFIG.TDATA_REMAP {tdata[15:0]} \
     CONFIG.TLAST_REMAP {1'b0} \
+  ] $axis_subset_converter_2
+
+  set_property -dict [list \
+    CONFIG.M_HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.M_HAS_TREADY.VALUE_MODE {auto} \
+    CONFIG.M_HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.M_TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.M_TID_WIDTH.VALUE_MODE {auto} \
+    CONFIG.M_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TREADY.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.S_TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TID_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TUSER_WIDTH.VALUE_MODE {auto} \
   ] $axis_subset_converter_2
 
 
   # Create instance: axis_subset_converter_3, and set properties
   set axis_subset_converter_3 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_subset_converter:1.1 axis_subset_converter_3 ]
   set_property -dict [list \
+    CONFIG.M_HAS_TKEEP {0} \
     CONFIG.M_HAS_TLAST {1} \
+    CONFIG.M_HAS_TREADY {0} \
+    CONFIG.M_HAS_TSTRB {0} \
     CONFIG.M_TDATA_NUM_BYTES {2} \
+    CONFIG.M_TDEST_WIDTH {0} \
+    CONFIG.M_TID_WIDTH {0} \
+    CONFIG.M_TUSER_WIDTH {0} \
+    CONFIG.S_HAS_TKEEP {0} \
     CONFIG.S_HAS_TLAST {1} \
+    CONFIG.S_HAS_TREADY {0} \
+    CONFIG.S_HAS_TSTRB {0} \
     CONFIG.S_TDATA_NUM_BYTES {3} \
+    CONFIG.S_TDEST_WIDTH {0} \
+    CONFIG.S_TID_WIDTH {0} \
+    CONFIG.S_TUSER_WIDTH {0} \
     CONFIG.TDATA_REMAP {tdata[15:0]} \
     CONFIG.TLAST_REMAP {1'b0} \
+  ] $axis_subset_converter_3
+
+  set_property -dict [list \
+    CONFIG.M_HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.M_HAS_TREADY.VALUE_MODE {auto} \
+    CONFIG.M_HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.M_TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.M_TID_WIDTH.VALUE_MODE {auto} \
+    CONFIG.M_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TREADY.VALUE_MODE {auto} \
+    CONFIG.S_HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.S_TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TID_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TUSER_WIDTH.VALUE_MODE {auto} \
   ] $axis_subset_converter_3
 
 
@@ -3858,6 +4206,13 @@ proc create_hier_cell_photon_pipe { parentCell nameHier } {
     CONFIG.M_TUSER_WIDTH {8} \
     CONFIG.S_TDATA_NUM_BYTES {32} \
     CONFIG.S_TUSER_WIDTH {8} \
+    CONFIG.TDEST_WIDTH {0} \
+    CONFIG.TID_WIDTH {0} \
+  ] $axis_broadcaster_1
+
+  set_property -dict [list \
+    CONFIG.TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.TID_WIDTH.VALUE_MODE {auto} \
   ] $axis_broadcaster_1
 
 
@@ -3951,7 +4306,10 @@ proc create_hier_cell_photon_pipe { parentCell nameHier } {
   # Create instance: phasematch_broadcaster_2, and set properties
   set phasematch_broadcaster_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 phasematch_broadcaster_2 ]
   set_property -dict [list \
+    CONFIG.HAS_TKEEP {0} \
+    CONFIG.HAS_TLAST {0} \
     CONFIG.HAS_TREADY {0} \
+    CONFIG.HAS_TSTRB {0} \
     CONFIG.M00_TDATA_REMAP {tdata[63:0]} \
     CONFIG.M00_TUSER_REMAP {tuser[8:0]} \
     CONFIG.M01_TDATA_REMAP {tdata[63:0]} \
@@ -3960,6 +4318,16 @@ proc create_hier_cell_photon_pipe { parentCell nameHier } {
     CONFIG.M_TUSER_WIDTH {9} \
     CONFIG.S_TDATA_NUM_BYTES {8} \
     CONFIG.S_TUSER_WIDTH {9} \
+    CONFIG.TDEST_WIDTH {0} \
+    CONFIG.TID_WIDTH {0} \
+  ] $phasematch_broadcaster_2
+
+  set_property -dict [list \
+    CONFIG.HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.HAS_TLAST.VALUE_MODE {auto} \
+    CONFIG.HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.TID_WIDTH.VALUE_MODE {auto} \
   ] $phasematch_broadcaster_2
 
 
@@ -5048,22 +5416,56 @@ proc create_root_design { parentCell } {
   # Create instance: axis_broadcaster_0, and set properties
   set axis_broadcaster_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 axis_broadcaster_0 ]
   set_property -dict [list \
+    CONFIG.HAS_TKEEP {0} \
+    CONFIG.HAS_TLAST {0} \
     CONFIG.HAS_TREADY {0} \
+    CONFIG.HAS_TSTRB {0} \
     CONFIG.M00_TDATA_REMAP {tdata[127:0]} \
     CONFIG.M01_TDATA_REMAP {tdata[127:0]} \
     CONFIG.M_TDATA_NUM_BYTES {16} \
+    CONFIG.M_TUSER_WIDTH {0} \
     CONFIG.S_TDATA_NUM_BYTES {16} \
+    CONFIG.S_TUSER_WIDTH {0} \
+    CONFIG.TDEST_WIDTH {0} \
+    CONFIG.TID_WIDTH {0} \
+  ] $axis_broadcaster_0
+
+  set_property -dict [list \
+    CONFIG.HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.HAS_TLAST.VALUE_MODE {auto} \
+    CONFIG.HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.M_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.TID_WIDTH.VALUE_MODE {auto} \
   ] $axis_broadcaster_0
 
 
   # Create instance: axis_broadcaster_1, and set properties
   set axis_broadcaster_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_broadcaster:1.1 axis_broadcaster_1 ]
   set_property -dict [list \
+    CONFIG.HAS_TKEEP {0} \
+    CONFIG.HAS_TLAST {0} \
     CONFIG.HAS_TREADY {0} \
+    CONFIG.HAS_TSTRB {0} \
     CONFIG.M00_TDATA_REMAP {tdata[127:0]} \
     CONFIG.M01_TDATA_REMAP {tdata[127:0]} \
     CONFIG.M_TDATA_NUM_BYTES {16} \
+    CONFIG.M_TUSER_WIDTH {0} \
     CONFIG.S_TDATA_NUM_BYTES {16} \
+    CONFIG.S_TUSER_WIDTH {0} \
+    CONFIG.TDEST_WIDTH {0} \
+    CONFIG.TID_WIDTH {0} \
+  ] $axis_broadcaster_1
+
+  set_property -dict [list \
+    CONFIG.HAS_TKEEP.VALUE_MODE {auto} \
+    CONFIG.HAS_TLAST.VALUE_MODE {auto} \
+    CONFIG.HAS_TSTRB.VALUE_MODE {auto} \
+    CONFIG.M_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.S_TUSER_WIDTH.VALUE_MODE {auto} \
+    CONFIG.TDEST_WIDTH.VALUE_MODE {auto} \
+    CONFIG.TID_WIDTH.VALUE_MODE {auto} \
   ] $axis_broadcaster_1
 
 
@@ -6457,6 +6859,7 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
   # Restore current instance
   current_bd_instance $oldCurInst
 
+  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -6468,6 +6871,4 @@ Port;FD4A0000;FD4AFFFF;1|FPD;DPDMA;FD4C0000;FD4CFFFF;1|FPD;DDR_XMPU5_CFG;FD05000
 
 create_root_design ""
 
-
-common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
