@@ -359,13 +359,13 @@ class AXIDMA(wiring.Component):
 
 class Trigger(wiring.Component):
     class ChunkSampler(csr.Register, access="r"):
-        # These should be sampled atomically so we pack a big struct into a single field
+        # TODO: These should be seperate fields
         chunk_header: csr.Field(
             csr.action.R,
             data.StructLayout(
                 {
                     "timestamp": timestamp,
-                    "cycle": 52,
+                    "cycle": 44,
                     "read": 2,
                     "dropped": 1,
                     "fault": 1,
@@ -375,8 +375,8 @@ class Trigger(wiring.Component):
         )
 
     class TriggerControl(csr.Register, access="rw"):
-        prescale: csr.Field(csr.action.RW, 1)
         input_gate: csr.Field(csr.action.RW, 1)
+        # TODO: This should be a different register
         config: csr.Field(
             csr.action.W,
             data.StructLayout({"bin": 11, "config": trigger_config}),
@@ -452,22 +452,22 @@ class Trigger(wiring.Component):
         m.submodules.bridge = self._bridge
         wiring.connect(m, wiring.flipped(self.bus), self._bridge.bus)
 
+        # IQ and Phase stream alignment
+        m.submodules.aligner = aligner = PackageStreams()
+        wiring.connect(m, wiring.flipped(self.iq), aligner.iq)
+        wiring.connect(m, wiring.flipped(self.phase), aligner.phase)
+
         # Top Level State
         started = Signal(reset_less=True)
-        cycle = Signal(52, reset_less=True)
         read = Signal(2, reset_less=True)
         drop_latch = Signal(reset_less=True)
         fault_latch = Signal(reset_less=True)
-        cycle_chunk = Signal(24 + 9, reset_less=True)
-        force_tickover = Signal()
         empty_latch = Signal(init=1)
+        cycle = Signal(44)
+        cycle_chunk = Signal(24)
+        beat = aligner.packaged.payload.beat
 
         # Register Management
-        cycle_chunk_scaled = Mux(
-            self._trigcontrol.f.prescale.data,
-            cycle_chunk.shift_right(9)[:24],
-            cycle_chunk[:24],
-        )
         m.d.comb += [
             self._chunksampler.f.chunk_header.r_data.cycle.eq(cycle),
             self._chunksampler.f.chunk_header.r_data.timestamp.eq(
@@ -479,41 +479,26 @@ class Trigger(wiring.Component):
             self._chunksampler.f.chunk_header.r_data.dropped.eq(drop_latch),
             self._chunksampler.f.chunk_header.r_data.empty.eq(empty_latch),
         ]
-        with m.If(cycle_chunk != 0 | force_tickover):
-            m.d.sync += cycle_chunk.eq(cycle_chunk + 1)
-            m.d.sync += force_tickover.eq(0)
         with m.If(self._chunksampler.f.chunk_header.r_stb):
-            m.d.sync += [
-                read.eq(self._chunksampler.f.chunk_header.r_data.read),
-                drop_latch.eq(0),
-                cycle_chunk.eq(1),
-                empty_latch.eq(1),
-            ]
-            with m.If(self._trigcontrol.f.prescale.data):
-                m.d.sync += [
-                    cycle_chunk.eq(cycle[:9] + 1),
-                    force_tickover.eq(1)
-                ]
-        with m.If(
-            ~self._trigcontrol.f.prescale.data & (cycle_chunk[:24] == 0xFFFF_FFFF_FFFF)
-        ):
-            m.d.sync += [cycle_chunk.eq(0), read.eq(0)]
-        with m.Elif(self._trigcontrol.f.prescale.data & (cycle_chunk + 1 == 0)):
-            m.d.sync += [cycle_chunk.eq(0), read.eq(0)]
-
-        # IQ and Phase stream alignment
-        m.submodules.aligner = aligner = PackageStreams()
-        wiring.connect(m, wiring.flipped(self.iq), aligner.iq)
-        wiring.connect(m, wiring.flipped(self.phase), aligner.phase)
+            m.d.sync += drop_latch.eq(0)
+            m.d.sync += empty_latch.eq(1)
+            m.d.sync += read.eq(Mux(read == 3, 1, read + 1))
+            m.d.sync += cycle_chunk.eq(0)
+            with m.If(aligner.packaged.valid & (beat == 0b1_1111_1111)):
+                m.d.sync += cycle_chunk.eq(1)
 
         with m.If(
             ~started
             & aligner.packaged.valid
             & (aligner.packaged.payload.beat == 0b1_1111_1111)
         ):
-            m.d.sync += [started.eq(1), cycle.eq(0)]
-        with m.If(started):
+            m.d.sync += [started.eq(1), cycle.eq(0), cycle_chunk.eq(0)]
+        with m.Elif(aligner.packaged.valid & (beat == 0b1_1111_1111)):
             m.d.sync += cycle.eq(cycle + 1)
+            m.d.sync += cycle_chunk.eq(cycle_chunk + 1)
+            with m.If((cycle_chunk + 1) & 0xff_ffff == 0):
+                m.d.sync += read.eq(0)
+
         m.d.comb += self._chunksampler.f.chunk_header.r_data.fault.eq(
             aligner.fault | fault_latch
         )
@@ -532,9 +517,9 @@ class Trigger(wiring.Component):
         cw = config_memory.write_port(granularity=1)
 
         # Address generation logic...
-        m.d.comb += sr.addr.eq((cycle + 2)[:9])
-        m.d.comb += cr.addr.eq((cycle + 2)[:9])
-        m.d.sync += sw.addr.eq(cycle[:9])
+        m.d.comb += sr.addr.eq((beat + 2)[:9])
+        m.d.comb += cr.addr.eq((beat + 2)[:9])
+        m.d.sync += sw.addr.eq(beat[:9])
         m.d.sync += cw.addr.eq(self._trigcontrol.f.config.w_data.bin[2:])
         m.d.sync += sw.en.eq(started)
         m.d.sync += cw.en.eq(
@@ -605,12 +590,12 @@ class Trigger(wiring.Component):
 
             m.d.comb += [
                 sw.data[i].eq(t.output_state),
-                t.cycle.eq(cycle_chunk_scaled),
+                t.cycle.eq(cycle_chunk),
                 t.read.eq(read),
             ]
 
             m.d.comb += [
-                t.input_stream.payload.bin.eq(Cat(C(i, unsigned(2)), cycle[:9])),
+                t.input_stream.payload.bin.eq(Cat(C(i, unsigned(2)), beat[:9])),
                 t.input_stream.payload.iq.eq(aligner.packaged.payload.iq[i]),
                 t.input_stream.payload.phase.eq(aligner.packaged.payload.phase[i]),
                 t.input_stream.valid.eq(
@@ -661,7 +646,7 @@ class Trigger(wiring.Component):
             self._isr.f.fault_postage.r_data.eq(
                 self._postcontrol.f.fault.r_data.as_value().any()
             ),
-            self._isr.f.halfchunk.r_data.eq(cycle_chunk_scaled[-1] == 1),
+            self._isr.f.halfchunk.r_data.eq(cycle_chunk[-1] == 1),
             self._isr.f.fullchunk.r_data.eq((read == 0) & started),
         ]
 
