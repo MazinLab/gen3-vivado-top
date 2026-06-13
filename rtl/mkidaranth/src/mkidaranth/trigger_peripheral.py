@@ -51,13 +51,11 @@ class AXICSRBridge(wiring.Component):
         m = Module()
 
         m.d.sync += self.csr.w_data.eq(self.axi.w.payload.data)
-        m.d.comb += self.axi.b.valid.eq(1)
 
         alatch = Signal(self._caw)
 
         with m.FSM():
             with m.State("WAITING_ADDRESS"):
-                m.d.sync += self.csr.w_stb.eq(0)
                 with m.If(self.axi.aw.valid):
                     m.d.comb += self.axi.aw.ready.eq(1)
                     m.d.sync += alatch.eq(self.axi.aw.payload.addr.shift_right(self._aw - self._caw))
@@ -72,6 +70,12 @@ class AXICSRBridge(wiring.Component):
                 with m.If(self.axi.w.valid):
                     m.d.comb += self.axi.w.ready.eq(1)
                     m.d.sync += self.csr.w_stb.eq(1)
+                    m.next = "WRITE_RESP"
+
+            with m.State("WRITE_RESP"):
+                m.d.sync += self.csr.w_stb.eq(0)
+                m.d.comb += self.axi.b.valid.eq(1)
+                with m.If(self.axi.b.valid & self.axi.b.ready):
                     m.next = "WAITING_ADDRESS"
 
             with m.State("READ-1"):
