@@ -7,6 +7,7 @@ from amaranth.utils import exact_log2
 
 from .trigger import StreamPipelineStage
 
+
 # Inspired by https://stackoverflow.com/a/54489602
 class AxiProperty:
 
@@ -35,21 +36,26 @@ class AxiProperty:
             raise ValueError(f"{self.name!r} should be one of {self.allowed_values!r}, not {value!r}")
         instance.__dict__[self.name] = value
 
+
 class ReadWriteMode(Flag):
     READ_ONLY = 0x1
     WRITE_ONLY = 0x2
     READ_WRITE = 0x3
 
+
 # Base class, should have all properties. Specializations should restrict property values
 @dataclass(frozen=True)
-class AxiProperties():
-    READ_WRITE_MODE: ReadWriteMode = AxiProperty([ReadWriteMode.READ_ONLY, ReadWriteMode.WRITE_ONLY, ReadWriteMode.READ_WRITE], ReadWriteMode.READ_WRITE)
+class AxiProperties:
+    READ_WRITE_MODE: ReadWriteMode = AxiProperty(
+        [ReadWriteMode.READ_ONLY, ReadWriteMode.WRITE_ONLY, ReadWriteMode.READ_WRITE],
+        ReadWriteMode.READ_WRITE,
+    )
 
-    ID_W_WIDTH: int = AxiProperty(range(33)) # Between 0 and 32
-    ID_R_WIDTH: int = AxiProperty(range(33)) # Between 0 and 32
+    ID_W_WIDTH: int = AxiProperty(range(33))  # Between 0 and 32
+    ID_R_WIDTH: int = AxiProperty(range(33))  # Between 0 and 32
 
     # Write/read request
-    ADDR_WIDTH: int = AxiProperty(range(1,65), 32) # Between 1 and 64
+    ADDR_WIDTH: int = AxiProperty(range(1, 65), 32)  # Between 1 and 64
     REGION_Present: bool = AxiProperty([True, False], True)
     LEN_Present: bool = AxiProperty([True, False], True)
     SIZE_Present: bool = AxiProperty([True, False], True)
@@ -69,17 +75,16 @@ class AxiProperties():
     BRESP_WIDTH: int = AxiProperty([0, 2, 3], 2)
     RRESP_WIDTH: int = AxiProperty([0, 2, 3], 2)
 
-
     # TODO: User signal width max value is only a recommendation, how to handle?
     USER_REQ_WIDTH: int = AxiProperty(range(129), 0)
-    USER_DATA_WIDTH: int = AxiProperty(range(513), 0) # TODO: max DATA_WIDTH / 2
+    USER_DATA_WIDTH: int = AxiProperty(range(513), 0)  # TODO: max DATA_WIDTH / 2
     USER_RESP_WIDTH: int = AxiProperty(range(17), 0)
 
     def __init__(self):
         raise NotImplementedError()
 
     MAX_BURST_LENGTH: ClassVar[int] = 256
-    
+
 
 @dataclass(frozen=True)
 class Axi4Properties(AxiProperties):
@@ -87,11 +92,12 @@ class Axi4Properties(AxiProperties):
     BRESP_WIDTH: int = AxiProperty([0, 2], 2)
     RRESP_WIDTH: int = AxiProperty([0, 2], 2)
 
+
 @dataclass(frozen=True)
 class Axi4LiteProperties(Axi4Properties):
     # Set default value to 0, since they're optional
-    ID_W_WIDTH: int = AxiProperty(range(33), 0) # Between 0 and 32
-    ID_R_WIDTH: int = AxiProperty(range(33), 0) # Between 0 and 32
+    ID_W_WIDTH: int = AxiProperty(range(33), 0)  # Between 0 and 32
+    ID_R_WIDTH: int = AxiProperty(range(33), 0)  # Between 0 and 32
 
     # Write/read request
     REGION_Present: bool = AxiProperty([False], False)
@@ -110,10 +116,12 @@ class Axi4LiteProperties(Axi4Properties):
     # Constant, set to 1 because Lite doesn't have burst
     MAX_BURST_LENGTH: ClassVar[int] = 1
 
+
 @dataclass(frozen=True)
 class Axi5Properties(AxiProperties):
     # TODO: additional properties
     pass
+
 
 @dataclass(frozen=True)
 class Axi5LiteProperties(Axi5Properties):
@@ -139,6 +147,7 @@ class BurstEncoding(IntEnum, shape=2):
     WRAP = 0x2
     RES = 0x3
 
+
 # Swapped order for allocate and other_allocate between read and write requests!
 class WriteCacheEncoding(data.Struct):
     bufferable: 1
@@ -146,11 +155,13 @@ class WriteCacheEncoding(data.Struct):
     other_allocate: 1
     allocate: 1
 
+
 class ReadCacheEncoding(data.Struct):
     bufferable: 1
     modifiable: 1
     allocate: 1
     other_allocate: 1
+
 
 # Property names describe the active state
 class ProtectionEncoding(data.Struct):
@@ -158,11 +169,13 @@ class ProtectionEncoding(data.Struct):
     non_secure: 1
     instruction: 1
 
+
 class ResponseEncoding(IntEnum, shape=2):
     OKAY = 0x0
     EXOKAY = 0x1
     SLVERR = 0x2
     DECERR = 0x3
+
 
 # TODO: remove duplication
 class ExtendedWriteResponseEncoding(IntEnum, shape=3):
@@ -174,6 +187,7 @@ class ExtendedWriteResponseEncoding(IntEnum, shape=3):
     TRANSFAULT = 0x5
     RESERVED = 0x6
     UNSUPPORTED = 0x7
+
 
 # TODO: remove duplication
 class ExtendedReadResponseEncoding(IntEnum, shape=3):
@@ -195,10 +209,11 @@ class Channel(data.StructLayout):
         """
 
         members = {signal: width for signal, (width, init) in signals.items() if width}
-        
+
         super().__init__(members)
 
         self.INIT = self.const({signal: init for signal, (width, init) in signals.items() if width})
+
 
 class WriteRequestChannel(Channel):
 
@@ -220,6 +235,7 @@ class WriteRequestChannel(Channel):
 
         super().__init__(members)
 
+
 class WriteDataChannel(Channel):
 
     def __init__(self, axi_props: AxiProperties):
@@ -227,11 +243,15 @@ class WriteDataChannel(Channel):
             "data": (axi_props.DATA_WIDTH, 0),
             "last": (1 if axi_props.WLAST_Present else 0, 1),
             # TODO: Init value of -1 doesn't work?
-            "strb": (axi_props.DATA_WIDTH // 8 if axi_props.WSTRB_Present else 0, 2**(axi_props.DATA_WIDTH // 8) - 1),
+            "strb": (
+                axi_props.DATA_WIDTH // 8 if axi_props.WSTRB_Present else 0,
+                2 ** (axi_props.DATA_WIDTH // 8) - 1,
+            ),
             "user": (axi_props.USER_DATA_WIDTH, 0),
         }
 
         super().__init__(members)
+
 
 class WriteResponseChannel(Channel):
 
@@ -255,6 +275,7 @@ class WriteResponseChannel(Channel):
 
         super().__init__(members)
 
+
 class ReadRequestChannel(Channel):
 
     def __init__(self, axi_props: AxiProperties):
@@ -274,6 +295,7 @@ class ReadRequestChannel(Channel):
         }
 
         super().__init__(members)
+
 
 class ReadDataChannel(Channel):
 
@@ -301,7 +323,7 @@ class ReadDataChannel(Channel):
 
 
 class Signature(wiring.Signature):
-    
+
     def __init__(self, axi_props: AxiProperties):
         self.props = axi_props
 
@@ -316,64 +338,83 @@ class Signature(wiring.Signature):
             channels["w"] = (wiring.Out, WriteDataChannel(axi_props))
             channels["b"] = (wiring.In, WriteResponseChannel(axi_props))
 
-        super().__init__({
-            name: flow(stream.Signature(shape, payload_init=shape.INIT)) for name, (flow, shape) in channels.items()
-        })
+        super().__init__(
+            {
+                name: flow(stream.Signature(shape, payload_init=shape.INIT))
+                for name, (flow, shape) in channels.items()
+            }
+        )
+
 
 class AxiPipelineStage(wiring.Component):
     def __init__(self, axi_props: AxiProperties):
         self.props = axi_props
-        super().__init__({
-            "input": wiring.In(Signature(self.props)),
-            "output": wiring.Out(Signature(self.props)),
-        })
+        super().__init__(
+            {
+                "input": wiring.In(Signature(self.props)),
+                "output": wiring.Out(Signature(self.props)),
+            }
+        )
 
     def elaborate(self, platform):
         m = Module()
         if self.props.READ_WRITE_MODE & ReadWriteMode.READ_ONLY:
-            m.submodules.arpipe = arpipe = StreamPipelineStage(ReadRequestChannel(self.props), payload_init=ReadRequestChannel(self.props).INIT)
-            wiring.connect(m, wiring.flipped(self.input.ar), arpipe.input) 
+            m.submodules.arpipe = arpipe = StreamPipelineStage(
+                ReadRequestChannel(self.props), payload_init=ReadRequestChannel(self.props).INIT
+            )
+            wiring.connect(m, wiring.flipped(self.input.ar), arpipe.input)
             wiring.connect(m, arpipe.output, wiring.flipped(self.output.ar))
 
-            m.submodules.rpipe = rpipe = StreamPipelineStage(ReadDataChannel(self.props), payload_init=ReadDataChannel(self.props).INIT)
-            wiring.connect(m, wiring.flipped(self.input.r), rpipe.output) 
+            m.submodules.rpipe = rpipe = StreamPipelineStage(
+                ReadDataChannel(self.props), payload_init=ReadDataChannel(self.props).INIT
+            )
+            wiring.connect(m, wiring.flipped(self.input.r), rpipe.output)
             wiring.connect(m, rpipe.input, wiring.flipped(self.output.r))
 
         if self.props.READ_WRITE_MODE & ReadWriteMode.WRITE_ONLY:
-            m.submodules.awpipe = awpipe = StreamPipelineStage(WriteRequestChannel(self.props), payload_init=WriteRequestChannel(self.props).INIT)
-            wiring.connect(m, wiring.flipped(self.input.aw), awpipe.input) 
+            m.submodules.awpipe = awpipe = StreamPipelineStage(
+                WriteRequestChannel(self.props), payload_init=WriteRequestChannel(self.props).INIT
+            )
+            wiring.connect(m, wiring.flipped(self.input.aw), awpipe.input)
             wiring.connect(m, awpipe.output, wiring.flipped(self.output.aw))
 
-            m.submodules.wpipe = wpipe = StreamPipelineStage(WriteDataChannel(self.props), payload_init=WriteDataChannel(self.props).INIT)
-            wiring.connect(m, wiring.flipped(self.input.w), wpipe.input) 
+            m.submodules.wpipe = wpipe = StreamPipelineStage(
+                WriteDataChannel(self.props), payload_init=WriteDataChannel(self.props).INIT
+            )
+            wiring.connect(m, wiring.flipped(self.input.w), wpipe.input)
             wiring.connect(m, wpipe.output, wiring.flipped(self.output.w))
 
-            m.submodules.rpipe = bpipe = StreamPipelineStage(WriteResponseChannel(self.props), payload_init=WriteResponseChannel(self.props).INIT)
-            wiring.connect(m, wiring.flipped(self.input.b), bpipe.output) 
+            m.submodules.bpipe = bpipe = StreamPipelineStage(
+                WriteResponseChannel(self.props), payload_init=WriteResponseChannel(self.props).INIT
+            )
+            wiring.connect(m, wiring.flipped(self.input.b), bpipe.output)
             wiring.connect(m, bpipe.input, wiring.flipped(self.output.b))
 
         return m
 
+
 class StandardizedSignature(wiring.Signature):
-    def __init__(self, base_signature, data_field = None, prefix = "t", renames = {}):
+    def __init__(self, base_signature, data_field=None, prefix="t", renames={}):
         self._base_signature = base_signature
         self._data_field = data_field
         self._prefix = prefix
         self._renames = renames
 
         config_dict = {}
-        config_dict[f"{prefix}valid"] = wiring.Out(1)
-        config_dict[f"{prefix}ready"] = wiring.In(1)
+        if not base_signature.always_valid:
+            config_dict[f"{prefix}valid"] = wiring.Out(1)
+        if not base_signature.always_ready:
+            config_dict[f"{prefix}ready"] = wiring.In(1)
 
         if data_field is None:
-            shape = base_signature.members['payload'].shape
+            shape = base_signature.members["payload"].shape
             if shape is int:
                 size = shape
             else:
                 size = shape.size
             config_dict[f"{prefix}data"] = wiring.Out(size)
         else:
-            shape = base_signature.members['payload'].shape
+            shape = base_signature.members["payload"].shape
             for k, v in shape:
                 size = v.width
                 if k == data_field:
@@ -383,6 +424,7 @@ class StandardizedSignature(wiring.Signature):
                 config_dict[f"{prefix}{k}"] = wiring.Out(size)
 
         super().__init__(config_dict)
+
 
 class StandardizedAxiSignature(wiring.Signature):
     def __init__(self, axi_props):
@@ -402,7 +444,9 @@ class StandardizedAxiSignature(wiring.Signature):
         sig = {}
         self._stream_signatures = {}
         for name, (flip, shape) in channels.items():
-            self._stream_signatures[name] = stream_sig = StandardizedSignature(stream.Signature(shape, payload_init=shape.INIT), prefix=name, data_field=False)
+            self._stream_signatures[name] = stream_sig = StandardizedSignature(
+                stream.Signature(shape, payload_init=shape.INIT), prefix=name, data_field=False
+            )
             for signame, innershape in stream_sig.members.items():
                 if flip:
                     sig[signame] = innershape.flip()
@@ -410,6 +454,7 @@ class StandardizedAxiSignature(wiring.Signature):
                     sig[signame] = innershape
 
         super().__init__(sig)
+
 
 def connect(m, a, b, signature_override=None, required_signature=StandardizedSignature, double_flip=False):
     flipped = False
@@ -440,13 +485,15 @@ def connect(m, a, b, signature_override=None, required_signature=StandardizedSig
     prefix = signature._prefix
     renames = signature._renames
     if not flipped:
-        m.d.comb += amaranth.valid.eq(getattr(standard, f'{prefix}valid'))
-        m.d.comb += getattr(standard, f'{prefix}ready').eq(amaranth.ready)
+        if not base_signature.always_valid:
+            m.d.comb += amaranth.valid.eq(getattr(standard, f"{prefix}valid"))
+        if not base_signature.always_ready:
+            m.d.comb += getattr(standard, f"{prefix}ready").eq(amaranth.ready)
 
         if data_field is None:
-            m.d.comb += amaranth.payload.eq(getattr(standard, f'{prefix}data'))
+            m.d.comb += amaranth.payload.eq(getattr(standard, f"{prefix}data"))
         else:
-            shape = base_signature.members['payload'].shape
+            shape = base_signature.members["payload"].shape
             for k, _ in shape:
                 if k == data_field:
                     kp = "data"
@@ -454,15 +501,17 @@ def connect(m, a, b, signature_override=None, required_signature=StandardizedSig
                     kp = renames[k]
                 else:
                     kp = k
-                m.d.comb += getattr(amaranth.payload, k).eq(getattr(standard, f'{prefix}{kp}'))
+                m.d.comb += getattr(amaranth.payload, k).eq(getattr(standard, f"{prefix}{kp}"))
     else:
-        m.d.comb += getattr(standard, f'{prefix}valid').eq(amaranth.valid)
-        m.d.comb += amaranth.ready.eq(getattr(standard, f'{prefix}ready'))
+        if not base_signature.always_valid:
+            m.d.comb += getattr(standard, f"{prefix}valid").eq(amaranth.valid)
+        if not base_signature.always_ready:
+            m.d.comb += amaranth.ready.eq(getattr(standard, f"{prefix}ready"))
 
         if data_field is None:
-            m.d.comb += getattr(standard, f'{prefix}data').eq(amaranth.payload)
+            m.d.comb += getattr(standard, f"{prefix}data").eq(amaranth.payload)
         else:
-            shape = base_signature.members['payload'].shape
+            shape = base_signature.members["payload"].shape
             for k, _ in shape:
                 if k == data_field:
                     kp = "data"
@@ -470,7 +519,8 @@ def connect(m, a, b, signature_override=None, required_signature=StandardizedSig
                     kp = renames[k]
                 else:
                     kp = k
-                m.d.comb += getattr(standard, f'{prefix}{kp}').eq(getattr(amaranth.payload, k))
+                m.d.comb += getattr(standard, f"{prefix}{kp}").eq(getattr(amaranth.payload, k))
+
 
 def connect_axi(m, a, b):
     if type(a.signature) is StandardizedAxiSignature:
@@ -502,5 +552,5 @@ def connect_axi(m, a, b):
             getattr(amaranth, name),
             signature_override=stream_sig,
             required_signature=StandardizedAxiSignature,
-            double_flip = name in ["r", "b"]
+            double_flip=name in ["r", "b"],
         )
