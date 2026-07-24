@@ -9,4 +9,3 @@ set_property IOSTANDARD LVCMOS18 [get_ports {rgbleds_6bits[?]}]
 set_property IOSTANDARD LVCMOS18 [get_ports {rgbleds_6bits[?]}]
 
 set_false_path -to [get_ports {rgbleds_6bits[?]}]
-

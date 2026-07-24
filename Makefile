@@ -36,12 +36,21 @@ ${MKIDARANTH_DIR}/.venv/: ${MKIDARANTH_DIR}/pyproject.toml ${MKIDARANTH_DIR}/pdm
 
 ${MKIDARANTH_DIR}/integration.v: ${MKIDARANTH_DIR}/.venv/ ${MKIDARANTH_DIR}/src/*
 	cd ${MKIDARANTH_DIR}; \
-	pdm run python -m mkidaranth.integration integration.v; \
+	pdm run python -m mkidaranth.integration integration.v False; \
 	sed -i 's/m_axi_postage__/m_axi_postage_/g' integration.v; \
 	sed -i 's/m_axi_trig__/m_axi_trig_/g' integration.v; \
 	sed -i 's/s_axi_ctrl__/s_axi_ctrl_/g' integration.v; \
 	sed -i 's/s_axi_ctrl_slow__/s_axi_ctrl_slow_/g' integration.v; \
 	sed -i 's/s_axi_cube__/s_axi_cube_/g' integration.v
+
+${MKIDARANTH_DIR}/pulser.v: ${MKIDARANTH_DIR}/.venv/ ${MKIDARANTH_DIR}/src/*
+	cd ${MKIDARANTH_DIR}; \
+	pdm run python -m mkidaranth.pulser pulser.v; \
+	sed -i 's/s_axi_pulser__/s_axi_pulser_/g' pulser.v; \
+	sed -i 's/s_axis_iin__/s_axis_iin_/g' pulser.v; \
+	sed -i 's/s_axis_qin__/s_axis_qin_/g' pulser.v; \
+	sed -i 's/m_axis_iout__/m_axis_iout_/g' pulser.v; \
+	sed -i 's/m_axis_qout__/m_axis_qout_/g' pulser.v
 
 ${PROJECT_DIR}/${PROJECT_NAME}.xpr: ${SCRIPT_DIR}/tcl/create_top_level_prj.tcl ${ORIGIN_DIR}/bd/${DESIGN}.tcl ${MKIDARANTH_DIR}/integration.v
 	cd ${ORIGIN_DIR}; \
