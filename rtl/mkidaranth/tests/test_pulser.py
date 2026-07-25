@@ -4,7 +4,7 @@ from amaranth import *
 from amaranth.lib import wiring, stream, data
 from amaranth.sim import Simulator
 
-from mkidaranth import axi
+from mkidaranth.axi import bus
 from mkidaranth.pulser import PulseCommand, Pulser, BUS_PROPS
 from mkidaranth.integration import map_to_json
 from mkidaranth.pulser import PulserIntegration
@@ -198,7 +198,7 @@ class PulserIntegrationTestCase(unittest.TestCase):
 
             super().__init__(
                 {
-                    "s_axi_pulser": wiring.In(axi.Signature(BUS_PROPS)),
+                    "s_axi_pulser": wiring.In(bus.Signature(BUS_PROPS)),
                     "iin": wiring.In(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)),
                     "qin": wiring.In(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)),
                     "iout": wiring.Out(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)),
@@ -211,11 +211,11 @@ class PulserIntegrationTestCase(unittest.TestCase):
             m = Module()
             m.submodules.ts = self.ts
 
-            axi.connect_axi(m, wiring.flipped(self.s_axi_pulser), self.ts.s_axi_pulser)
-            axi.connect(m, wiring.flipped(self.iin), self.ts.s_axis_iin)
-            axi.connect(m, wiring.flipped(self.qin), self.ts.s_axis_qin)
-            axi.connect(m, self.ts.m_axis_iout, wiring.flipped(self.iout))
-            axi.connect(m, self.ts.m_axis_qout, wiring.flipped(self.qout))
+            bus.connect_axi(m, wiring.flipped(self.s_axi_pulser), self.ts.s_axi_pulser)
+            bus.connect(m, wiring.flipped(self.iin), self.ts.s_axis_iin)
+            bus.connect(m, wiring.flipped(self.qin), self.ts.s_axis_qin)
+            bus.connect(m, self.ts.m_axis_iout, wiring.flipped(self.iout))
+            bus.connect(m, self.ts.m_axis_qout, wiring.flipped(self.qout))
 
             m.d.comb += self.ts.pps.eq(self.pps)
 
@@ -228,7 +228,6 @@ class PulserIntegrationTestCase(unittest.TestCase):
             import json
             ctrl_mmio = (ctx, dut.s_axi_pulser, "sync")
             regs = json.loads(map_to_json(dut.ts.pulser_peri.ctlbus.memory_map))
-            print(regs)
 
             ctx.set(dut.iin.payload, [0x7fff for _ in range(8)])
             ctx.set(dut.qin.payload, [0x7fff for _ in range(8)])
@@ -250,7 +249,7 @@ class PulserIntegrationTestCase(unittest.TestCase):
             ctx.set(dut.pps, 0)
             while (await read_reg(ctrl_mmio, regs, ["CommandFIFOStatus"]))['count']:
                 pass
-           
+
 
         sim = Simulator(dut)
         sim.add_clock(1e-6)

@@ -5,12 +5,10 @@ from amaranth.lib import stream, wiring, data
 from amaranth.lib.enum import IntEnum, Flag
 from amaranth.utils import exact_log2
 
-from .trigger import StreamPipelineStage
-
+from .stream import StreamPipelineStage
 
 # Inspired by https://stackoverflow.com/a/54489602
 class AxiProperty:
-
     def __init__(self, allowed_values, default=None):
         self.allowed_values = allowed_values
         self.default = default

@@ -2,20 +2,19 @@ from amaranth import *
 from amaranth.lib import stream, wiring, data, enum, fifo, memory
 from amaranth.lib.wiring import In, Out
 
+from mkidaranth.utils import Complex
+
 # TODO: Fully parameterize
 CYCLE_BITS = 24
 LANES = 4
 BINS = 2048
 
-trigger_config = data.StructLayout(
-    {
-        "threshold": signed(16),
-        "holdoff": 8,
-        "postage": 1,
-        "enabled": 1
-    }
-)
-
+trigger_config = data.StructLayout({
+    "threshold": signed(16),
+    "holdoff": 8,
+    "postage": 1,
+    "enabled": 1
+})
 
 class TriggerState(data.Struct):
     class State(enum.Enum):
@@ -25,61 +24,44 @@ class TriggerState(data.Struct):
         HOLDING = 3
 
     state: State
-    info: data.UnionLayout(
-        {
-            "waiting": data.StructLayout({"maxseen": signed(16)}),
-            "triggered": data.StructLayout({"minseen": signed(16)}),
-            "holding": data.StructLayout({"holdoff": signed(16)}),
-        }
-    )
+    info: data.UnionLayout({
+        "waiting": data.StructLayout({"maxseen": signed(16)}),
+        "triggered": data.StructLayout({"minseen": signed(16)}),
+        "holding": data.StructLayout({"holdoff": signed(16)}),
+    })
 
 
-trigger_event = data.StructLayout(
-    {
-        "phase": signed(16),
-        "cycle": CYCLE_BITS,
-        "bin": 11,
-        "read": 2,
-    }
-)
+trigger_event = data.StructLayout({
+    "phase": signed(16),
+    "cycle": CYCLE_BITS,
+    "bin": 11,
+    "read": 2,
+})
 
-iq = data.StructLayout(
-    {
-        "real": signed(16),
-        "imag": signed(16),
-    }
-)
+timestamp = data.StructLayout({
+    "secs": 32,
+    "ns": 32,
+    "subns": 8,
+})
 
-timestamp = data.StructLayout(
-    {
-        "secs": 32,
-        "ns": 32,
-        "subns": 8,
-    }
-)
+packaged = data.StructLayout({
+    "beat": 9,
+    "iq": data.ArrayLayout(Complex(16), 4),
+    "phase": data.ArrayLayout(signed(16), 4),
+})
 
-packaged = data.StructLayout(
-    {
-        "beat": 9,
-        "iq": data.ArrayLayout(iq, 4),
-        "phase": data.ArrayLayout(signed(16), 4),
-    }
-)
+postage_event = data.StructLayout({
+    "iq": Complex(16),
+    "cycle": CYCLE_BITS,
+    "bin": 11,
+    "read": 2,
+    "triggered": 1,
+})
 
-postage_event = data.StructLayout(
-    {
-        "iq": iq,
-        "cycle": CYCLE_BITS,
-        "bin": 11,
-        "read": 2,
-        "triggered": 1,
-    }
-)
-
-trigger_input = data.StructLayout({"bin": 11, "iq": iq, "phase": signed(16)})
+trigger_input = data.StructLayout({"bin": 11, "iq": Complex(16), "phase": signed(16)})
 
 iq_stream = stream.Signature(
-    data.StructLayout({"beat": 8, "payload": data.ArrayLayout(iq, LANES * 2)})
+    data.StructLayout({"beat": 8, "payload": data.ArrayLayout(Complex(16), LANES * 2)})
 )
 phase_stream = stream.Signature(
     data.StructLayout({"beat": 9, "payload": data.ArrayLayout(signed(16), LANES)})
@@ -93,21 +75,14 @@ trigger_stream = stream.Signature(trigger_input, always_ready=True)
 event_stream = stream.Signature(trigger_event)
 
 
-class ValvePositions(enum.Enum):
-    OPEN = 0b00
-    CLOSED = 0b01
-    DUMP = 0b10
-    MAGIC = 0b11
 
 class StreamSplitter(wiring.Component):
     def __init__(self, shape, count):
         self.count = count
-        return super().__init__(
-            {
-                "input": In(stream.Signature(shape)),
-                "outputs": Out(stream.Signature(shape)).array(count),
-            }
-        )
+        return super().__init__({
+            "input": In(stream.Signature(shape)),
+            "outputs": Out(stream.Signature(shape)).array(count),
+        })
 
 
     def elaborate(self, platform):
@@ -129,131 +104,6 @@ class StreamSplitter(wiring.Component):
 
         return m
 
-class StreamPipelineStage(wiring.Component):
-    def __init__(self, shape, payload_init=None):
-        self.shape = shape
-        self.payload_init = payload_init
-        return super().__init__(
-            {
-                "input": In(stream.Signature(shape, payload_init=payload_init)),
-                "output": Out(stream.Signature(shape, payload_init=payload_init))
-            }
-        )
-
-    def elaborate(self, platform):
-        m = Module()
-        pipe_valid = Signal()
-        pipe_payload = Signal(self.shape, init=self.payload_init)
-
-        skid_valid = Signal()
-        skid_payload = Signal(self.shape, init=self.payload_init)
-
-        with m.If(self.input.ready):
-            m.d.sync += [
-                pipe_valid.eq(self.input.valid),
-                pipe_payload.eq(self.input.payload),
-            ]
-            with m.If(~self.output.ready):
-                m.d.sync += [
-                    skid_valid.eq(pipe_valid),
-                    skid_payload.eq(pipe_payload),
-                ]
-        with m.If(self.output.ready):
-            m.d.sync += skid_valid.eq(0)
-
-        m.d.comb += [
-            self.input.ready.eq(~skid_valid),
-            self.output.valid.eq(pipe_valid | skid_valid),
-        ]
-
-        with m.If(skid_valid):
-            m.d.comb += self.output.payload.eq(skid_payload)
-        with m.Else():
-            m.d.comb += self.output.payload.eq(pipe_payload)
-
-        return m
-
-
-class StreamValve(wiring.Component):
-    def __init__(self, shape, magic=None, packet=False, magic_packet_len=256):
-        self.magic = magic
-        self.magic_packet_len = magic_packet_len
-        self.packet = packet
-        super().__init__(
-            {
-                "input": In(stream.Signature(shape)),
-                "output": Out(stream.Signature(shape)),
-                "turn": In(ValvePositions),
-                "turning": Out(ValvePositions),
-            }
-        )
-
-    def elaborate(self, platform):
-        m = Module()
-
-        if self.packet:
-            magic_packet_counter = Signal(range(self.magic_packet_len))
-            platch = Signal(init=1)
-            pcomplete = Signal()
-            m.d.comb += pcomplete.eq(platch | (self.output.ready & self.output.valid & self.output.payload.last))
-            with m.If(pcomplete):
-                m.d.sync += platch.eq(1)
-            with m.If(self.output.valid & self.output.ready & ~self.output.payload.last):
-                m.d.sync += platch.eq(0)
-                m.d.comb += pcomplete.eq(0)
-
-        if not self.packet:
-            with m.If(~self.output.valid | (self.output.valid & self.output.ready)):
-                m.d.sync += self.turning.eq(self.turn)
-        else:
-            with m.If((~self.output.valid & pcomplete) | (self.output.valid & self.output.ready & pcomplete)):
-                m.d.sync += self.turning.eq(self.turn)
-            with m.If(~self.output.valid & self.turning == ValvePositions.CLOSED):
-                m.d.sync += self.turning.eq(self.turn)
-
-        with m.If(self.turning == ValvePositions.OPEN):
-            m.d.comb += [
-                self.output.valid.eq(self.input.valid),
-                self.input.ready.eq(self.output.ready),
-                self.output.payload.eq(self.input.payload),
-            ]
-        with m.Elif(self.turning == ValvePositions.CLOSED):
-            m.d.comb += [
-                self.output.valid.eq(0),
-                self.input.ready.eq(0),
-                self.output.payload.eq(self.input.payload),
-            ]
-        with m.Elif(self.turning == ValvePositions.DUMP):
-            m.d.comb += [
-                self.output.valid.eq(0),
-                self.input.ready.eq(1),
-                self.output.payload.eq(self.input.payload),
-            ]
-            if self.packet:
-                with m.If(self.input.valid & self.input.ready & self.input.payload.last):
-                    m.d.comb += pcomplete.eq(1)
-                    m.d.sync += platch.eq(1)
-        with m.Elif(self.turning == ValvePositions.MAGIC):
-            if self.packet:
-                with m.If(self.output.valid & self.output.ready):
-                    m.d.sync += magic_packet_counter.eq(magic_packet_counter + 1)
-                    with m.If(magic_packet_counter + 1 == self.magic_packet_len):
-                        m.d.sync += magic_packet_counter.eq(0)
-            m.d.comb += [
-                self.output.valid.eq(1),
-                self.input.ready.eq(0),
-                self.output.payload.eq(
-                    self.input.payload if self.magic is None else self.magic
-                ),
-            ]
-            if self.packet:
-                with m.If(magic_packet_counter + 1 == self.magic_packet_len):
-                    m.d.comb += self.output.payload.last.eq(1)
-                with m.Else():
-                    m.d.comb += self.output.payload.last.eq(0)
-        return m
-
-
 # Stolen shamelessly from lib.fifo
 def _incr(signal, modulo):
     if modulo == 2 ** len(signal):
@@ -268,15 +118,11 @@ class MultiwidthFIFO(wiring.Component):
         self.multiplier = multiplier
         self.depth = depth
 
-        super().__init__(
-            {
-                "input": In(stream.Signature(input_shape)),
-                "output": Out(
-                    stream.Signature(data.ArrayLayout(input_shape, multiplier))
-                ),
-                "level": Out(range(depth * multiplier + 1)),
-            }
-        )
+        super().__init__({
+            "input": In(stream.Signature(input_shape)),
+            "output": Out(stream.Signature(data.ArrayLayout(input_shape, multiplier))),
+            "level": Out(range(depth * multiplier + 1)),
+        })
 
     def elaborate(self, platform):
         m = Module()
@@ -355,12 +201,10 @@ class StreamArbiter(wiring.Component):
         self.packet = packet
         self.credits = credits
         self.shape = shape
-        return super().__init__(
-            {
-                "inputs": In(stream.Signature(shape)).array(inputs),
-                "output": Out(stream.Signature(shape)),
-            }
-        )
+        return super().__init__({
+            "inputs": In(stream.Signature(shape)).array(inputs),
+            "output": Out(stream.Signature(shape)),
+        })
 
     def elaborate(self, platform):
         m = Module()
@@ -433,8 +277,8 @@ class PackageStreams(wiring.Component):
 
         started = Signal()
         strobe = Signal()
-        iq_latch = Signal(data.ArrayLayout(iq, LANES), reset_less=True)
-        iq_this = Signal(data.ArrayLayout(iq, LANES))
+        iq_latch = Signal(data.ArrayLayout(Complex(16), LANES), reset_less=True)
+        iq_this = Signal(data.ArrayLayout(Complex(16), LANES))
 
         fault_sticky = Signal(reset_less=True)
 
@@ -604,24 +448,20 @@ class PostageFIFO(wiring.Component):
         self._before = before
         self._length = length
         self._count = count
-        super().__init__(
-            {
-                "postage_stream": In(postage_stream),
-                "output_streams": Out(
-                    stream.Signature(data.StructLayout({"iq": iq, "last": 1}))
-                ).array(count),
-                "output_metadata": Out(
-                    data.ArrayLayout(
-                        data.StructLayout({"bin": 11, "cycle": 24, "read": 2}), count
-                    )
-                ),
-                "count": In(range(count + 1)),
-                "flushed": Out(1),
-                "dropped": Out(count),
-                "cleardropped": In(1),
-                "fault": Out(count),
-            }
-        )
+        super().__init__({
+            "postage_stream": In(postage_stream),
+            "output_streams": Out(
+                stream.Signature(data.StructLayout({"iq": Complex(16), "last": 1}))
+            ).array(count),
+            "output_metadata": Out(data.ArrayLayout(
+                data.StructLayout({"bin": 11, "cycle": 24, "read": 2}), count
+            )),
+            "count": In(range(count + 1)),
+            "flushed": Out(1),
+            "dropped": Out(count),
+            "cleardropped": In(1),
+            "fault": Out(count),
+        })
 
     def elaborate(self, platform):
         m = Module()

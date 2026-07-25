@@ -4,7 +4,8 @@ import random
 from amaranth.sim import Simulator
 
 from mkidaranth.trigger import *
-from src.mkidaranth.trigger import StreamArbiter
+from mkidaranth.utils import Complex
+from mkidaranth.trigger import StreamArbiter
 
 
 async def stream_get(ctx, stream):
@@ -387,7 +388,7 @@ class PackageTestCase(unittest.TestCase):
 
         iqpc = lambda i: {
             "beat": i,
-            "payload": data.ArrayLayout(iq, 8).from_bits(
+            "payload": data.ArrayLayout(Complex(16), 8).from_bits(
                 sum([n << (j * 32) for j, n in enumerate(range(i * 8, (i + 1) * 8))])
             ),
         }
@@ -409,7 +410,7 @@ class PackageTestCase(unittest.TestCase):
         ).const(
             {
                 "beat": i,
-                "iq": data.ArrayLayout(iq, 4).from_bits(
+                "iq": data.ArrayLayout(Complex(16), 4).from_bits(
                     sum(
                         [n << (j * 32) for j, n in enumerate(range(i * 4, (i + 1) * 4))]
                     )
@@ -673,7 +674,7 @@ class PostageFIFOTestCase(unittest.TestCase):
                             {
                                 "triggered": (channel in points.keys())
                                 and (counter in points[channel]),
-                                "iq": iq.from_bits(
+                                "iq": Complex(16).from_bits(
                                     counter if channel in points.keys() else 0
                                 ),
                                 "bin": channel,

@@ -5,20 +5,19 @@ from amaranth.lib.wiring import In, Out, Component
 from amaranth.utils import exact_log2
 from amaranth_soc import csr
 
-from .trigger import trigger_event, CYCLE_BITS, StreamPipelineStage
+from .trigger import trigger_event, CYCLE_BITS
 from .image_cuber import ImageCuber
-from . import axi
-from .axi import BurstEncoding
+from .axi import bus
+from .axi.bus import BurstEncoding
+from .axi.stream import StreamPipelineStage
 
-cuber_axi_signature = axi.Signature(
-    axi.Axi4Properties(
-            QOS_Present=False, PROT_Present=False, CACHE_Present=False, Exclusive_Accesses=False,
-            READ_WRITE_MODE=axi.ReadWriteMode.READ_ONLY, ADDR_WIDTH=16, REGION_Present=False,
-            DATA_WIDTH=64, WSTRB_Present=False, WLAST_Present=False, ID_W_WIDTH=16, ID_R_WIDTH=16
-        )
-    )
+cuber_axi_signature = bus.Signature(bus.Axi4Properties(
+    QOS_Present=False, PROT_Present=False, CACHE_Present=False, Exclusive_Accesses=False,
+    READ_WRITE_MODE=bus.ReadWriteMode.READ_ONLY, ADDR_WIDTH=16, REGION_Present=False,
+    DATA_WIDTH=64, WSTRB_Present=False, WLAST_Present=False, ID_W_WIDTH=16, ID_R_WIDTH=16
+))
 
-address_generator_props = axi.Axi4Properties(
+address_generator_props = bus.Axi4Properties(
     ADDR_WIDTH=16,
     DATA_WIDTH=64,
     Exclusive_Accesses=False,
@@ -33,17 +32,15 @@ address_generator_props = axi.Axi4Properties(
 
 class AddressGenerator(wiring.Component):
     def __init__(self):
-        super().__init__(
-            {
-                "ar": In(stream.Signature(axi.ReadRequestChannel(cuber_axi_signature.props), payload_init=axi.ReadRequestChannel(cuber_axi_signature.props).INIT)),
-                "addresses": Out(stream.Signature(data.StructLayout({"mem_num": 1, "byte_addr": address_generator_props.ADDR_WIDTH-1, "last": 1, "id": address_generator_props.ID_R_WIDTH}))),
-            }
-        )
-    
+        super().__init__({
+            "ar": In(stream.Signature(bus.ReadRequestChannel(cuber_axi_signature.props), payload_init=bus.ReadRequestChannel(cuber_axi_signature.props).INIT)),
+            "addresses": Out(stream.Signature(data.StructLayout({"mem_num": 1, "byte_addr": address_generator_props.ADDR_WIDTH-1, "last": 1, "id": address_generator_props.ID_R_WIDTH}))),
+        })
+
     def elaborate(self, platform):
         m = Module()
 
-        ar_saved = Signal(axi.ReadRequestChannel(cuber_axi_signature.props))
+        ar_saved = Signal(bus.ReadRequestChannel(cuber_axi_signature.props))
         log2_burst_length = Signal(4)
         wrap_address = Signal(cuber_axi_signature.props.ADDR_WIDTH)
         aligned_address = Signal(cuber_axi_signature.props.ADDR_WIDTH)
@@ -144,7 +141,7 @@ class CuberPeri(wiring.Component):
         )
     class frameCounter(csr.Register, access = "r"):
         frame_count: csr.Field(csr.action.R, 8)
-    
+
     class debugRegister(csr.Register, access = "r"):
         trigger_stream_valid: csr.Field(csr.action.R, 1)
         trigger_stream_ready: csr.Field(csr.action.R, 1)
@@ -156,7 +153,7 @@ class CuberPeri(wiring.Component):
         photon_count: csr.Field(csr.action.R, 16)
         read_mem_number: csr.Field(csr.action.R, 1)
         interrupt: csr.Field(csr.action.R, 1)
-    
+
 
     def __init__(self, *, csr_addr_width, csr_data_width, debug_reg=True):
         self.debug_reg = debug_reg
@@ -172,14 +169,12 @@ class CuberPeri(wiring.Component):
             self._debug = regs.add("debugRegister", self.debugRegister())
         self._bridge = csr.Bridge(regs.as_memory_map())
 
-        super().__init__(
-            {
-                "bus": In(csr.Signature(addr_width=csr_addr_width, data_width=csr_data_width)),
-                "membus": In(cuber_axi_signature),
-                "trigger_stream": In(stream.Signature(trigger_event)),
-                "int": Out(1),
-            }
-        )
+        super().__init__({
+            "bus": In(csr.Signature(addr_width=csr_addr_width, data_width=csr_data_width)),
+            "membus": In(cuber_axi_signature),
+            "trigger_stream": In(stream.Signature(trigger_event)),
+            "int": Out(1),
+        })
 
         self.bus.memory_map = self._bridge.bus.memory_map
 
@@ -207,7 +202,7 @@ class CuberPeri(wiring.Component):
 
         m.d.comb += cuber.cycles_per_frame.eq(cpf)
         m.d.comb += cuber.generate_cubes.eq(generate_cubes)
-        
+
         with m.If(cuber.lost_photon_flag == 1):
             m.d.sync += lost_photon.eq(lost_photon + 1)
         with m.If(cuber.count_overflow_flag == 1):
@@ -221,7 +216,7 @@ class CuberPeri(wiring.Component):
             m.d.sync += count_overflow.eq(0)
 
         m.d.comb += self.int.eq((lost_photon > 0) | (count_overflow > 0))
-        
+
         m.d.sync += cuber.pixel_LUT_write.addr.eq(self._pixelLUTconfig.f.pixelLUTconfig.w_data.bin)
         m.d.sync += cuber.pixel_LUT_write.data.eq((self._pixelLUTconfig.f.pixelLUTconfig.w_data.xpos<<8) | self._pixelLUTconfig.f.pixelLUTconfig.w_data.ypos)
         m.d.sync += cuber.pixel_LUT_write.en.eq(self._pixelLUTconfig.f.pixelLUTconfig.w_stb)
@@ -263,9 +258,9 @@ class CuberPeri(wiring.Component):
         AXI address scheme:
 
         First 15 LSBs (bits 0-14) of the AXI address is the byte address
-        
+
         The memory address is the byte address divided by 8 rounded down (since the memory data is 8 bytes)
-        
+
         Bit 15 of the axi address is the mem_number, which indicated which memory module the CPU is trying to read from
         (mem_number = 0 --> mem1  |  mem_number = 1 --> mem2)
         """
@@ -276,7 +271,7 @@ class CuberPeri(wiring.Component):
         wiring.connect(m, wiring.flipped(self.membus.ar), address_generator.ar)
 
         wiring.connect(m, address_generator.addresses, address_pipeline.input)
-        
+
         m.d.comb += [
             cuber.mem_read.payload.addr.eq(address_pipeline.output.payload.byte_addr >> 3),
             cuber.mem_read.payload.last.eq(address_pipeline.output.payload.last),
@@ -298,7 +293,7 @@ class CuberPeri(wiring.Component):
                 self.membus.r.payload.id.eq(cuber.mem_read_output.payload.id),
                 self.membus.r.valid.eq(1),
             ]
-        
+
         with m.If(self.membus.r.valid & self.membus.r.ready):
             m.d.sync += self.membus.r.valid.eq(0)
             with m.If(cuber.mem_read_output.valid):
@@ -312,4 +307,3 @@ class CuberPeri(wiring.Component):
 
 
         return m
-

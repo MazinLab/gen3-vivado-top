@@ -16,15 +16,13 @@ class URAMPortFormatter(wiring.Component):
     def __init__(self, port, user_data_shape=unsigned(0)):
         self.user_data_shape = user_data_shape
         self.port = port
-        
-        super().__init__(
-            {
-                "write": In(stream.Signature(data.StructLayout({"addr": 12, "data": 72}))),
-                "read": In(stream.Signature(data.StructLayout({"addr": 12, "user_data": user_data_shape}))),
-                "read_output": Out(stream.Signature(data.StructLayout({"data": 72, "user_data": user_data_shape})))
-            }
-        )
-    
+
+        super().__init__({
+            "write": In(stream.Signature(data.StructLayout({"addr": 12, "data": 72}))),
+            "read": In(stream.Signature(data.StructLayout({"addr": 12, "user_data": user_data_shape}))),
+            "read_output": Out(stream.Signature(data.StructLayout({"data": 72, "user_data": user_data_shape})))
+        })
+
     def elaborate(self, platform):
         m = Module()
 
@@ -41,7 +39,7 @@ class URAMPortFormatter(wiring.Component):
         with m.Elif(self.read.valid):
             m.d.comb += self.port.addr.eq(self.read.payload.addr)
             m.d.comb += self.port.dread_user.eq(self.read.payload.user_data)
-    
+
 
         m.submodules.skid_buffer = skid_buffer = SkidBuffer(shape=data.StructLayout({"data": 72, "user_data": self.user_data_shape}), depth=4)
 
@@ -62,7 +60,7 @@ class URAMPortFormatter(wiring.Component):
             skid_buffer.o.ready.eq(self.read_output.ready)
         ]
         """
-            
+
 
         return m
 
@@ -75,20 +73,18 @@ class ImageCuber(wiring.Component):
         self.mem2 = UltraRAM(input_pipeline=False, output_pipeline=True, user_shape=main_user_data_shape)
 
         self.event_payload_bits = 16 + 11 + 2 + CYCLE_BITS
-        super().__init__(
-            {
-                "i_stream": In(stream.Signature(trigger_event)),
-                "cycles_per_frame": In(24),
-                "generate_cubes": In(1),
-                "pixel_LUT_write": In(WritePort.Signature(addr_width=11, shape=unsigned(12))),
-                "wavelength_LUT_write": In(WritePort.Signature(addr_width=11, shape=unsigned(5*wavelength_cutoff_precision))),
-                "mem_read": In(stream.Signature(data.StructLayout({"addr": 12, "mem_num": 1, "last": 1, "id": ID_R_WIDTH}))),
-                "mem_read_output": Out(stream.Signature(data.StructLayout({"data": 64, "mem_num": 1, "last": 1, "id": ID_R_WIDTH}))),
-                "lost_photon_flag": Out(1),
-                "count_overflow_flag": Out(1),
-                "current_cycle_number": Out(24),         #Will always be <= cycles_per_frame
-            }
-        )
+        super().__init__({
+            "i_stream": In(stream.Signature(trigger_event)),
+            "cycles_per_frame": In(24),
+            "generate_cubes": In(1),
+            "pixel_LUT_write": In(WritePort.Signature(addr_width=11, shape=unsigned(12))),
+            "wavelength_LUT_write": In(WritePort.Signature(addr_width=11, shape=unsigned(5*wavelength_cutoff_precision))),
+            "mem_read": In(stream.Signature(data.StructLayout({"addr": 12, "mem_num": 1, "last": 1, "id": ID_R_WIDTH}))),
+            "mem_read_output": Out(stream.Signature(data.StructLayout({"data": 64, "mem_num": 1, "last": 1, "id": ID_R_WIDTH}))),
+            "lost_photon_flag": Out(1),
+            "count_overflow_flag": Out(1),
+            "current_cycle_number": Out(24),         #Will always be <= cycles_per_frame
+        })
 
     def elaborate(self, platform):
         m = Module()
@@ -123,7 +119,7 @@ class ImageCuber(wiring.Component):
             wavelength_LUT.a.addr.eq(self.wavelength_LUT_write.addr),
             wavelength_LUT.a.dwrite.eq(self.wavelength_LUT_write.data),
             wavelength_LUT.a.write.eq(self.wavelength_LUT_write.en),
-            
+
             pixel_LUT.a.en.eq(1),
             pixel_LUT.a.we.eq(0b111111111),
             pixel_LUT.b.we.eq(0b111111111),
@@ -180,11 +176,11 @@ class ImageCuber(wiring.Component):
                         m.d.sync += memfa.write.valid.eq(0)
                         m.d.sync += memfb.write.valid.eq(0)
                         m.next = "Counting"
-                    
+
                     with m.If(~self.generate_cubes):
                         m.d.sync += i.eq(0)
                         m.next = "Configuring"
-                    
+
                 with m.State("Counting"):
                     m.d.sync += buffered_stream.ready.eq(1)
                     m.d.sync += memfa.write.valid.eq(0)
@@ -207,12 +203,12 @@ class ImageCuber(wiring.Component):
                         m.d.sync += pixel_LUT.b.en.eq(1)
                         m.d.sync += wavelength_LUT.b.addr.eq(inc_bin)
                         m.d.sync += wavelength_LUT.b.en.eq(1)
-                        
+
                         m.d.sync += divided_phase.eq(inc_phase>>(16-self.wavelength_cutoff_precision))
 
                         m.d.sync += buffered_stream.ready.eq(0)
                         m.d.sync += counting.eq(1)
-                    
+
                     with m.If(counting):
                         m.d.sync += buffered_stream.ready.eq(0)
 
@@ -269,8 +265,8 @@ class ImageCuber(wiring.Component):
                                     for j in range(8):
                                         m.d.sync += byte_array[j].eq(memfa.read_output.payload.data[8*j:8*(j+1)])
                                     m.next = "State3"
-                            
-                            with m.State("State3"):                  
+
+                            with m.State("State3"):
                                 byte_array_new = Array([Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8),Signal(8)])
                                 index = wavelength_bin | (muxer<<2)
 
@@ -335,7 +331,7 @@ class ImageCuber(wiring.Component):
                     with m.If(i == self.cycles_per_frame - 1):
                         m.d.sync += i.eq(0)
                         m.next = "Clearing"
-                
+
                     with m.If(~self.generate_cubes):
                         m.d.sync += i.eq(0)
                         m.next = "Configuring"
@@ -343,11 +339,9 @@ class ImageCuber(wiring.Component):
 
         #State machine memory 1
         state_machine(mem1fa, mem1fb, 0)
-        
+
         #State machine memory 2
         state_machine(mem2fa, mem2fb, 1)
-        
-        
+
+
         return m
-    
-    

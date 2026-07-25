@@ -5,8 +5,9 @@ from amaranth.lib import wiring
 from amaranth.sim import Simulator
 from amaranth_soc import csr
 
-from mkidaranth.trigger_peripheral import Trigger, AXIDMA, AXICSRBridge
-from mkidaranth import axi
+from mkidaranth.trigger_peripheral import Trigger
+from mkidaranth.axi import bus
+from mkidaranth.axi.ip import AXIDMA, AXICSRBridge
 
 
 async def stream_get(ctx, stream):
@@ -302,7 +303,7 @@ class AXICSRBridgeTestCase(unittest.TestCase):
 
             super().__init__(
                 {
-                    "axi": wiring.In(axi.Signature(axi.Axi4LiteProperties(DATA_WIDTH=32, ADDR_WIDTH=10))),
+                    "axi": wiring.In(bus.Signature(bus.Axi4LiteProperties(DATA_WIDTH=32, ADDR_WIDTH=10))),
                     "rwa": wiring.Out(32),
                     "rwb": wiring.Out(213),
                     "rwc": wiring.Out(16),

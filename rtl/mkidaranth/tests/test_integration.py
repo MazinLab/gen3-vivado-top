@@ -6,7 +6,7 @@ from amaranth.sim import Simulator
 
 from mkidaranth.integration import TriggerSubsystem, map_to_json
 from mkidaranth.trigger import iq_stream, phase_stream
-from mkidaranth import axi
+from mkidaranth.axi import bus
 
 from dataclasses import dataclass
 
@@ -278,11 +278,11 @@ class IntegrationTestCase(unittest.TestCase):
             from mkidaranth.image_cuber_perhipheral import cuber_axi_signature
             super().__init__(
                 {
-                    "s_axi_ctrl": wiring.In(axi.Signature(ts.converter.axi_properties)),
-                    "s_axi_ctrl_slow": wiring.In(axi.Signature(ts.converter.axi_properties)),
-                    "s_axi_cube": wiring.In(axi.Signature(cuber_axi_signature.props)),
-                    "m_axi_trig": wiring.Out(axi.Signature(ts.trig_dma.dma_bus_signature.props)),
-                    "m_axi_postage": wiring.Out(axi.Signature(ts.postage_dma.dma_bus_signature.props)),
+                    "s_axi_ctrl": wiring.In(bus.Signature(ts.converter.axi_properties)),
+                    "s_axi_ctrl_slow": wiring.In(bus.Signature(ts.converter.axi_properties)),
+                    "s_axi_cube": wiring.In(bus.Signature(cuber_axi_signature.props)),
+                    "m_axi_trig": wiring.Out(bus.Signature(ts.trig_dma.dma_bus_signature.props)),
+                    "m_axi_postage": wiring.Out(bus.Signature(ts.postage_dma.dma_bus_signature.props)),
                     "s_axis_iq": wiring.In(stream.Signature(iq_stream._payload_shape)),
                     "s_axis_phase": wiring.In(stream.Signature(phase_stream._payload_shape)),
                     "pulse_mark_sim": wiring.In(1),
@@ -299,17 +299,17 @@ class IntegrationTestCase(unittest.TestCase):
             m.d.comb += pms.eq(self.pulse_mark_sim)
             m.d.comb += cms.eq(self.cycle_mark_sim)
 
-            axi.connect_axi(m, wiring.flipped(self.s_axi_ctrl), self.ts.s_axi_ctrl)
-            axi.connect_axi(m, wiring.flipped(self.s_axi_ctrl_slow), self.ts.s_axi_ctrl_slow)
-            axi.connect_axi(m, wiring.flipped(self.s_axi_cube), self.ts.s_axi_cube)
-            axi.connect_axi(m, wiring.flipped(self.m_axi_trig), self.ts.m_axi_trig)
-            axi.connect_axi(m, wiring.flipped(self.m_axi_postage), self.ts.m_axi_postage)
-            axi.connect(m, wiring.flipped(self.s_axis_iq), self.ts.s_axis_iq)
-            axi.connect(m, wiring.flipped(self.s_axis_phase), self.ts.s_axis_phase)
+            bus.connect_axi(m, wiring.flipped(self.s_axi_ctrl), self.ts.s_axi_ctrl)
+            bus.connect_axi(m, wiring.flipped(self.s_axi_ctrl_slow), self.ts.s_axi_ctrl_slow)
+            bus.connect_axi(m, wiring.flipped(self.s_axi_cube), self.ts.s_axi_cube)
+            bus.connect_axi(m, wiring.flipped(self.m_axi_trig), self.ts.m_axi_trig)
+            bus.connect_axi(m, wiring.flipped(self.m_axi_postage), self.ts.m_axi_postage)
+            bus.connect(m, wiring.flipped(self.s_axis_iq), self.ts.s_axis_iq)
+            bus.connect(m, wiring.flipped(self.s_axis_phase), self.ts.s_axis_phase)
 
             m.d.comb += self.ts.aclk.eq(ClockSignal())
             m.d.comb += self.ts.aresetn.eq(~ResetSignal())
-            
+
             return m
 
     #@unittest.skip("Skip")
@@ -385,7 +385,7 @@ class IntegrationTestCase(unittest.TestCase):
         with sim.write_vcd("test_integration_cuber.vcd"):
             sim.run()
     """
-            
+
     def test_integration_cuber(self):
         import json
         dut = self.IntegrationHarness(TriggerSubsystem(enable_cuber=True, sim_clocks=True))
@@ -413,7 +413,7 @@ class IntegrationTestCase(unittest.TestCase):
             data |= (to_unsigned_equiv(edge3) << (11+(16*3)))
             data |= (to_unsigned_equiv(edge4) << (11+(16*4)))
             return data
-        
+
         #Generate sample pixel and wavelength LUTs for cuber
         async def generate_sample_LUTS(ctx, ctrl_cuber_mmio):
             addr = 0
@@ -472,7 +472,8 @@ class IntegrationTestCase(unittest.TestCase):
 
         for k, v in storage.items():
             if k == 0:
-                self.assertEqual(v, 10)
+                self.assertEqual(v & 0xFFFF, 10)
+                self.assertEqual(v >> 16, 32)
             if k >= 8192:
                 self.assertEqual(v & 0xFFFF, 0)
                 self.assertEqual(v >> 16, ((k - 8192) // 4) + 32 - 8 + 1)

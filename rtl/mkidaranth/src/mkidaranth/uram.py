@@ -25,7 +25,7 @@ class UltraRAM(wiring.Component):
         self.input_pipeline = input_pipeline
         self.output_pipeline = output_pipeline
         self.user_shape = user_shape
-        super().__init__({   
+        super().__init__({
             "a": wiring.In(UltraRAMPort(user_shape=user_shape)),
             "b": wiring.In(UltraRAMPort(user_shape=user_shape)),
             "sleep": wiring.In(1),
@@ -48,7 +48,7 @@ class UltraRAM(wiring.Component):
         else:
             m.d.comb += arui.eq(self.a.dread_user)
             m.d.comb += brui.eq(self.b.dread_user)
-        
+
         if self.output_pipeline:
             m.d.sync += self.a.dread_user_out.eq(arum)
             m.d.sync += self.b.dread_user_out.eq(brum)
@@ -154,13 +154,13 @@ class UltraRAM(wiring.Component):
                 m.d.sync += output_assignments_b
             else:
                 m.d.comb += output_assignments_b
-            
+
             with m.If((self.a.addr == self.b.addr) & self.a.write & self.b.write & self.a.en & self.b.en):
                 if self.input_pipeline:
                     m.d.sync += wa.en.eq(self.a.we & (~self.b.we))
                 else:
                     m.d.comb += wa.en.eq(self.a.we & (~self.b.we))
-                    
+
         return m
 
 if __name__ == "__main__":

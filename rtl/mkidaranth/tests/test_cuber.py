@@ -1,8 +1,7 @@
 from amaranth import *
 from amaranth.sim import Simulator
 from amaranth.lib.wiring import In, Out, Component
-from amaranth.lib import stream, wiring, data, enum, fifo, memory
-from amaranth.lib.memory import Memory, WritePort, ReadPort
+from amaranth.lib import stream
 from src.mkidaranth.image_cuber import ImageCuber
 import unittest
 from src.mkidaranth.trigger import trigger_event, CYCLE_BITS
@@ -17,7 +16,7 @@ class Producer(Component):
 
         with m.If((self.event_stream.valid == 1) & (self.event_stream.ready == 1)):
             m.d.sync += self.event_stream.valid.eq(0)
-        
+
         return m
 
 
@@ -28,7 +27,7 @@ class Harness(Component):
     photon_event: In(1)
     valid_photon: In(1)
     cycle_counter: Out(CYCLE_BITS)
-    
+
     def __init__(self):
         self.cuber = ImageCuber(wavelength_cutoff_precision = test_wavelength_cutoff_precision)
         super().__init__()
@@ -59,7 +58,7 @@ class Harness(Component):
         m.d.comb += producer.event_stream.payload.phase.eq(self.test_phase)
         m.d.comb += producer.event_stream.payload.bin.eq(self.test_bin)
         m.d.comb += producer.event_stream.valid.eq(self.valid_photon)
-        
+
         with m.If(producer.event_stream.ready == 1):
             m.d.sync += self.valid_photon.eq(0)
 
@@ -109,14 +108,14 @@ class CuberTest(unittest.TestCase):
                 await ctx.tick()
                 addr += 1
             ctx.set(dut.cuber.wavelength_LUT_write.en, 0)
-        
+
         async def read_address_and_assert_equal(ctx, addr, expected_value, mem_num):
             ctx.set(dut.cuber.mem_read_output.ready, 1)
 
             ctx.set(dut.cuber.mem_read.payload.addr, addr)
             ctx.set(dut.cuber.mem_read.payload.mem_num, mem_num)
             ctx.set(dut.cuber.mem_read.valid, 1)
-            
+
             if (ctx.get(dut.cuber.mem_read.ready)):
                 await ctx.tick()
                 ctx.set(dut.cuber.mem_read.valid, 0)
@@ -124,8 +123,8 @@ class CuberTest(unittest.TestCase):
                 await ctx.posedge(dut.cuber.mem_read.ready)
                 await ctx.tick()
                 ctx.set(dut.cuber.mem_read.valid, 0)
-            
-            if (ctx.get(dut.cuber.mem_read_output.valid)): 
+
+            if (ctx.get(dut.cuber.mem_read_output.valid)):
                 self.assertEqual(ctx.get(dut.cuber.mem_read_output.payload.data), expected_value)
                 self.assertEqual(ctx.get(dut.cuber.mem_read_output.payload.mem_num), mem_num)
             else:
@@ -133,7 +132,7 @@ class CuberTest(unittest.TestCase):
                 await ctx.tick()
                 self.assertEqual(ctx.get(dut.cuber.mem_read_output.payload.data), expected_value)
                 self.assertEqual(ctx.get(dut.cuber.mem_read_output.payload.mem_num), mem_num)
-            
+
             ctx.set(dut.cuber.mem_read_output.ready, 0)
 
         async def testbench(ctx):

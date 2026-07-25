@@ -1,82 +1,13 @@
 from amaranth import *
-from amaranth.lib import stream, wiring, data, enum, fifo, memory
+from amaranth.lib import stream, wiring, data, enum, fifo
 from amaranth.lib.wiring import In, Out
 
 from amaranth_soc import csr
-from . import trigger_peripheral, axi
-from .trigger import StreamPipelineStage
-from .axi import Axi4LiteProperties
+from . import trigger_peripheral
+from .axi import bus, ip
+from .axi.stream import StreamPipelineStage
 
-
-class Complex(data.StructLayout):
-    def __init__(self, bits):
-        super().__init__({"real": signed(bits), "imag": signed(bits)})
-
-# Ripped pretty much directly from UG901
-class CMultiply(wiring.Component):
-    def __init__(self, a_width, b_width):
-        self.__a_width = a_width
-        self.__b_width = b_width
-        super().__init__(
-            {
-                "a": In(stream.Signature(Complex(a_width), always_ready=True)),
-                "b": In(stream.Signature(Complex(b_width), always_ready=True)),
-                "p": Out(stream.Signature(Complex(a_width + b_width + 1), always_ready=True)),
-            }
-        )
-
-    def elaborate(self, platform):
-        m = Module()
-        a_delay = [Signal(Complex(self.__a_width)) for _ in range(4)]
-        b_delay = [Signal(Complex(self.__b_width)) for _ in range(4)]
-        v_delay = [Signal(1) for _ in range(5)]
-
-        m.d.sync += (
-            [
-                a_delay[0].eq(self.a.payload),
-                b_delay[0].eq(self.b.payload),
-                v_delay[0].eq(self.a.valid & self.b.valid),
-            ]
-            + [a_delay[i].eq(a_delay[i - 1]) for i in range(1, 4)]
-            + [b_delay[i].eq(b_delay[i - 1]) for i in range(1, 4)]
-            + [v_delay[i].eq(v_delay[i - 1]) for i in range(1, 5)]
-        )
-
-        # Common Product
-        add_common_1 = Signal(signed(self.__a_width + 1))
-        mult_common_2 = Signal(signed(self.__a_width + self.__b_width + 1))
-        mult_common_3 = Signal(signed(self.__a_width + self.__b_width + 1))
-        mult_common_4 = Signal(signed(self.__a_width + self.__b_width + 1))
-        m.d.sync += [
-            add_common_1.eq(a_delay[0].real - a_delay[0].imag),
-            mult_common_2.eq(add_common_1 * b_delay[1].imag),
-            mult_common_3.eq(mult_common_2),
-            mult_common_4.eq(mult_common_3),
-        ]
-
-        # Real Part
-        add_real_3 = Signal(signed(self.__b_width + 1))
-        mult_real_4 = Signal(signed(self.__a_width + self.__b_width + 1))
-        m.d.sync += [
-            add_real_3.eq(b_delay[2].real - b_delay[2].imag),
-            mult_real_4.eq(add_real_3 * a_delay[3].real),
-        ]
-
-        # Imaginary Part
-        add_imag_3 = Signal(signed(self.__b_width + 1))
-        mult_imag_4 = Signal(signed(self.__a_width + self.__b_width + 1))
-        m.d.sync += [
-            add_imag_3.eq(b_delay[2].real + b_delay[2].imag),
-            mult_imag_4.eq(add_imag_3*a_delay[3].imag)
-        ]
-
-        # Output
-        m.d.sync += [
-            self.p.payload.real.eq(mult_real_4 + mult_common_4),
-            self.p.payload.imag.eq(mult_imag_4 + mult_common_4),
-            self.p.valid.eq(v_delay[4]),
-        ]
-        return m
+from .utils import Complex, CMultiply
 
 
 class PulseCommand(data.Struct):
@@ -88,15 +19,13 @@ class PulseCommand(data.Struct):
         CMUL = 4
 
     command: Command
-    info: data.UnionLayout(
-        {
-            "set": data.StructLayout({"shr": data.ArrayLayout(unsigned(4), 8)}),
-            "delay": data.StructLayout({"delay": unsigned(32)}),
-            "sync": data.StructLayout({"sources": unsigned(32)}),
-            "outp": data.StructLayout({"outp": unsigned(32)}),
-            "cmul": Complex(16),
-        }
-    )
+    info: data.UnionLayout({
+        "set": data.StructLayout({"shr": data.ArrayLayout(unsigned(4), 8)}),
+        "delay": data.StructLayout({"delay": unsigned(32)}),
+        "sync": data.StructLayout({"sources": unsigned(32)}),
+        "outp": data.StructLayout({"outp": unsigned(32)}),
+        "cmul": Complex(16),
+    })
 
 
 class Pulser(wiring.Component):
@@ -185,19 +114,17 @@ class PulserPeripheral(wiring.Component):
         self._cfifo_stat = regs.add("CommandFIFOStatus", self.CommandFIFOStatus())
         self._bridge = csr.Bridge(regs.as_memory_map())
 
-        super().__init__(
-            {
-                "interrupt": Out(1),
-                "ctlbus": In(csr.Signature(addr_width=8, data_width=32)),
-                "iin": In(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)),
-                "qin": In(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)),
-                "iout": Out(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)),
-                "qout": Out(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)),
-                "pps": In(1),
-                "sync": In(31),
-                "outp": Out(32),
-            }
-        )
+        super().__init__({
+            "interrupt": Out(1),
+            "ctlbus": In(csr.Signature(addr_width=8, data_width=32)),
+            "iin": In(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)),
+            "qin": In(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)),
+            "iout": Out(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)),
+            "qout": Out(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)),
+            "pps": In(1),
+            "sync": In(31),
+            "outp": Out(32),
+        })
 
         self.ctlbus.memory_map = self._bridge.bus.memory_map
 
@@ -231,7 +158,7 @@ class PulserPeripheral(wiring.Component):
         return m
 
 
-BUS_PROPS = Axi4LiteProperties(DATA_WIDTH=32, ADDR_WIDTH=10)
+BUS_PROPS = bus.Axi4LiteProperties(DATA_WIDTH=32, ADDR_WIDTH=10)
 
 
 class PulserIntegration(wiring.Component):
@@ -239,19 +166,11 @@ class PulserIntegration(wiring.Component):
     aresetn: In(1)
     interrupt: Out(1)
 
-    s_axi_pulser: In(axi.StandardizedAxiSignature(BUS_PROPS))
-    s_axis_iin: In(
-        axi.StandardizedSignature(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True))
-    )
-    s_axis_qin: In(
-        axi.StandardizedSignature(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True))
-    )
-    m_axis_iout: Out(
-        axi.StandardizedSignature(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True))
-    )
-    m_axis_qout: Out(
-        axi.StandardizedSignature(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True))
-    )
+    s_axi_pulser: In(bus.StandardizedAxiSignature(BUS_PROPS))
+    s_axis_iin: In(bus.StandardizedSignature(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)))
+    s_axis_qin: In(bus.StandardizedSignature(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)))
+    m_axis_iout: Out(bus.StandardizedSignature(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)))
+    m_axis_qout: Out(bus.StandardizedSignature(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)))
 
     pps: In(1)
     sync: In(31)
@@ -264,19 +183,19 @@ class PulserIntegration(wiring.Component):
             m.domains.sync = cd_sync = ClockDomain()
             m.d.comb += [cd_sync.clk.eq(self.aclk), cd_sync.rst.eq(~self.aresetn)]
 
-        m.submodules.pipea = pipea = axi.AxiPipelineStage(BUS_PROPS)
-        m.submodules.pipeb = pipeb = axi.AxiPipelineStage(BUS_PROPS)
-        axi.connect_axi(m, wiring.flipped(self.s_axi_pulser), pipea.input)
+        m.submodules.pipea = pipea = bus.AxiPipelineStage(BUS_PROPS)
+        m.submodules.pipeb = pipeb = bus.AxiPipelineStage(BUS_PROPS)
+        bus.connect_axi(m, wiring.flipped(self.s_axi_pulser), pipea.input)
         wiring.connect(m, pipea.output, pipeb.input)
 
-        m.submodules.converter = converter = trigger_peripheral.AXICSRBridge(addr_width=10, data_width=32)
+        m.submodules.converter = converter = ip.AXICSRBridge(addr_width=10, data_width=32)
         self.pulser_peri = m.submodules.pulser_peri = pulser_peri = PulserPeripheral(4096)
 
         wiring.connect(m, pipeb.output, converter.axi)
-        axi.connect(m, wiring.flipped(self.s_axis_iin), pulser_peri.iin)
-        axi.connect(m, wiring.flipped(self.s_axis_qin), pulser_peri.qin)
-        axi.connect(m, wiring.flipped(self.m_axis_iout), pulser_peri.iout)
-        axi.connect(m, wiring.flipped(self.m_axis_qout), pulser_peri.qout)
+        bus.connect(m, wiring.flipped(self.s_axis_iin), pulser_peri.iin)
+        bus.connect(m, wiring.flipped(self.s_axis_qin), pulser_peri.qin)
+        bus.connect(m, wiring.flipped(self.m_axis_iout), pulser_peri.iout)
+        bus.connect(m, wiring.flipped(self.m_axis_qout), pulser_peri.qout)
         m.d.comb += pulser_peri.pps.eq(self.pps)
         m.d.comb += pulser_peri.sync.eq(self.sync)
         m.d.comb += self.outp.eq(pulser_peri.outp)
@@ -293,13 +212,7 @@ if __name__ == "__main__":
     from amaranth.vendor import XilinxPlatform
 
     from .integration import map_to_json
-
-    class RFSoCGen3Platform(XilinxPlatform):
-        device = "xczu48dr"
-        package = "ffvg1517"
-        speed = "2"
-        resources = []
-        connectors = []
+    from .utils import RFSoCGen3Platform
 
     integrated_pulser = PulserIntegration()
     with open(sys.argv[1], "w") as f:
