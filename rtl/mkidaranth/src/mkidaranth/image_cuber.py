@@ -4,9 +4,10 @@ from amaranth.back import rtlil, verilog
 from amaranth.lib.memory import Memory, WritePort, ReadPort
 from amaranth.lib.wiring import Component, In, Out
 from amaranth.lib import stream, wiring, data, enum, fifo, memory
-from .trigger import trigger_event, CYCLE_BITS
-from .uram import UltraRAM
-from .skid import SkidBuffer
+
+from mkidaranth.primitives.uram import UltraRAM
+from mkidaranth.trigger import trigger_event, CYCLE_BITS
+from mkidaranth.skid import SkidBuffer
 
 ID_R_WIDTH = 16
 

@@ -81,10 +81,9 @@ class PulserTestCase(unittest.TestCase):
         dut = Pulser()
 
         async def testbench(ctx):
-            ctx.set(dut.iin.payload, [0x7fff for _ in range(4)])
-            ctx.set(dut.qin.payload, [0x7fff for _ in range(4)])
-            ctx.set(dut.iin.valid, 1)
-            ctx.set(dut.qin.valid, 1)
+            ctx.set(dut.i.p.i, [0x7fff for _ in range(4)])
+            ctx.set(dut.i.p.q, [0x7fff for _ in range(4)])
+            ctx.set(dut.i.valid, 1)
             await stream_put(
                 ctx,
                 dut.command,
@@ -199,8 +198,6 @@ class PulserIntegrationTestCase(unittest.TestCase):
             super().__init__(
                 {
                     "s_axi_pulser": wiring.In(bus.Signature(BUS_PROPS)),
-                    "iin": wiring.In(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)),
-                    "qin": wiring.In(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)),
                     "iout": wiring.Out(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)),
                     "qout": wiring.Out(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)),
                     "pps": wiring.In(1),
@@ -212,8 +209,6 @@ class PulserIntegrationTestCase(unittest.TestCase):
             m.submodules.ts = self.ts
 
             bus.connect_axi(m, wiring.flipped(self.s_axi_pulser), self.ts.s_axi_pulser)
-            bus.connect(m, wiring.flipped(self.iin), self.ts.s_axis_iin)
-            bus.connect(m, wiring.flipped(self.qin), self.ts.s_axis_qin)
             bus.connect(m, self.ts.m_axis_iout, wiring.flipped(self.iout))
             bus.connect(m, self.ts.m_axis_qout, wiring.flipped(self.qout))
 
@@ -229,8 +224,19 @@ class PulserIntegrationTestCase(unittest.TestCase):
             ctrl_mmio = (ctx, dut.s_axi_pulser, "sync")
             regs = json.loads(map_to_json(dut.ts.pulser_peri.ctlbus.memory_map))
 
-            ctx.set(dut.iin.payload, [0x7fff for _ in range(8)])
-            ctx.set(dut.qin.payload, [0x7fff for _ in range(8)])
+            for i in range(128):
+                d = 0
+                for j in range(0, 256, 16):
+                    d |= 0x7FFF << j
+                await write_reg(ctrl_mmio, regs, ["DACLoad"], {
+                    "data": d,
+                    "addr": i,
+                })
+            await write_reg(ctrl_mmio, regs, ["DACControl"], {
+                "mask": 0b111,
+                "select": 0,
+                "enable": 1
+            })
 
             await write_reg(ctrl_mmio, regs, ["CommandFIFO"], {
                 "command": 2 | 0x1 << 4

@@ -8,6 +8,7 @@ authors = [
 dependencies = [
     "amaranth>=0.5.8",
     "amaranth-soc @ git+https://github.com/amaranth-lang/amaranth-soc",
+    "amaranth-boards>=0.0.20",
 ]
 requires-python = ">=3.10"
 readme = "README.md"
@@ -33,4 +34,5 @@ dev = [
     "ipython>=8.29.0",
     "ipykernel>=6.30.1",
     "jupyterlab>=4.4.5",
+    "paramiko>=5.0.0",
 ]

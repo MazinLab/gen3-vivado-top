@@ -7,6 +7,12 @@ from amaranth_soc import csr
 
 from . import bus
 
+class AXIAddressGenerator(wiring.Component):
+    def __init__(props):
+        super().__init__({
+
+        })
+
 # Heavily pipelined to let vivado retime a bit
 class AXICSRBridge(wiring.Component):
     def __init__(self, *, addr_width, data_width=32):
