@@ -109,6 +109,7 @@ class PulserPeripheral(wiring.Component):
         depth:   csr.Field(csr.action.R, 16)
         count:   csr.Field(csr.action.R, 16)
         lowmark: csr.Field(csr.action.W, 16)
+        gate:    csr.Field(csr.action.RW, 1)
 
     class DACLoad(csr.Register, access="rw"):
         data: csr.Field(csr.action.W, 256)
@@ -169,8 +170,9 @@ class PulserPeripheral(wiring.Component):
         ]
 
         m.submodules.buf = buf = StreamPipelineStage(dactable.o.p.shape(), always_ready=True)
-        wiring.connect(m, dactable.o, buf.input)
         wiring.connect(m, buf.output, pulser.i)
+        wiring.connect(m, dactable.o, buf.input)
+
 
         with m.If(self._dac_load.f.data.w_stb):
             m.d.sync += dactable.wdata.eq(self._dac_load.f.data.w_data)
@@ -181,7 +183,13 @@ class PulserPeripheral(wiring.Component):
             m.d.sync += dactable.wen.eq(0)
 
         wiring.connect(m, command_fifo.r_stream, pipeline.input)
-        wiring.connect(m, pipeline.output, pulser.command)
+        pipe = [Signal(1) for _ in range(8)]
+        m.d.sync += pipe[0].eq(self._cfifo_stat.f.gate.data)
+        for i in range(1, len(pipe)):
+            m.d.sync += pipe[i].eq(pipe[i-1])
+        with m.If(~pipe[-1]):
+            wiring.connect(m, pipeline.output, pulser.command)
+
         wiring.connect(m, wiring.flipped(self.iout), pulser.iout)
         wiring.connect(m, wiring.flipped(self.qout), pulser.qout)
         m.d.comb += pulser.sync.eq(Cat(
@@ -189,7 +197,7 @@ class PulserPeripheral(wiring.Component):
             *[
                 buf.output.p.last & buf.output.valid & buf.output.ready \
                     & (buf.output.p.id == i)
-                for i in range(5)
+                for i in range(4)
             ]
         ))
         m.d.comb += self.outp.eq(pulser.outp)

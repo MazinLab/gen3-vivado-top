@@ -240,6 +240,13 @@ class PulserIntegrationTestCase(unittest.TestCase):
                 "enable": 1
             })
 
+            await write_reg(ctrl_mmio, regs, ["CommandFIFOStatus"], {
+                "depth": 0,
+                "count": 0,
+                "lowmark": 0,
+                "gate": 1,
+            })
+
             await write_reg(ctrl_mmio, regs, ["CommandFIFO"], {
                 "command": 2 | 0x1 << 4
             })
@@ -250,11 +257,26 @@ class PulserIntegrationTestCase(unittest.TestCase):
                 await write_reg(ctrl_mmio, regs, ["CommandFIFO"], {
                     "command": 1 | (31) << 4,
                 })
-            for _ in range(32):
-                await ctx.tick()
+
+            await ctx.tick().repeat(32)
             ctx.set(dut.pps, 1)
             await ctx.tick()
             ctx.set(dut.pps, 0)
+            await ctx.tick().repeat(32)
+
+            await write_reg(ctrl_mmio, regs, ["CommandFIFOStatus"], {
+                "depth": 0,
+                "count": 0,
+                "lowmark": 0,
+                "gate": 0,
+            })
+
+            await ctx.tick().repeat(32)
+            ctx.set(dut.pps, 1)
+            await ctx.tick()
+            ctx.set(dut.pps, 0)
+            await ctx.tick().repeat(32)
+
             while (await read_reg(ctrl_mmio, regs, ["CommandFIFOStatus"]))['count']:
                 pass
 
