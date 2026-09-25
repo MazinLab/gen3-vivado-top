@@ -3,44 +3,58 @@ from amaranth.lib import wiring, stream, enum
 from amaranth.lib.wiring import In, Out
 
 class StreamPipelineStage(wiring.Component):
-    def __init__(self, shape, payload_init=None):
+    def __init__(self, shape, payload_init=None, *, always_ready=False, always_valid=False):
         self.shape = shape
         self.payload_init = payload_init
+        self._always_ready = always_ready
+        self._always_valid = always_valid
         return super().__init__({
-            "input": In(stream.Signature(shape, payload_init=payload_init)),
-            "output": Out(stream.Signature(shape, payload_init=payload_init))
+            "input": In(stream.Signature(
+                shape, payload_init=payload_init,
+                always_ready=always_ready, always_valid=always_valid
+            )),
+            "output": Out(stream.Signature(
+                shape, payload_init=payload_init,
+                always_ready=always_ready, always_valid=always_valid
+            ))
         })
 
     def elaborate(self, platform):
         m = Module()
-        pipe_valid = Signal()
-        pipe_payload = Signal(self.shape, init=self.payload_init)
+        if not self._always_ready:
+            pipe_valid = Signal()
+            pipe_payload = Signal(self.shape, init=self.payload_init)
 
-        skid_valid = Signal()
-        skid_payload = Signal(self.shape, init=self.payload_init)
+            skid_valid = Signal()
+            skid_payload = Signal(self.shape, init=self.payload_init)
 
-        with m.If(self.input.ready):
-            m.d.sync += [
-                pipe_valid.eq(self.input.valid),
-                pipe_payload.eq(self.input.payload),
-            ]
-            with m.If(~self.output.ready):
+            with m.If(self.input.ready):
                 m.d.sync += [
-                    skid_valid.eq(pipe_valid),
-                    skid_payload.eq(pipe_payload),
+                    pipe_valid.eq(self.input.valid),
+                    pipe_payload.eq(self.input.payload),
                 ]
-        with m.If(self.output.ready):
-            m.d.sync += skid_valid.eq(0)
+                with m.If(~self.output.ready):
+                    m.d.sync += [
+                        skid_valid.eq(pipe_valid),
+                        skid_payload.eq(pipe_payload),
+                    ]
+            with m.If(self.output.ready):
+                m.d.sync += skid_valid.eq(0)
 
-        m.d.comb += [
-            self.input.ready.eq(~skid_valid),
-            self.output.valid.eq(pipe_valid | skid_valid),
-        ]
+            m.d.comb += [
+                self.output.valid.eq(pipe_valid | skid_valid),
+                self.input.ready.eq(~skid_valid),
+            ]
 
-        with m.If(skid_valid):
-            m.d.comb += self.output.payload.eq(skid_payload)
-        with m.Else():
-            m.d.comb += self.output.payload.eq(pipe_payload)
+            with m.If(skid_valid):
+                m.d.comb += self.output.payload.eq(skid_payload)
+            with m.Else():
+                m.d.comb += self.output.payload.eq(pipe_payload)
+        else:
+            m.d.sync += [
+                self.output.valid.eq(self.input.valid),
+                self.output.payload.eq(self.input.payload)
+            ]
 
         return m
 

@@ -86,6 +86,8 @@ class UltraRAM(wiring.Component):
             m.submodules.uram = Instance("URAM288",
                 i_CLK=ClockSignal(),
                 i_SLEEP=self.sleep,
+
+                # A
                 i_ADDR_A=self.a.addr,
                 i_EN_A=self.a.en,
                 i_RDB_WR_A=self.a.wr,
@@ -100,6 +102,8 @@ class UltraRAM(wiring.Component):
                 o_RDACCESS_A=self.a.data_read_valid,
                 o_SBITERR_A=self.a.single_biterror,
                 o_DBITERR_A=self.a.double_biterror,
+
+                # B
                 i_ADDR_B=self.b.addr,
                 i_EN_B=self.b.en,
                 i_RDB_WR_B=self.b.wr,
@@ -114,6 +118,8 @@ class UltraRAM(wiring.Component):
                 o_RDACCESS_B=self.b.data_read_valid,
                 o_SBITERR_B=self.b.single_biterror,
                 o_DBITERR_B=self.b.double_biterror,
+
+                # CASIN A
                 i_CAS_IN_ADDR_A=self.a_cascade_in.addr,
                 i_CAS_IN_EN_A=self.a_cascade_in.en,
                 i_CAS_IN_RDB_WR_A=self.a_cascade_in.wr,
@@ -123,6 +129,8 @@ class UltraRAM(wiring.Component):
                 i_CAS_IN_RDACCESS_A=self.a_cascade_in.data_read_valid,
                 i_CAS_IN_SBITERR_A=self.a_cascade_in.single_biterror,
                 i_CAS_IN_DBITERR_A=self.a_cascade_in.double_biterror,
+
+                # CASIN B
                 i_CAS_IN_ADDR_B=self.b_cascade_in.addr,
                 i_CAS_IN_EN_B=self.b_cascade_in.en,
                 i_CAS_IN_RDB_WR_B=self.b_cascade_in.wr,
@@ -132,34 +140,48 @@ class UltraRAM(wiring.Component):
                 i_CAS_IN_RDACCESS_B=self.b_cascade_in.data_read_valid,
                 i_CAS_IN_SBITERR_B=self.b_cascade_in.single_biterror,
                 i_CAS_IN_DBITERR_B=self.b_cascade_in.double_biterror,
+
+                # CASOUT A
                 o_CAS_OUT_ADDR_A=self.a_cascade_out.addr,
                 o_CAS_OUT_EN_A=self.a_cascade_out.en,
                 o_CAS_OUT_RDB_WR_A=self.a_cascade_out.wr,
-                o_CAS_OUT_BWE_B=self.a_cascade_out.we,
+                o_CAS_OUT_BWE_A=self.a_cascade_out.we,
                 o_CAS_OUT_DIN_A=self.a_cascade_out.data_write,
                 o_CAS_OUT_DOUT_A=self.a_cascade_out.data_read,
                 o_CAS_OUT_RDACCESS_A=self.a_cascade_out.data_read_valid,
                 o_CAS_OUT_SBITERR_A=self.a_cascade_out.single_biterror,
                 o_CAS_OUT_DBITERR_A=self.a_cascade_out.double_biterror,
+
+                # CASOUT B
                 o_CAS_OUT_ADDR_B=self.b_cascade_out.addr,
                 o_CAS_OUT_EN_B=self.b_cascade_out.en,
                 o_CAS_OUT_RDB_WR_B=self.b_cascade_out.wr,
-                o_CAS_IN_BWE_B=self.b_cascade_out.we,
+                o_CAS_OUT_BWE_B=self.b_cascade_out.we,
                 o_CAS_OUT_DIN_B=self.b_cascade_out.data_write,
                 o_CAS_OUT_DOUT_B=self.b_cascade_out.data_read,
                 o_CAS_OUT_RDACCESS_B=self.b_cascade_out.data_read_valid,
                 o_CAS_OUT_SBITERR_B=self.b_cascade_out.single_biterror,
                 o_CAS_OUT_DBITERR_B=self.b_cascade_out.double_biterror,
+
+                # WE Mode
                 p_BWE_MODE_A="PARITY_INDEPENDENT",
                 p_BWE_MODE_B="PARITY_INDEPENDENT",
+
+                # Pipeline Registers
                 p_OREG_A="TRUE" if self.output_pipeline else "FALSE",
                 p_OREG_B="TRUE" if self.output_pipeline else "FALSE",
                 p_OREG_ECC_A="TRUE" if self.ecc_pipeline else "FALSE",
                 p_OREG_ECC_B="TRUE" if self.ecc_pipeline else "FALSE",
                 p_IREG_PRE_A="TRUE" if self.input_pipeline else "FALSE",
                 p_IREG_PRE_B="TRUE" if self.input_pipeline else "FALSE",
+
+                # Cascade Parameters
                 p_CASCADE_ORDER_A=self.cascade_mode_a.value,
                 p_CASCADE_ORDER_B=self.cascade_mode_b.value,
+                p_SELF_ADDR_A=self.self_addr_a,
+                p_SELF_ADDR_B=self.self_addr_b,
+                p_SELF_MASK_A=self.self_mask_a,
+                p_SELF_MASK_B=self.self_mask_b,
             )
         elif platform is None:
             self._sim_uram = m.submodules.sim_uram = sim_uram = \

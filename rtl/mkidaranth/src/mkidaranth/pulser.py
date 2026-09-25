@@ -7,7 +7,8 @@ from mkidaranth.dactable import Table
 from mkidaranth.axi import bus, ip
 from mkidaranth.axi.stream import StreamPipelineStage
 
-from .utils import Complex, CMultiply
+from mkidaranth.utils import Complex, CMultiply
+from mkidaranth.skid import SkidBuffer
 
 
 class PulseCommand(data.Struct):
@@ -20,18 +21,17 @@ class PulseCommand(data.Struct):
 
     command: Command
     info: data.UnionLayout({
-        "set": data.StructLayout({"shr": data.ArrayLayout(unsigned(4), 8)}),
+        "set":   data.StructLayout({"shr": data.ArrayLayout(unsigned(4), 8)}),
         "delay": data.StructLayout({"delay": unsigned(32)}),
-        "sync": data.StructLayout({"sources": unsigned(32)}),
-        "outp": data.StructLayout({"outp": unsigned(32)}),
-        "cmul": Complex(16),
+        "sync":  data.StructLayout({"sources": unsigned(32)}),
+        "outp":  data.StructLayout({"outp": unsigned(32)}),
+        "cmul":  Complex(16),
     })
 
 
 class Pulser(wiring.Component):
     i: In(stream.Signature(data.StructLayout({
-        "i":    data.ArrayLayout(signed(16), 8),
-        "q":    data.ArrayLayout(signed(16), 8),
+        "iq":   data.ArrayLayout(Complex(16), 8),
         "id":   2,
         "last": 1
     }), always_ready=True))
@@ -40,8 +40,8 @@ class Pulser(wiring.Component):
     qout: Out(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True))
 
     command: In(stream.Signature(PulseCommand))
-    sync: In(32)
-    outp: Out(32)
+    sync:    In(32)
+    outp:    Out(32)
 
     def elaborate(self, platform):
         m = Module()
@@ -58,8 +58,8 @@ class Pulser(wiring.Component):
             m.submodules[f"cmul{i}"] = cmul = CMultiply(16, 16)
             m.d.sync += [
                 cmul.a.valid.eq(self.i.valid),
-                cmul.a.payload.real.eq(self.i.p.i[i] >> shrs[i]),
-                cmul.a.payload.imag.eq(self.i.p.q[i] >> shrs[i]),
+                cmul.a.payload.real.eq(self.i.p.iq[i].real >> shrs[i]),
+                cmul.a.payload.imag.eq(self.i.p.iq[i].imag >> shrs[i]),
                 cmul.b.valid.eq(1),
                 cmul.b.payload.eq(qam_mod),
 
@@ -133,12 +133,12 @@ class PulserPeripheral(wiring.Component):
 
         super().__init__({
             "interrupt": Out(1),
-            "ctlbus": In(csr.Signature(addr_width=8, data_width=32)),
-            "iout": Out(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)),
-            "qout": Out(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)),
-            "pps": In(1),
-            "sync": In(31),
-            "outp": Out(32),
+            "ctlbus":    In(csr.Signature(addr_width=8, data_width=32)),
+            "iout":      Out(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)),
+            "qout":      Out(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)),
+            "pps":       In(1),
+            "sync":      In(31 - 4),
+            "outp":      Out(32),
         })
 
         self.ctlbus.memory_map = self._bridge.bus.memory_map
@@ -160,12 +160,17 @@ class PulserPeripheral(wiring.Component):
 
         m.d.sync += self.interrupt.eq(command_fifo.level < self._cfifo_stat.f.lowmark.w_data)
 
+        m.submodules.pulser   = pulser   = Pulser()
         m.submodules.dactable = dactable = Table()
         m.d.sync += [
-            dactable.mask  .eq(self._dac_control.f.mask.data),
-            dactable.select.eq(self._dac_control.f.select.data),
-            dactable.enable.eq(self._dac_control.f.enable.data),
+            dactable.mask  .eq(self._dac_control.f.mask.data   | pulser.outp[32-4:32-2]),
+            dactable.select.eq(self._dac_control.f.select.data | pulser.outp[32-2:32-0]),
+            dactable.enable.eq(self._dac_control.f.enable.data | pulser.outp[32-5]),
         ]
+
+        m.submodules.buf = buf = StreamPipelineStage(dactable.o.p.shape(), always_ready=True)
+        wiring.connect(m, dactable.o, buf.input)
+        wiring.connect(m, buf.output, pulser.i)
 
         with m.If(self._dac_load.f.data.w_stb):
             m.d.sync += dactable.wdata.eq(self._dac_load.f.data.w_data)
@@ -175,13 +180,18 @@ class PulserPeripheral(wiring.Component):
         with m.Else():
             m.d.sync += dactable.wen.eq(0)
 
-        m.submodules.pulser = pulser = Pulser()
         wiring.connect(m, command_fifo.r_stream, pipeline.input)
         wiring.connect(m, pipeline.output, pulser.command)
-        wiring.connect(m, dactable.o, pulser.i)
         wiring.connect(m, wiring.flipped(self.iout), pulser.iout)
         wiring.connect(m, wiring.flipped(self.qout), pulser.qout)
-        m.d.comb += pulser.sync.eq(Cat(self.pps, self.sync))
+        m.d.comb += pulser.sync.eq(Cat(
+            self.pps, self.sync,
+            *[
+                buf.output.p.last & buf.output.valid & buf.output.ready \
+                    & (buf.output.p.id == i)
+                for i in range(5)
+            ]
+        ))
         m.d.comb += self.outp.eq(pulser.outp)
 
         return m
@@ -191,16 +201,16 @@ BUS_PROPS = bus.Axi4LiteProperties(DATA_WIDTH=32, ADDR_WIDTH=10)
 
 
 class PulserIntegration(wiring.Component):
-    aclk: In(1)
-    aresetn: In(1)
+    aclk:      In(1)
+    aresetn:   In(1)
     interrupt: Out(1)
 
     s_axi_pulser: In(bus.StandardizedAxiSignature(BUS_PROPS))
-    m_axis_iout: Out(bus.StandardizedSignature(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)))
-    m_axis_qout: Out(bus.StandardizedSignature(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)))
+    m_axis_iout:  Out(bus.StandardizedSignature(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)))
+    m_axis_qout:  Out(bus.StandardizedSignature(stream.Signature(data.ArrayLayout(signed(16), 8), always_ready=True)))
 
-    pps: In(1)
-    sync: In(31)
+    pps:  In(1)
+    sync: In(31 - 4)
     outp: Out(32)
 
     def elaborate(self, platform):
@@ -216,7 +226,7 @@ class PulserIntegration(wiring.Component):
         wiring.connect(m, pipea.output, pipeb.input)
 
         m.submodules.converter = converter = ip.AXICSRBridge(addr_width=10, data_width=32)
-        self.pulser_peri = m.submodules.pulser_peri = pulser_peri = PulserPeripheral(4096)
+        self.pulser_peri = m.submodules.pulser_peri = pulser_peri = PulserPeripheral(2048)
 
         wiring.connect(m, pipeb.output, converter.axi)
         bus.connect(m, wiring.flipped(self.m_axis_iout), pulser_peri.iout)

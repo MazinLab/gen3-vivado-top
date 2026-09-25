@@ -70,8 +70,10 @@ class TableTestCase(unittest.TestCase):
                 def _signed(p):
                     return int.from_bytes(int.to_bytes(p, 2, 'little'), 'little', signed=True)
                 await stream_assert(ctx, dut.o, {
-                    "i": [_signed((n >> i)         & 0xffff) for i in range(0, 128, 16)],
-                    "q": [_signed((n >> (i + 128)) & 0xffff) for i in range(0, 128, 16)],
+                    "iq": [{
+                        "real": _signed((n >> (i))      & 0xffff),
+                        "imag": _signed((n >> (i + 16)) & 0xffff),
+                    } for i in range(0, 256, 32)],
                     "id": i // (4096 * 4),
                     "last": i % (4096 * 4) == (4096 * 4 - 1)
                 })
@@ -83,7 +85,7 @@ class TableTestCase(unittest.TestCase):
 
         sim.run()
 
-    @unittest.skip("Fucking slow")
+    # @unittest.skip("Fucking slow")
     def test_table(self):
         dut = Table()
 
@@ -91,8 +93,10 @@ class TableTestCase(unittest.TestCase):
             for s in range(4):
                 for i in range(4096 * 4):
                     await stream_assert(ctx, dut.o, {
-                        "i": [s for _ in range(8)],
-                        "q": [s for _ in range(8)],
+                        "iq": [{
+                            "real": s,
+                            "imag": s,
+                        } for _ in range(8)],
                         "id": s,
                         "last": i == 4096 * 4 - 1
                     })
@@ -112,7 +116,7 @@ class TableTestCase(unittest.TestCase):
 
         sim.run()
 
-    @unittest.skip("Fucking slow")
+    # @unittest.skip("Fucking slow")
     def test_mask(self):
         dut = Table()
 
@@ -120,8 +124,10 @@ class TableTestCase(unittest.TestCase):
             for s in range(4):
                 for i in range(4096 * 4):
                     await stream_assert(ctx, dut.o, {
-                        "i": [s & 0b01 | 0b10 for _ in range(8)],
-                        "q": [s & 0b01 | 0b10 for _ in range(8)],
+                        "iq": [{
+                            "real": s & 0b01 | 0b10,
+                            "imag": s & 0b01 | 0b10,
+                        } for _ in range(8)],
                         "id": s & 0b01 | 0b10,
                         "last": i == 4096 * 4 - 1
                     })

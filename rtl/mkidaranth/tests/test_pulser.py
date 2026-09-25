@@ -81,8 +81,10 @@ class PulserTestCase(unittest.TestCase):
         dut = Pulser()
 
         async def testbench(ctx):
-            ctx.set(dut.i.p.i, [0x7fff for _ in range(4)])
-            ctx.set(dut.i.p.q, [0x7fff for _ in range(4)])
+            ctx.set(dut.i.p.iq, [{
+                "real": 0x7fff,
+                "imag": 0x7fff,
+            } for _ in range(4)])
             ctx.set(dut.i.valid, 1)
             await stream_put(
                 ctx,

@@ -2,6 +2,7 @@ from amaranth import *
 from amaranth.lib import wiring, stream, data
 from amaranth.utils import exact_log2
 
+from mkidaranth.utils import Complex
 from mkidaranth.primitives.uram import UltraRAMColumn
 
 
@@ -13,8 +14,7 @@ class SubTable(wiring.Component):
     wdata:   wiring.In(256)
 
     o: wiring.Out(stream.Signature(data.StructLayout({
-        "i":    data.ArrayLayout(signed(16), 8),
-        "q":    data.ArrayLayout(signed(16), 8),
+        "iq":   data.ArrayLayout(Complex(16), 8),
         "id":   2,
         "last": 1
     }), always_ready=True))
@@ -27,22 +27,25 @@ class SubTable(wiring.Component):
         m = Module()
 
         self._rams = rams = [UltraRAMColumn(4) for _ in range(4)]
-        m.d.comb += self.o.valid.eq(rams[0].b.data_read_valid)
-        m.d.comb += self.o.p.id.eq(self._id)
 
         address = Signal.like(self.waddr)
         counter = Signal.like(self.waddr)
         with m.If(self.enable):
             m.d.sync += address.eq(address + 1)
-        with m.If(self.o.valid & self.o.ready):
+        with m.If(rams[0].b.data_read_valid):
             m.d.sync += counter.eq(counter + 1)
+
+        m.d.sync += self.o.valid.eq(rams[0].b.data_read_valid)
+        m.d.sync += self.o.p.id.eq(self._id)
         with m.If(counter == (4096 * 4) - 1):
-            m.d.comb += self.o.p.last.eq(1)
+            m.d.sync += self.o.p.last.eq(1)
+        with m.Else():
+            m.d.sync += self.o.p.last.eq(0)
 
         for i, ram in enumerate(rams):
             m.submodules[f"ram{i}"] = ram
 
-            m.d.comb += [
+            m.d.sync += [
                 ram.a.en  .eq(self.wen),
                 ram.a.wr  .eq(self.wen),
                 ram.a.we  .eq(0x1ff),
@@ -53,13 +56,10 @@ class SubTable(wiring.Component):
                 ram.b.addr.eq(address),
             ]
 
-            part = self.o.p.i if i < 2 else self.o.p.q
-            for j in range(4):
-                m.d.comb += [
-                    part[(i % 2) * 4 + j].eq(ram.b.data_read[j * 16 : (j + 1) * 16])
+            for j in range(2):
+                m.d.sync += [
+                    self.o.p.iq[i * 2 + j].eq(ram.b.data_read[j * 32 : (j + 1) * 32])
                 ]
-
-            m.d.comb += Assert(ram.b.data_read_valid == rams[0].b.data_read_valid)
 
         return m
 
@@ -74,8 +74,7 @@ class Table(wiring.Component):
     wdata:  wiring.In(256)
 
     o: wiring.Out(stream.Signature(data.StructLayout({
-        "i":    data.ArrayLayout(signed(16), 8),
-        "q":    data.ArrayLayout(signed(16), 8),
+        "iq":   data.ArrayLayout(Complex(16), 8),
         "id":   2,
         "last": 1,
     }), always_ready=True))
