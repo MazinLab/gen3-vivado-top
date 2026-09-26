@@ -49,7 +49,7 @@ class Pulser(wiring.Component):
         delay_loaded = Signal()
         delay = Signal(28)
         shrs = [Signal(4) for _ in range(8)]
-        sync_last = Signal()
+        sync_last = Signal(32)
 
         qam_mod = Signal(Complex(16), init={"real": 0x7FFF, "imag": 0})
 

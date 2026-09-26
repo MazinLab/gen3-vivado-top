@@ -248,14 +248,21 @@ class PulserIntegrationTestCase(unittest.TestCase):
             })
 
             await write_reg(ctrl_mmio, regs, ["CommandFIFO"], {
-                "command": 2 | 0x1 << 4
+                "command": PulseCommand.Command.SYNC.value | 0x1 << 4
             })
             for i in range(0, 16):
                 await write_reg(ctrl_mmio, regs, ["CommandFIFO"], {
-                    "command": 0 | (0x11111111 * i) << 4,
+                    "command": PulseCommand.Command.SET.value | (0x11111111 * i) << 4,
                 })
                 await write_reg(ctrl_mmio, regs, ["CommandFIFO"], {
-                    "command": 1 | (31) << 4,
+                    "command": PulseCommand.Command.DELAY.value | (31) << 4,
+                })
+            await write_reg(ctrl_mmio, regs, ["CommandFIFO"], {
+                "command": PulseCommand.Command.SYNC.value | 0x1 << (4 + 28)
+            })
+            for _ in range(4):
+                await write_reg(ctrl_mmio, regs, ["CommandFIFO"], {
+                    "command": PulseCommand.Command.DELAY.value | (31) << 4,
                 })
 
             await ctx.tick().repeat(32)
